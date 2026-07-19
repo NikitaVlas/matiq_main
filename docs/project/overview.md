@@ -1,52 +1,13 @@
-# Project overview
+# MATIQ product overview
 
-## Summary
+Choose the maintained language version:
 
-Describe the project in one or two paragraphs.
-
-## Problem
-
-What user or business problem does the project solve?
-
-## Target users
-
-Who uses the product, and in what context?
-
-## Core use cases
-
-- UC-001:
-
-## Goals
-
-- G-001:
-
-## Non-goals
-
-- NG-001:
-
-## Success criteria
-
-- SC-001:
-
-## Current state
-
-Describe what already exists and what is known to work.
-
-## Important links
-
-- Repository:
-- Product:
-- Issue tracker:
-- Design:
-
-## Open questions
-
-- [ ] Question:
+- [Русская версия](overview.ru.md)
+- [English version](overview.en.md)
 
 ## Document status
 
-- Status: Draft
-- Owner:
-- Last reviewed:
+- Status: Active language index
+- Owner: MATIQ team
+- Last reviewed: 2026-07-19
 - Related code: Repository-wide
-

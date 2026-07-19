@@ -100,9 +100,9 @@ materials.
   cannot watch videos.
 - After registration and assessment completion, the user can activate a
   seven-day trial.
-- A payment card is required to activate the trial.
-- Unless cancelled, the trial converts to an automatically renewing monthly
-  subscription.
+- No payment card is required to activate the trial.
+- The trial does not convert to a paid subscription automatically. After it
+  ends, the user may purchase a monthly subscription separately.
 - Video access is blocked after the trial when there is no active subscription.
 - The main video library is included in the subscription.
 - Separate sales of large courses are planned for the future.
@@ -147,8 +147,7 @@ materials.
 
 ## Document status
 
-- Status: Draft
+- Status: Approved product baseline
 - Owner: MATIQ team
 - Last reviewed: 2026-07-19
-- Related code: Product code has not been created
-
+- Related code: Repository-wide; implementation is partial

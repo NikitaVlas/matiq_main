@@ -12,6 +12,10 @@
   and `Admin` roles.
 - `FR-USER-004`: Subscription content playback shall be available only to a
   user with an active trial or subscription.
+- `FR-USER-005`: The `/` page shall show a public video and trainer catalogue
+  without protected-video playback.
+- `FR-USER-006`: Attempting to play locked video shall open a contextual modal
+  with the appropriate next action.
 
 ### Profile and assessment
 
@@ -21,7 +25,7 @@
   frequency, belt, competition experience, and prioritised general goals.
 - `FR-ASMT-003`: Each selected discipline shall have a separate assessment
   section.
-- `FR-ASMT-004`: Experts shall configure questions, answers, branching, and
+- `FR-ASMT-004`: An `Admin` shall configure questions, answers, branching, and
   evaluation rules through the administration interface.
 - `FR-ASMT-005`: Follow-up questions shall be selected from an approved bank;
   AI shall not generate new questions.
@@ -31,6 +35,10 @@
   that MATIQ does not provide medical advice.
 - `FR-ASMT-008`: A user shall be able to edit answers; the system shall
   recalculate current recommendations after a change.
+- `FR-ASMT-009`: An incomplete assessment shall be saved and resumed from the
+  last completed step.
+- `FR-ASMT-010`: The assessment result and preliminary Roadmap shall be shown
+  before trial activation.
 
 ### Recommendations and roadmaps
 
@@ -68,19 +76,41 @@
 - `FR-CONT-007`: A user shall have access to a library of watched materials.
 - `FR-CONT-008`: The platform shall use protected streaming delivery and shall
   not expose a public source video file.
+- `FR-CONT-009`: The platform shall provide a dedicated catalogue of all
+  published videos with methodology and content filters.
+- `FR-CONT-010`: A locked video shall support a short preview without granting
+  access to the complete material.
+- `FR-CONT-011`: Completely free videos are out of scope for the first version.
+- `FR-CONT-012`: An `Admin` shall select a preview range within the full video,
+  with a maximum duration of 60 seconds.
 
 ### Trial and subscription
 
 - `FR-SUB-001`: A seven-day trial shall be available after registration and
   assessment completion.
-- `FR-SUB-002`: A payment card shall be required to activate the trial.
-- `FR-SUB-003`: Unless cancelled, the trial shall convert to an automatically
-  renewing monthly subscription.
+- `FR-SUB-002`: No payment card shall be required to activate the trial.
+- `FR-SUB-003`: The trial shall not convert to a paid subscription
+  automatically. The user purchases a monthly subscription separately during
+  or after the trial.
 - `FR-SUB-004`: Playback access shall be blocked after the trial if there is no
   active subscription.
 - `FR-SUB-005`: The primary video library shall be included in the
   subscription.
 - `FR-SUB-006`: Paid-access checks shall be enforced on the server.
+- `FR-SUB-007`: The trial shall expire automatically after seven days and shall
+  not require cancellation.
+- `FR-SUB-008`: After access expires, the profile, Roadmap, and catalogue shall
+  remain available while video playback is locked.
+- `FR-SUB-009`: Checkout shall use EUR for Germany and disclose price, period,
+  automatic renewal, next charge, and cancellation before payment.
+- `FR-SUB-010`: A success redirect shall not grant access before a verified
+  payment event creates or updates an entitlement.
+- `FR-SUB-011`: A user shall be able to cancel renewal from the profile while
+  retaining access through the paid period.
+- `FR-SUB-012`: Payment, subscription, and entitlement shall be separate domain
+  concepts.
+- `FR-PREM-001`: Premium-course sales are outside MVP, but the model shall allow
+  a future course-scoped product and entitlement without changing video access.
 
 ### Trainers and reporting
 
@@ -99,10 +129,31 @@
 
 - `FR-ADMIN-001`: An `Admin` shall manage users, trainers, content,
   assessments, roadmaps, subscriptions, and reports.
-- `FR-ADMIN-002`: An `Editor` shall manage permitted content and assessments
-  without access to payments or user administration.
+- `FR-ADMIN-002`: An `Editor` shall manage permitted content drafts without
+  access to assessments, payments, or user administration.
+- `FR-ADMIN-003`: An `Editor` shall be able to create and edit drafts of
+  trainers, courses, lessons, positions, techniques, Movements, and Drills.
+- `FR-ADMIN-004`: An `Editor` shall be able to add descriptions, relationships,
+  and a primary topic to an uploaded video but shall not upload videos.
+- `FR-ADMIN-005`: Only an `Admin` shall be able to publish, archive, or
+  unpublish content.
+- `FR-ADMIN-006`: Only an `Admin` shall be able to modify assessment questions,
+  branching, and rules.
+- `FR-ADMIN-007`: The system shall audit administrative changes with the actor,
+  time, and changed data.
+- `FR-ADMIN-008`: Published content shall be changed through a new draft
+  revision and renewed `Admin` approval.
+- `FR-ADMIN-009`: Unpublishing content shall require a reason.
 - `FR-LANG-001`: The user interface, assessments, administration interface,
   trainer area, emails, and payment pages shall be in German.
+- `FR-NAV-001`: The Roadmap shall be the personal core of the Dashboard without
+  displacing courses, videos, or trainers.
+- `FR-NAV-002`: Desktop shall use primary side navigation and mobile web shall
+  use bottom navigation.
+- `FR-NAV-003`: Bottom mobile navigation shall contain Dashboard, Roadmap,
+  Videos, History, and Profile.
+- `FR-NAV-004`: The primary interface shall use light mode and compact
+  typography.
 
 ## Non-functional requirements
 
@@ -119,6 +170,9 @@
   client code, logs, or documentation.
 - `NFR-SEC-006`: Viewing statistics shall prevent obvious abuse and duplicate
   counting.
+- `NFR-SEC-007`: MFA shall be mandatory for `Admin` and `Editor`.
+- `NFR-SEC-008`: Critical administrative actions shall require recent
+  re-authentication.
 
 ### Privacy
 
@@ -128,6 +182,13 @@
   version.
 - `NFR-PRIV-003`: GDPR requirements, retention periods, and deletion rules
   shall be defined before user-data implementation.
+- `NFR-PRIV-004`: Primary user data, video, analytics, logs, and backups shall
+  be stored in the EU.
+- `NFR-PRIV-005`: An international processor shall require explicit approval
+  and DPA, subprocessor, transfer, retention, and deletion review.
+- `NFR-PRIV-006`: Account deletion shall revoke sessions and asynchronously
+  erase or irreversibly pseudonymise product data, including processor copies.
+- `NFR-PRIV-007`: The system shall support a machine-readable user-data export.
 
 ### Accessibility and compatibility
 
@@ -143,6 +204,10 @@
   accounting.
 - `NFR-OBS-001`: Critical assessment, video-access, subscription, and
   statistics operations shall provide diagnosable logs without sensitive data.
+- `NFR-OBS-002`: The administrative audit log shall be protected from
+  modification by roles without a dedicated permission.
+- `NFR-OBS-003`: The audit log shall preliminarily be retained for at least
+  five years; the final period requires legal and GDPR review before production.
 
 ## First-version scope
 
@@ -192,8 +257,7 @@
 
 ## Document status
 
-- Status: Draft
+- Status: Approved product baseline
 - Owner: MATIQ team
 - Last reviewed: 2026-07-19
-- Related code: Product code has not been created
-
+- Related code: Repository-wide; implementation is partial

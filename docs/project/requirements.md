@@ -1,47 +1,13 @@
-# Project requirements
+# MATIQ requirements
 
-## Functional requirements
+Choose the maintained language version:
 
-- FR-001:
-
-## Non-functional requirements
-
-### Security
-
-- NFR-SEC-001:
-
-### Performance
-
-- NFR-PERF-001:
-
-### Reliability
-
-- NFR-REL-001:
-
-### Accessibility
-
-- NFR-A11Y-001:
-
-### Compatibility
-
-- NFR-COMP-001:
-
-### Observability
-
-- NFR-OBS-001:
-
-## Assumptions
-
-- A-001:
-
-## Open questions
-
-- [ ] Question:
+- [Русская версия](requirements.ru.md)
+- [English version](requirements.en.md)
 
 ## Document status
 
-- Status: Draft
-- Owner:
-- Last reviewed:
+- Status: Active language index
+- Owner: MATIQ team
+- Last reviewed: 2026-07-19
 - Related code: Repository-wide
-
