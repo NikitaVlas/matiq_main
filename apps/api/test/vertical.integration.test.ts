@@ -68,6 +68,9 @@ describe('registration to athlete profile', () => {
     expect(assessment.body.completed).toBe(true);
     expect(assessment.body.roadmap.length).toBe(3);
 
+    const catalog = await request(app.getHttpServer()).get('/content/catalog').expect(200);
+    expect(catalog.body[0].positions[0].skillGroups[0].techniques[0].variants.length).toBe(1);
+
     await request(app.getHttpServer()).post('/auth/logout-all').set('Cookie', cookie).expect(201);
     await request(app.getHttpServer()).get('/auth/me').set('Cookie', cookie).expect(401);
 

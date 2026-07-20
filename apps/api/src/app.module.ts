@@ -8,9 +8,19 @@ import { ProfileController } from './profile.controller';
 import { RateLimitService } from './rate-limit.service';
 import { AssessmentController } from './assessment.controller';
 import { AssessmentService } from './assessment.service';
+import { ContentController } from './content.controller';
+import { ContentService } from './content.service';
 
 @Module({
-  controllers: [AuthController, ProfileController, AssessmentController],
-  providers: [Database, EmailService, RateLimitService, AuthService, AuthGuard, AssessmentService],
+  controllers: [AuthController, ProfileController, AssessmentController, ContentController],
+  providers: [
+    Database,
+    EmailService,
+    RateLimitService,
+    AuthService,
+    AuthGuard,
+    AssessmentService,
+    ContentService,
+  ],
 })
 export class AppModule {}

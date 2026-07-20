@@ -173,3 +173,106 @@ model RoadmapItem {
 
   @@index([athleteProfileId, position])
 }
+
+model GameArea {
+  id          String     @id @default(cuid())
+  key         String     @unique
+  name        String
+  discipline  Discipline
+  positions   Position[]
+}
+
+model Position {
+  id          String       @id @default(cuid())
+  gameAreaId  String
+  key         String
+  name        String
+  context     AssessmentContext
+  gameArea    GameArea     @relation(fields: [gameAreaId], references: [id], onDelete: Cascade)
+  skillGroups SkillGroup[]
+  flows       Flow[]
+  videos      Video[]
+  @@unique([gameAreaId, key])
+}
+
+model SkillGroup {
+  id          String      @id @default(cuid())
+  positionId  String
+  key         String
+  name        String
+  position    Position    @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  techniques  Technique[]
+  @@unique([positionId, key])
+}
+
+model Technique {
+  id           String             @id @default(cuid())
+  skillGroupId String
+  key          String             @unique
+  name         String
+  skillGroup   SkillGroup         @relation(fields: [skillGroupId], references: [id], onDelete: Cascade)
+  variants     TechniqueVariant[]
+  videos       Video[]
+  drills       Drill[]
+}
+
+model TechniqueVariant {
+  id          String     @id @default(cuid())
+  techniqueId String
+  discipline  Discipline
+  name        String
+  technique   Technique  @relation(fields: [techniqueId], references: [id], onDelete: Cascade)
+  videos      Video[]
+  @@unique([techniqueId, discipline])
+}
+
+model Movement {
+  id          String  @id @default(cuid())
+  key         String  @unique
+  name        String
+  description String?
+  videos      Video[]
+  drills      Drill[]
+}
+
+model Drill {
+  id          String     @id @default(cuid())
+  key         String     @unique
+  name        String
+  description String?
+  techniqueId String?
+  movementId  String?
+  technique   Technique? @relation(fields: [techniqueId], references: [id], onDelete: SetNull)
+  movement    Movement?  @relation(fields: [movementId], references: [id], onDelete: SetNull)
+  videos      Video[]
+}
+
+model Flow {
+  id          String     @id @default(cuid())
+  key         String     @unique
+  name        String
+  discipline  Discipline
+  positionId  String?
+  position    Position?  @relation(fields: [positionId], references: [id], onDelete: SetNull)
+}
+
+model Video {
+  id            String             @id @default(cuid())
+  title         String
+  description   String?
+  storageKey    String
+  published     Boolean            @default(false)
+  durationSec   Int?
+  positionId    String?
+  techniqueId   String?
+  variantId     String?
+  movementId    String?
+  drillId       String?
+  position      Position?          @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  technique     Technique?         @relation(fields: [techniqueId], references: [id], onDelete: SetNull)
+  variant       TechniqueVariant?  @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  movement      Movement?          @relation(fields: [movementId], references: [id], onDelete: SetNull)
+  drill         Drill?             @relation(fields: [drillId], references: [id], onDelete: SetNull)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}

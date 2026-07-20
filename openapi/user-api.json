@@ -208,6 +208,20 @@
           "assessment"
         ]
       }
+    },
+    "/content/catalog": {
+      "get": {
+        "operationId": "ContentController_catalog",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
     }
   },
   "info": {
