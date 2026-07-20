@@ -152,6 +152,62 @@
           "athlete-profile"
         ]
       }
+    },
+    "/assessment/questions": {
+      "get": {
+        "operationId": "AssessmentController_questions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "assessment"
+        ]
+      }
+    },
+    "/assessment/result": {
+      "get": {
+        "operationId": "AssessmentController_result",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "assessment"
+        ]
+      }
+    },
+    "/assessment/submit": {
+      "post": {
+        "operationId": "AssessmentController_submit",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "assessment"
+        ]
+      }
+    },
+    "/assessment/roadmap-items": {
+      "post": {
+        "operationId": "AssessmentController_add",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "assessment"
+        ]
+      }
     }
   },
   "info": {

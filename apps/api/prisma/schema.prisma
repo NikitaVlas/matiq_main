@@ -33,6 +33,18 @@ enum AthleteGoal {
   RETURN_AFTER_BREAK
 }
 
+enum AssessmentContext {
+  STANDING
+  TOP
+  BOTTOM
+}
+
+enum RoadmapItemType {
+  POSITION
+  SKILL_GROUP
+  TECHNIQUE
+}
+
 model User {
   id                      String                   @id @default(cuid())
   email                   String                   @unique
@@ -45,6 +57,7 @@ model User {
   passwordResetTokens      PasswordResetToken[]
   sessions                Session[]
   athleteProfile          AthleteProfile?
+  assessment              Assessment?
 }
 
 model PasswordResetToken {
@@ -96,4 +109,67 @@ model AthleteProfile {
   createdAt               DateTime      @default(now())
   updatedAt               DateTime      @updatedAt
   user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roadmapItems            RoadmapItem[]
+}
+
+model Assessment {
+  id          String               @id @default(cuid())
+  userId      String               @unique
+  completedAt DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responses   AssessmentResponse[]
+  scores      SkillScore[]
+}
+
+model AssessmentQuestion {
+  id          String               @id @default(cuid())
+  key         String               @unique
+  text        String
+  context     AssessmentContext
+  skillKey    String
+  options     Json
+  active      Boolean              @default(true)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  responses   AssessmentResponse[]
+}
+
+model AssessmentResponse {
+  id           String             @id @default(cuid())
+  assessmentId String
+  questionId   String
+  optionKey    String
+  value        Int
+  createdAt    DateTime           @default(now())
+  assessment   Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  question     AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([assessmentId, questionId])
+}
+
+model SkillScore {
+  id           String     @id @default(cuid())
+  assessmentId String
+  skillKey     String
+  score        Int
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, skillKey])
+}
+
+model RoadmapItem {
+  id              String          @id @default(cuid())
+  athleteProfileId String
+  type            RoadmapItemType
+  title           String
+  context         AssessmentContext?
+  skillKey        String?
+  position        Int
+  isAddedByUser   Boolean         @default(false)
+  isHidden        Boolean         @default(false)
+  athleteProfile  AthleteProfile  @relation(fields: [athleteProfileId], references: [id], onDelete: Cascade)
+
+  @@index([athleteProfileId, position])
 }

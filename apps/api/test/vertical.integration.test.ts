@@ -51,6 +51,23 @@ describe('registration to athlete profile', () => {
 
     expect(profile.body.completedAt).toBeTruthy();
 
+    const questions = await request(app.getHttpServer())
+      .get('/assessment/questions')
+      .set('Cookie', cookie)
+      .expect(200);
+    const assessment = await request(app.getHttpServer())
+      .post('/assessment/submit')
+      .set('Cookie', cookie)
+      .send({
+        answers: questions.body.map((question: { key: string; options: { key: string }[] }) => ({
+          questionKey: question.key,
+          optionKey: question.options[0].key,
+        })),
+      })
+      .expect(201);
+    expect(assessment.body.completed).toBe(true);
+    expect(assessment.body.roadmap.length).toBe(3);
+
     await request(app.getHttpServer()).post('/auth/logout-all').set('Cookie', cookie).expect(201);
     await request(app.getHttpServer()).get('/auth/me').set('Cookie', cookie).expect(401);
 
