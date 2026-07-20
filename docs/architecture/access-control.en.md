@@ -4,12 +4,12 @@
 
 MATIQ uses four system roles:
 
-| Role | Purpose |
-|---|---|
-| `Athlete` | Assessment, Roadmap, subscription, and content playback |
-| `Trainer` | Own statistics and financial reports only |
-| `Editor` | Preparation of content and methodology entities |
-| `Admin` | Full management, publishing, video, assessment, and security |
+| Role      | Purpose                                                      |
+| --------- | ------------------------------------------------------------ |
+| `Athlete` | Assessment, Roadmap, subscription, and content playback      |
+| `Trainer` | Own statistics and financial reports only                    |
+| `Editor`  | Preparation of content and methodology entities              |
+| `Admin`   | Full management, publishing, video, assessment, and security |
 
 The first version does not use a separate methodology-expert role.
 
@@ -32,25 +32,25 @@ Authorised action
 
 ## Access matrix
 
-| Action | Athlete | Trainer | Editor | Admin |
-|---|---:|---:|---:|---:|
-| Browse the published catalogue | Yes | Yes | Yes | Yes |
-| Play video when entitled | Yes | According to account access | Yes | Yes |
-| Complete an assessment | Yes | No | No | For testing |
-| Manage own Roadmap | Yes | No | No | For support |
-| View own trainer statistics | No | Yes | No | Yes |
-| View another trainer's statistics | No | No | No | Yes |
-| Create a trainer draft | No | No | Yes | Yes |
-| Create course and lesson drafts | No | No | Yes | Yes |
-| Create positions, techniques, and Movements | No | No | Yes | Yes |
-| Create Drills and Flows | No | No | Yes | Yes |
-| Edit uploaded-video metadata | No | No | Yes | Yes |
-| Upload video | No | No | No | Yes |
-| Publish or archive content | No | No | No | Yes |
-| Manage assessment questions and rules | No | No | No | Yes |
-| Manage users and roles | No | No | No | Yes |
-| Manage MATIQ subscriptions and payment records | No | No | No | Yes |
-| View the audit log | No | No | No | Yes |
+| Action                                         | Athlete |                     Trainer | Editor |       Admin |
+| ---------------------------------------------- | ------: | --------------------------: | -----: | ----------: |
+| Browse the published catalogue                 |     Yes |                         Yes |    Yes |         Yes |
+| Play video when entitled                       |     Yes | According to account access |    Yes |         Yes |
+| Complete an assessment                         |     Yes |                          No |     No | For testing |
+| Manage own Roadmap                             |     Yes |                          No |     No | For support |
+| View own trainer statistics                    |      No |                         Yes |     No |         Yes |
+| View another trainer's statistics              |      No |                          No |     No |         Yes |
+| Create a trainer draft                         |      No |                          No |    Yes |         Yes |
+| Create course and lesson drafts                |      No |                          No |    Yes |         Yes |
+| Create positions, techniques, and Movements    |      No |                          No |    Yes |         Yes |
+| Create Drills and Flows                        |      No |                          No |    Yes |         Yes |
+| Edit uploaded-video metadata                   |      No |                          No |    Yes |         Yes |
+| Upload video                                   |      No |                          No |     No |         Yes |
+| Publish or archive content                     |      No |                          No |     No |         Yes |
+| Manage assessment questions and rules          |      No |                          No |     No |         Yes |
+| Manage users and roles                         |      No |                          No |     No |         Yes |
+| Manage MATIQ subscriptions and payment records |      No |                          No |     No |         Yes |
+| View the audit log                             |      No |                          No |     No |         Yes |
 
 This matrix is a product model. Concrete permissions will be named during API
 design.

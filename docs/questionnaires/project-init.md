@@ -55,4 +55,3 @@ Allowed answers: a concrete answer, `Unknown`, `Propose options`, or
 33. Are there performance requirements?
 34. Are there accessibility requirements?
 35. Which checks are mandatory before a task is complete?
-

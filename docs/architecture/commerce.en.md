@@ -2,11 +2,11 @@
 
 ## Commercial products
 
-| Product | MVP | Entitlement |
-|---|---:|---|
-| Seven-day trial | Yes | Main library for a limited period |
-| Monthly subscription | Yes | Main library through the paid period |
-| Premium course | Modelled now; sold after MVP | Per-course perpetual or contractual access |
+| Product              |                          MVP | Entitlement                                |
+| -------------------- | ---------------------------: | ------------------------------------------ |
+| Seven-day trial      |                          Yes | Main library for a limited period          |
+| Monthly subscription |                          Yes | Main library through the paid period       |
+| Premium course       | Modelled now; sold after MVP | Per-course perpetual or contractual access |
 
 Currency is EUR and the first market is Germany. Price, applicable tax, refund
 policy, and the payment provider require approval before production payments.

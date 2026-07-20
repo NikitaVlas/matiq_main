@@ -45,4 +45,3 @@ Allowed answers: a concrete answer, `Unknown`, `Propose options`, or
 23. What are the acceptance criteria?
 24. Which tests and manual checks are expected?
 25. Which decisions require approval before implementation?
-

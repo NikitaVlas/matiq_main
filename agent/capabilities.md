@@ -5,22 +5,22 @@ not from which tools happen to be available.
 
 ## Capability matrix
 
-| Capability | Required | Preferred provider | Required operations | Notes |
-|---|---|---|---|---|
-| Code discovery | TBD | codebase-memory-mcp | Search, trace, snippets | May be omitted for empty or very small repositories |
-| Frontend design | TBD | design-taste-frontend | Direction, implementation review | Optional module |
-| Figma | TBD | Approved Figma tooling | Generate, read, design-to-code, components | Optional module |
-| Unit testing | TBD | Project-native | Run and author tests | |
-| Integration testing | TBD | Project-native | Run and author tests | |
-| E2E testing | TBD | TBD | Browser/user flows | |
-| Visual testing | TBD | TBD | Screenshots and comparison | UI projects only |
-| Deployment | TBD | TBD | Build, release, rollback | Requires confirmation |
+| Capability          | Required | Preferred provider     | Required operations                        | Notes                                               |
+| ------------------- | -------- | ---------------------- | ------------------------------------------ | --------------------------------------------------- |
+| Code discovery      | TBD      | codebase-memory-mcp    | Search, trace, snippets                    | May be omitted for empty or very small repositories |
+| Frontend design     | TBD      | design-taste-frontend  | Direction, implementation review           | Optional module                                     |
+| Figma               | TBD      | Approved Figma tooling | Generate, read, design-to-code, components | Optional module                                     |
+| Unit testing        | TBD      | Project-native         | Run and author tests                       |                                                     |
+| Integration testing | TBD      | Project-native         | Run and author tests                       |                                                     |
+| E2E testing         | TBD      | TBD                    | Browser/user flows                         |                                                     |
+| Visual testing      | TBD      | TBD                    | Screenshots and comparison                 | UI projects only                                    |
+| Deployment          | TBD      | TBD                    | Build, release, rollback                   | Requires confirmation                               |
 
 ## External integrations
 
 | System | Required | Operations | Data/secrets | Approval needs |
-|---|---|---|---|---|
-| GitHub | TBD | TBD | TBD | TBD |
+| ------ | -------- | ---------- | ------------ | -------------- |
+| GitHub | TBD      | TBD        | TBD          | TBD            |
 
 ## Gap review
 
@@ -41,4 +41,3 @@ For each missing capability:
 - Owner:
 - Last reviewed:
 - Related code: Repository-wide
-

@@ -49,15 +49,15 @@ packages/
 
 ## Ответственность процессов
 
-| Компонент | Ответственность | Запрещено |
-|---|---|---|
-| `web` | Public-каталог, Athlete, assessment, Roadmap, playback, Trainer | Авторитетные бизнес-правила |
-| `admin-web` | Рабочие процессы Admin и Editor | Выдача доступа через видимость маршрута |
-| `api` | Public, Athlete и Trainer HTTP-контракты | Admin controllers |
-| `admin-api` | Admin/Editor HTTP-контракты и audit context | Копирование domain/application logic |
-| `worker` | Идемпотентная фоновая обработка | Пользовательский HTTP API |
-| PostgreSQL | Транзакционные данные продукта | Прямой доступ frontend |
-| Redis/BullMQ | Очереди и временная координация | Роль источника истины |
+| Компонент    | Ответственность                                                 | Запрещено                               |
+| ------------ | --------------------------------------------------------------- | --------------------------------------- |
+| `web`        | Public-каталог, Athlete, assessment, Roadmap, playback, Trainer | Авторитетные бизнес-правила             |
+| `admin-web`  | Рабочие процессы Admin и Editor                                 | Выдача доступа через видимость маршрута |
+| `api`        | Public, Athlete и Trainer HTTP-контракты                        | Admin controllers                       |
+| `admin-api`  | Admin/Editor HTTP-контракты и audit context                     | Копирование domain/application logic    |
+| `worker`     | Идемпотентная фоновая обработка                                 | Пользовательский HTTP API               |
+| PostgreSQL   | Транзакционные данные продукта                                  | Прямой доступ frontend                  |
+| Redis/BullMQ | Очереди и временная координация                                 | Роль источника истины                   |
 
 ## Backend-модули
 
@@ -136,12 +136,12 @@ Roadmap или финансового состояния. Backups и прове�
 
 ## Внешние интеграции
 
-| Port | Назначение | Поведение при отказе |
-|---|---|---|
-| Payment provider | Checkout и subscription | Проверенный idempotent webhook и reconciliation |
-| Video provider | Private upload и protected playback | Без fallback на публичный original |
-| Email provider | Транзакционные письма на немецком | Retry/dead-letter без секретов |
-| AI provider | Объяснение deterministic result | Roadmap доступна без AI |
+| Port             | Назначение                          | Поведение при отказе                            |
+| ---------------- | ----------------------------------- | ----------------------------------------------- |
+| Payment provider | Checkout и subscription             | Проверенный idempotent webhook и reconciliation |
+| Video provider   | Private upload и protected playback | Без fallback на публичный original              |
+| Email provider   | Транзакционные письма на немецком   | Retry/dead-letter без секретов                  |
+| AI provider      | Объяснение deterministic result     | Roadmap доступна без AI                         |
 
 Документ не утверждает конкретного production provider. Международная обработка
 требует проверки GDPR, DPA, subprocessors и передачи данных.

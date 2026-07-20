@@ -1,0 +1,20 @@
+{
+  "name": "@matiq/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "openapi:generate": "openapi-typescript ../../openapi/user-api.json -o src/generated/user-api.ts && openapi-typescript ../../openapi/admin-api.json -o src/generated/admin-api.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.8.0",
+    "vitest": "3.2.4"
+  }
+}

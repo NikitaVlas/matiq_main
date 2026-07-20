@@ -1,62 +1,47 @@
 # Verification
 
-Replace every applicable placeholder with a real, repository-tested command.
-Use `Not applicable — <reason>` where a check does not apply.
-
 ## Commands
+
+Run commands from the repository root with pnpm 10.12.1 and Node.js 22+.
+On Windows with restricted PowerShell scripts, use `pnpm.cmd`.
 
 | Check | Command | Required in CI |
 |---|---|---|
-| Setup | TBD | No |
-| Development | TBD | No |
-| Format check | TBD | Yes |
-| Lint | TBD | Yes |
-| Typecheck | TBD | Yes |
-| Unit tests | TBD | Yes |
-| Integration tests | TBD | Project-specific |
-| E2E tests | TBD | Project-specific |
-| Build | TBD | Yes |
-| Security | TBD | Project-specific |
-| Full verification | TBD | Yes |
+| Setup | `pnpm install --frozen-lockfile` | Yes |
+| Development | `pnpm dev` | No |
+| Infrastructure | `docker compose up -d` | Integration only |
+| Prisma client | `pnpm db:generate` | Yes |
+| Migration | `pnpm --filter @matiq/api prisma:deploy` | Integration |
+| OpenAPI documents | `pnpm openapi:generate` | Contract changes |
+| Format | `pnpm format:check` | Yes |
+| Lint | `pnpm lint` | Yes |
+| Typecheck | `pnpm typecheck` | Yes |
+| Unit tests | `pnpm test` | Yes |
+| Identity integration | `pnpm --filter @matiq/api test:integration` | Yes with PostgreSQL |
+| Build | `pnpm build` | Yes |
+| Full verification | `pnpm verify` | Yes |
 
-Prefer one `verify` command that runs the standard local and CI checks.
+`DATABASE_URL` must point to a disposable test/local PostgreSQL for migration
+and integration tests. Never run these commands against production.
 
 ## Required by change type
 
-| Change type | Required checks |
+| Change | Required checks |
 |---|---|
-| Documentation only | Format/link checks when available |
-| Business logic | Lint, typecheck, unit tests, build |
-| Data access | Standard checks plus integration tests |
-| Public contract | Standard checks plus contract/integration tests |
-| Critical user flow | Standard checks plus E2E |
-| Visual UI | Standard checks, UI tests, screenshot and responsive review |
-| Security or permissions | Standard checks, integration and negative tests, security review |
-| Migration | Standard checks, migration test, rollback/compatibility review |
-
-## CI expectations
-
-- CI uses the same verification entry point as local development where possible.
-- Required checks fail on warnings only when the project explicitly configures it.
-- Tests do not depend on developer-specific state.
-- Generated artifacts and migrations are checked for drift when applicable.
-- Security-sensitive output is redacted.
+| Documentation | Link check and `git diff --check` |
+| Business policy | Format, lint, typecheck, unit, build |
+| Prisma/data access | Standard checks, migration, integration |
+| API/OpenAPI | Standard checks, generated-client drift, integration |
+| Critical user flow | Standard checks and E2E/integration |
+| Permissions/security | Integration, negative cases, security review |
 
 ## Reporting
 
-Every completion report lists:
-
-- commands run;
-- checks that passed;
-- checks that failed, including relevant error summaries;
-- checks not run and why;
-- manual or visual checks performed;
-- residual risks and limitations.
+Report every command, outcome, skipped check, manual check, and residual risk.
 
 ## Document status
 
-- Status: Draft
-- Owner:
-- Last reviewed:
-- Related code: Build, test, and CI configuration
-
+- Status: Active
+- Owner: MATIQ team
+- Last reviewed: 2026-07-20
+- Related code: Root scripts, CI, all workspace packages

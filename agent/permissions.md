@@ -48,4 +48,3 @@ Document additions or stricter rules here:
 - Owner: Project maintainers
 - Last reviewed: YYYY-MM-DD
 - Related code: Repository-wide
-

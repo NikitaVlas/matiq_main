@@ -20,14 +20,14 @@ Use `docs/project/requirements.md` when validating product requirements and
 
 ## Sources of truth
 
-| Information | Source of truth |
-|---|---|
-| Product goals and boundaries | `docs/project/` |
-| Architectural rules | `docs/architecture/` |
-| Feature behavior | Approved feature specification |
-| Verification commands | `docs/development/verification.md` |
-| Installed tooling | `agent/skills-lock.md` and `agent/mcp.md` |
-| Current implementation | Code and tests |
+| Information                  | Source of truth                           |
+| ---------------------------- | ----------------------------------------- |
+| Product goals and boundaries | `docs/project/`                           |
+| Architectural rules          | `docs/architecture/`                      |
+| Feature behavior             | Approved feature specification            |
+| Verification commands        | `docs/development/verification.md`        |
+| Installed tooling            | `agent/skills-lock.md` and `agent/mcp.md` |
+| Current implementation       | Code and tests                            |
 
 If sources conflict, identify the conflict, report it, recommend which source
 should be updated, and continue only when a safe resolution is available.
@@ -122,4 +122,3 @@ documents `Outdated`; do not silently leave misleading information.
 Use:
 
 `docs/development/definition-of-done.md`
-

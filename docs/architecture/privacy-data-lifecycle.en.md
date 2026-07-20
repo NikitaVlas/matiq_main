@@ -13,16 +13,16 @@ capabilities.
 
 ## Data categories
 
-| Category | Examples | Rule |
-|---|---|---|
-| Account | email, password hash, sessions | Never store passwords; restrict access |
-| Athlete profile | discipline, belt, experience, goals | Profile and recommendations only |
-| Health limitation | optional general flag | No diagnoses or free medical text |
-| Assessment | answers, score, rule version | Versioned and access-restricted |
-| Viewing | positions and verified intervals | Minimise raw events and anti-abuse data |
-| Commerce | customer/order/payment references | Never store card details |
-| Trainer finance | agreements and payout reports | Separate permissions and legal retention |
-| Audit/security | actor, action, reason, signals | Minimise and protect from alteration |
+| Category          | Examples                            | Rule                                     |
+| ----------------- | ----------------------------------- | ---------------------------------------- |
+| Account           | email, password hash, sessions      | Never store passwords; restrict access   |
+| Athlete profile   | discipline, belt, experience, goals | Profile and recommendations only         |
+| Health limitation | optional general flag               | No diagnoses or free medical text        |
+| Assessment        | answers, score, rule version        | Versioned and access-restricted          |
+| Viewing           | positions and verified intervals    | Minimise raw events and anti-abuse data  |
+| Commerce          | customer/order/payment references   | Never store card details                 |
+| Trainer finance   | agreements and payout reports       | Separate permissions and legal retention |
+| Audit/security    | actor, action, reason, signals      | Minimise and protect from alteration     |
 
 Before production, the product owner and counsel document controller identity,
 legal bases, privacy notice, processing record, DPIA need, and retention per
@@ -60,16 +60,16 @@ audit records remain only on a documented legal basis.
 
 ## Preliminary retention matrix
 
-| Data | Working rule |
-|---|---|
-| Used verification/reset tokens | Remove after a short TTL |
-| Sessions | Remove on expiry or revocation |
-| Raw viewing heartbeats | Short anti-fraud/reconciliation period, then aggregate |
-| Viewing aggregates | While needed for account/reporting, then erase or anonymise |
-| Assessment versions | Active-account life plus limited audit period |
-| Payment/invoice records | German tax and commercial requirements |
-| Audit log | Preliminary five years, finalised by legal review |
-| Backups | Rolling retention approved before production |
+| Data                           | Working rule                                                |
+| ------------------------------ | ----------------------------------------------------------- |
+| Used verification/reset tokens | Remove after a short TTL                                    |
+| Sessions                       | Remove on expiry or revocation                              |
+| Raw viewing heartbeats         | Short anti-fraud/reconciliation period, then aggregate      |
+| Viewing aggregates             | While needed for account/reporting, then erase or anonymise |
+| Assessment versions            | Active-account life plus limited audit period               |
+| Payment/invoice records        | German tax and commercial requirements                      |
+| Audit log                      | Preliminary five years, finalised by legal review           |
+| Backups                        | Rolling retention approved before production                |
 
 Exact periods are a production gate and must not default to indefinite.
 

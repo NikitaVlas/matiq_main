@@ -74,4 +74,3 @@ Initialization is complete when the agent can:
 - Owner: Project maintainers
 - Last reviewed: YYYY-MM-DD
 - Related code: Repository-wide
-

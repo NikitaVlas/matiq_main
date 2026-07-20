@@ -5,9 +5,9 @@ records actual state and verification evidence; it does not install anything.
 
 ## Inventory
 
-| Capability | Server | Source | Version | Platform | Status | Verification | Notes |
-|---|---|---|---|---|---|---|---|
-| Codebase intelligence | codebase-memory-mcp | TBD | TBD | TBD | required | TBD | Optional for empty, tiny, unsupported, or policy-restricted repositories |
+| Capability            | Server              | Source | Version | Platform | Status   | Verification | Notes                                                                    |
+| --------------------- | ------------------- | ------ | ------- | -------- | -------- | ------------ | ------------------------------------------------------------------------ |
+| Codebase intelligence | codebase-memory-mcp | TBD    | TBD     | TBD      | required | TBD          | Optional for empty, tiny, unsupported, or policy-restricted repositories |
 
 Allowed statuses: `required`, `reviewed`, `approved`, `installed`, `verified`,
 `rejected`, and `unavailable`.
@@ -61,4 +61,3 @@ Record the reason and the fallback discovery method in the inventory.
 - Owner:
 - Last reviewed:
 - Related code: Repository-wide
-

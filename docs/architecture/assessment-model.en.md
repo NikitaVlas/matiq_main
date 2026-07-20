@@ -157,13 +157,13 @@ Discipline
 
 The internal score uses a 1–5 scale:
 
-| Score | Meaning |
-|---|---|
-| 1 | Very weak area |
-| 2 | Needs development |
-| 3 | Intermediate level |
-| 4 | Strong area |
-| 5 | Very strong area |
+| Score | Meaning            |
+| ----- | ------------------ |
+| 1     | Very weak area     |
+| 2     | Needs development  |
+| 3     | Intermediate level |
+| 4     | Strong area        |
+| 5     | Very strong area   |
 
 The user sees German text categories. The numeric score may remain an internal
 system detail.

@@ -1,0 +1,15 @@
+node_modules/
+.turbo/
+.codebase-memory/
+.next/
+dist/
+coverage/
+playwright-report/
+test-results/
+.env
+.env.local
+generated/
+*.tsbuildinfo
+apps/api/prisma/dev.db
+apps/api/prisma/dev.db-journal
+.idea/

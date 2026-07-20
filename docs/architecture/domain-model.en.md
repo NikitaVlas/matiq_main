@@ -8,23 +8,23 @@ created only after the domain boundaries have been approved.
 
 ## Core glossary
 
-| Term | Meaning |
-|---|---|
-| `Discipline` | A sport discipline such as BJJ Gi or No-Gi Grappling |
-| `GameArea` | A broad game area: `STANDING`, `TOP`, or `BOTTOM` |
-| `Position` | A sport position such as Side Control or Closed Guard |
-| `PositionContext` | Work from one side of a position, such as Side Control `TOP` or `BOTTOM` |
-| `SkillGroup` | A group of related skills such as Takedowns, Guard Passing, or Escapes |
-| `Technique` | A sport action applied in a real situation |
+| Term               | Meaning                                                                  |
+| ------------------ | ------------------------------------------------------------------------ |
+| `Discipline`       | A sport discipline such as BJJ Gi or No-Gi Grappling                     |
+| `GameArea`         | A broad game area: `STANDING`, `TOP`, or `BOTTOM`                        |
+| `Position`         | A sport position such as Side Control or Closed Guard                    |
+| `PositionContext`  | Work from one side of a position, such as Side Control `TOP` or `BOTTOM` |
+| `SkillGroup`       | A group of related skills such as Takedowns, Guard Passing, or Escapes   |
+| `Technique`        | A sport action applied in a real situation                               |
 | `TechniqueVariant` | A technique variant scoped by discipline, position, and other conditions |
-| `Movement` | A fundamental movement such as Shrimp, Bridge, or Technical Stand-up |
-| `Drill` | A repeatable method for practising a position, technique, or movement |
-| `Flow` | An expert-authored sequence of transitions and techniques |
-| `Roadmap` | A personal development plan for a specific athlete |
-| `Video` | The primary playable media item |
-| `Course` | An ordered educational programme |
-| `Module` | A section of a course |
-| `Lesson` | A complete course topic with one primary video |
+| `Movement`         | A fundamental movement such as Shrimp, Bridge, or Technical Stand-up     |
+| `Drill`            | A repeatable method for practising a position, technique, or movement    |
+| `Flow`             | An expert-authored sequence of transitions and techniques                |
+| `Roadmap`          | A personal development plan for a specific athlete                       |
+| `Video`            | The primary playable media item                                          |
+| `Course`           | An ordered educational programme                                         |
+| `Module`           | A section of a course                                                    |
+| `Lesson`           | A complete course topic with one primary video                           |
 
 ## Methodology hierarchy
 
@@ -111,13 +111,13 @@ Discipline
 
 The internal scale is 1–5. The user sees understandable categories, for example:
 
-| Value | Category |
-|---|---|
-| 1 | Very weak area |
-| 2 | Needs development |
-| 3 | Intermediate level |
-| 4 | Strong area |
-| 5 | Very strong area |
+| Value | Category           |
+| ----- | ------------------ |
+| 1     | Very weak area     |
+| 2     | Needs development  |
+| 3     | Intermediate level |
+| 4     | Strong area        |
+| 5     | Very strong area   |
 
 The exact German labels will be approved during interface design. Expert rules,
 not free-form AI decisions, produce the value.

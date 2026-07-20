@@ -13,16 +13,16 @@ MATIQ проектируется по принципам минимизации,
 
 ## Категории данных
 
-| Категория | Примеры | Правило |
-|---|---|---|
-| Account | email, password hash, sessions | Не хранить пароль; защищать и ограничивать доступ |
-| Athlete profile | дисциплина, пояс, опыт, цели | Только для профиля и рекомендаций |
-| Health limitation | добровольная общая отметка | Без диагнозов и свободного медицинского текста |
-| Assessment | ответы, score, rule version | Версионирование и ограниченный доступ |
-| Viewing | позиции и подтверждённые интервалы | Минимизация raw events и anti-abuse |
-| Commerce | customer/order/payment references | Не хранить карточные реквизиты |
-| Trainer finance | договоры и payout reports | Отдельные permissions и юридические сроки |
-| Audit/security | actor, action, reason, signals | Минимизация и защита от изменения |
+| Категория         | Примеры                            | Правило                                           |
+| ----------------- | ---------------------------------- | ------------------------------------------------- |
+| Account           | email, password hash, sessions     | Не хранить пароль; защищать и ограничивать доступ |
+| Athlete profile   | дисциплина, пояс, опыт, цели       | Только для профиля и рекомендаций                 |
+| Health limitation | добровольная общая отметка         | Без диагнозов и свободного медицинского текста    |
+| Assessment        | ответы, score, rule version        | Версионирование и ограниченный доступ             |
+| Viewing           | позиции и подтверждённые интервалы | Минимизация raw events и anti-abuse               |
+| Commerce          | customer/order/payment references  | Не хранить карточные реквизиты                    |
+| Trainer finance   | договоры и payout reports          | Отдельные permissions и юридические сроки         |
+| Audit/security    | actor, action, reason, signals     | Минимизация и защита от изменения                 |
 
 Перед production владелец продукта с юристом фиксирует controller identity,
 правовые основания, privacy notice, record of processing, DPIA necessity и
@@ -62,16 +62,16 @@ MATIQ проектируется по принципам минимизации,
 
 ## Предварительная матрица хранения
 
-| Данные | Рабочее правило |
-|---|---|
-| Неактивные verification/reset tokens | удалить после короткого TTL |
-| Sessions | удалить при истечении или отзыве |
-| Raw viewing heartbeats | короткий период для антифрода и сверки; затем агрегировать |
-| Viewing aggregates | пока нужен аккаунту/отчётности, затем удалить или обезличить |
-| Assessment versions | пока активен аккаунт и ограниченный audit period |
-| Payment/invoice records | по немецким налоговым и коммерческим требованиям |
-| Audit log | предварительно 5 лет, окончательно после legal review |
-| Backups | rolling retention, срок утверждается до production |
+| Данные                               | Рабочее правило                                              |
+| ------------------------------------ | ------------------------------------------------------------ |
+| Неактивные verification/reset tokens | удалить после короткого TTL                                  |
+| Sessions                             | удалить при истечении или отзыве                             |
+| Raw viewing heartbeats               | короткий период для антифрода и сверки; затем агрегировать   |
+| Viewing aggregates                   | пока нужен аккаунту/отчётности, затем удалить или обезличить |
+| Assessment versions                  | пока активен аккаунт и ограниченный audit period             |
+| Payment/invoice records              | по немецким налоговым и коммерческим требованиям             |
+| Audit log                            | предварительно 5 лет, окончательно после legal review        |
+| Backups                              | rolling retention, срок утверждается до production           |
 
 Точные сроки являются обязательным production gate и не должны быть
 «бессрочными по умолчанию».

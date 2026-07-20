@@ -64,4 +64,3 @@ Mark non-applicable items explicitly and explain material exceptions.
 - Owner: Project maintainers
 - Last reviewed: YYYY-MM-DD
 - Related code: Repository-wide
-

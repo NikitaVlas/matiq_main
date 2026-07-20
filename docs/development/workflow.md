@@ -2,14 +2,14 @@
 
 ## Sources of truth
 
-| Information | Source |
-|---|---|
-| Product goals and boundaries | `docs/project/` |
-| Architecture | `docs/architecture/` |
-| Feature behavior | Approved feature specification |
-| Visual state | Approved Figma frame, when enabled |
-| Verification | `docs/development/verification.md` |
-| Implementation state | Code and tests |
+| Information                  | Source                             |
+| ---------------------------- | ---------------------------------- |
+| Product goals and boundaries | `docs/project/`                    |
+| Architecture                 | `docs/architecture/`               |
+| Feature behavior             | Approved feature specification     |
+| Visual state                 | Approved Figma frame, when enabled |
+| Verification                 | `docs/development/verification.md` |
+| Implementation state         | Code and tests                     |
 
 ## Project initialization
 
@@ -64,4 +64,3 @@ its described reality changed.
 - Owner: Project maintainers
 - Last reviewed: YYYY-MM-DD
 - Related code: Repository-wide
-

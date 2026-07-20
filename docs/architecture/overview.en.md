@@ -50,15 +50,15 @@ assumed to exist.
 
 ## Runtime responsibilities
 
-| Component | Responsibility | Must not |
-|---|---|---|
-| `web` | Public catalogue, athlete account, assessment, Roadmap, playback, Trainer area | Contain authoritative business rules |
-| `admin-web` | Admin and Editor workflows | Grant access through route visibility |
-| `api` | Public, Athlete, and Trainer HTTP contracts | Expose Admin controllers |
-| `admin-api` | Admin and Editor HTTP contracts and audit context | Duplicate domain/application logic |
-| `worker` | Idempotent async processing and aggregation | Expose a user-facing API |
-| PostgreSQL | Transactional product data | Become directly accessible to frontend |
-| Redis/BullMQ | Queues and disposable coordination state | Become a source of truth |
+| Component    | Responsibility                                                                 | Must not                               |
+| ------------ | ------------------------------------------------------------------------------ | -------------------------------------- |
+| `web`        | Public catalogue, athlete account, assessment, Roadmap, playback, Trainer area | Contain authoritative business rules   |
+| `admin-web`  | Admin and Editor workflows                                                     | Grant access through route visibility  |
+| `api`        | Public, Athlete, and Trainer HTTP contracts                                    | Expose Admin controllers               |
+| `admin-api`  | Admin and Editor HTTP contracts and audit context                              | Duplicate domain/application logic     |
+| `worker`     | Idempotent async processing and aggregation                                    | Expose a user-facing API               |
+| PostgreSQL   | Transactional product data                                                     | Become directly accessible to frontend |
+| Redis/BullMQ | Queues and disposable coordination state                                       | Become a source of truth               |
 
 ## Backend modules
 
@@ -138,12 +138,12 @@ or financial state. Backups and tested restoration stay in the EU.
 
 ## External integrations
 
-| Port | Purpose | Failure policy |
-|---|---|---|
-| Payment provider | Checkout and subscriptions | Verified idempotent webhooks plus reconciliation |
-| Video provider | Private upload and protected playback | No fallback to public originals |
-| Email provider | Transactional German email | Retry and dead-letter; no secret data |
-| AI provider | Explanation of deterministic results | Roadmap remains usable without AI |
+| Port             | Purpose                               | Failure policy                                   |
+| ---------------- | ------------------------------------- | ------------------------------------------------ |
+| Payment provider | Checkout and subscriptions            | Verified idempotent webhooks plus reconciliation |
+| Video provider   | Private upload and protected playback | No fallback to public originals                  |
+| Email provider   | Transactional German email            | Retry and dead-letter; no secret data            |
+| AI provider      | Explanation of deterministic results  | Roadmap remains usable without AI                |
 
 No concrete production provider is approved by this document. International
 processing requires GDPR, DPA, subprocessor, and transfer review.

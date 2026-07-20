@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: matiq
+          POSTGRES_USER: matiq
+          POSTGRES_PASSWORD: matiq_local
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U matiq -d matiq"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://matiq:matiq_local@localhost:5432/matiq?schema=public
+      NODE_ENV: test
+      EMAIL_PROVIDER: console
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm --filter @matiq/api prisma:deploy
+      - run: pnpm openapi:generate
+      - run: pnpm --filter @matiq/contracts openapi:generate
+      - run: git diff --exit-code -- openapi packages/contracts/src/generated
+      - run: pnpm verify
+      - run: pnpm --filter @matiq/api test:integration

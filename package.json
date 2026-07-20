@@ -1,0 +1,34 @@
+{
+  "name": "matiq",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.12.1",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "format": "prettier --write \"apps/**/*.{ts,tsx,json,css}\" \"packages/**/*.{ts,tsx,json,css}\" \"*.{json,mjs,yaml,yml}\" \".github/**/*.yml\"",
+    "format:check": "prettier --check \"apps/**/*.{ts,tsx,json,css}\" \"packages/**/*.{ts,tsx,json,css}\" \"*.{json,mjs,yaml,yml}\" \".github/**/*.yml\"",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:integration": "turbo run test:integration",
+    "openapi:generate": "turbo run openapi:generate",
+    "db:generate": "pnpm --filter @matiq/api prisma:generate",
+    "db:migrate": "pnpm --filter @matiq/api prisma:migrate",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.29.0",
+    "@types/node": "22.15.32",
+    "eslint": "9.29.0",
+    "eslint-config-prettier": "10.1.5",
+    "globals": "16.2.0",
+    "prettier": "3.5.3",
+    "turbo": "2.5.4",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.34.1"
+  }
+}

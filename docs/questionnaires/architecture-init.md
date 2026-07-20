@@ -20,4 +20,3 @@ Allowed answers: a concrete answer, `Unknown`, `Propose options`, or
 15. Which future changes require a separate ADR?
 16. What compatibility guarantees must be preserved?
 17. What are the principal trust and failure boundaries?
-

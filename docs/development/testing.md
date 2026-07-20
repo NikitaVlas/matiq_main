@@ -34,18 +34,18 @@ A reproducible bug fix must include a regression test when technically feasible.
 
 ## Test matrix
 
-| Change | Minimum expected test |
-|---|---|
-| Business rule | Unit |
-| Database query or repository | Integration |
-| API endpoint or event | Integration and/or contract |
-| Critical user flow | E2E |
-| Bug fix | Regression |
-| Migration | Migration integration |
-| UI state | Component and/or E2E |
-| Visual change | Screenshot comparison |
+| Change                        | Minimum expected test           |
+| ----------------------------- | ------------------------------- |
+| Business rule                 | Unit                            |
+| Database query or repository  | Integration                     |
+| API endpoint or event         | Integration and/or contract     |
+| Critical user flow            | E2E                             |
+| Bug fix                       | Regression                      |
+| Migration                     | Migration integration           |
+| UI state                      | Component and/or E2E            |
+| Visual change                 | Screenshot comparison           |
 | Authentication or permissions | Integration plus negative cases |
-| External integration | Contract plus failure behavior |
+| External integration          | Contract plus failure behavior  |
 
 ## Test rules
 
@@ -63,4 +63,3 @@ A reproducible bug fix must include a regression test when technically feasible.
 - Owner:
 - Last reviewed:
 - Related code: Test suites
-
