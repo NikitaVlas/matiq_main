@@ -27,13 +27,7 @@ export default function RegisterPage() {
       setError(body.message ?? 'Registrierung fehlgeschlagen.');
       return;
     }
-    if (body.developmentToken) {
-      window.location.assign(
-        `/verify-email?token=${encodeURIComponent(body.developmentToken as string)}`,
-      );
-      return;
-    }
-    router.push('/verify-email');
+    router.push(`/check-email?email=${encodeURIComponent(String(data.get('email')))}`);
   }
 
   return (
@@ -63,6 +57,7 @@ export default function RegisterPage() {
             </p>
           )}
           <button disabled={pending}>{pending ? 'Wird erstellt …' : 'Konto erstellen'}</button>
+          <a href="/login">Ich habe bereits ein Konto</a>
         </form>
       </section>
     </main>

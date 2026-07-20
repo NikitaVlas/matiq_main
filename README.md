@@ -46,3 +46,19 @@ pnpm test:integration
 ```
 
 Подробные требования и архитектурные решения находятся в каталоге `docs/`.
+
+## Локальная отправка через Gmail
+
+По умолчанию ссылки подтверждения и восстановления выводятся в консоль API.
+Для отправки реальных писем создайте локальный `.env` и задайте:
+
+```dotenv
+EMAIL_PROVIDER=gmail
+GMAIL_USER=your-address@gmail.com
+GMAIL_APP_PASSWORD=your-google-app-password
+EMAIL_FROM_NAME=MATIQ
+EMAIL_FROM_ADDRESS=your-address@gmail.com
+```
+
+Используйте Google App Password, а не основной пароль аккаунта. Файл `.env`
+игнорируется Git.

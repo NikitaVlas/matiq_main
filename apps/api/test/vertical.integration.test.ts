@@ -22,7 +22,7 @@ describe('registration to athlete profile', () => {
     await app.close();
   });
 
-  it('registers, verifies email, creates a session, and completes the profile', async () => {
+  it('covers registration, verification, login, reset, profile, and session revocation', async () => {
     const registration = await request(app.getHttpServer())
       .post('/auth/register')
       .send({ email, password: 'SicheresPasswort1' })
@@ -50,5 +50,36 @@ describe('registration to athlete profile', () => {
       .expect(200);
 
     expect(profile.body.completedAt).toBeTruthy();
+
+    await request(app.getHttpServer()).post('/auth/logout-all').set('Cookie', cookie).expect(201);
+    await request(app.getHttpServer()).get('/auth/me').set('Cookie', cookie).expect(401);
+
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password: 'SicheresPasswort1' })
+      .expect(201);
+    const loginCookie = login.headers['set-cookie'] as unknown as string[];
+
+    const resetRequest = await request(app.getHttpServer())
+      .post('/auth/forgot-password')
+      .send({ email })
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/auth/reset-password')
+      .send({ token: resetRequest.body.developmentToken, password: 'NeuesSicheresPasswort2' })
+      .expect(201);
+
+    await request(app.getHttpServer()).get('/auth/me').set('Cookie', loginCookie).expect(401);
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password: 'NeuesSicheresPasswort2' })
+      .expect(201);
+  });
+
+  it('does not reveal whether a reset email exists', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/forgot-password')
+      .send({ email: `missing-${Date.now()}@example.de` })
+      .expect(201, { accepted: true });
   });
 });

@@ -42,8 +42,21 @@ model User {
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens      PasswordResetToken[]
   sessions                Session[]
   athleteProfile          AthleteProfile?
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
 }
 
 model EmailVerificationToken {

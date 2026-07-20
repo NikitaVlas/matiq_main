@@ -17,3 +17,22 @@ export class VerifyEmailDto {
   @IsString()
   token!: string;
 }
+
+export class EmailDto {
+  @ApiProperty({ example: 'athlet@example.de' })
+  @IsEmail()
+  email!: string;
+}
+
+export class LoginDto extends RegisterDto {}
+
+export class ResetPasswordDto {
+  @ApiProperty()
+  @IsString()
+  token!: string;
+
+  @ApiProperty({ minLength: 12 })
+  @IsString()
+  @Length(12, 128)
+  password!: string;
+}
