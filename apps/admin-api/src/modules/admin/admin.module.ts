@@ -12,9 +12,11 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { PrismaClient } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
 import { StorageService } from '../../shared/infrastructure/storage.service';
+import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
+import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
+import { UseGuards } from '@nestjs/common';
 
 @ApiTags('health')
 @Controller('health')
@@ -25,12 +27,14 @@ class HealthController {
   }
 }
 
-class AdminDatabase extends PrismaClient {}
-
 @ApiTags('admin')
 @Controller('admin')
+@UseGuards(AdminAuthGuard)
 export class AdminController {
-  private readonly db = new AdminDatabase();
+  constructor(
+    private readonly storage: StorageService,
+    private readonly db: AdminDatabaseService,
+  ) {}
   private authorize(key?: string) {
     if (!process.env.ADMIN_API_KEY || key !== process.env.ADMIN_API_KEY)
       throw new UnauthorizedException();
@@ -219,13 +223,10 @@ export class AdminController {
       data: { action, entity, entityId, actor: 'local-admin', metadata: metadata as object },
     });
   }
-
-  constructor(private readonly storage: StorageService) {}
 }
 
 @Module({
   controllers: [HealthController, AdminController],
   providers: [StorageService],
-  exports: [StorageService],
 })
 export class AdminModule {}
