@@ -1,18 +1,10 @@
 import { Module } from '@nestjs/common';
-import { AuthController } from './auth.controller';
-import { AuthGuard } from './auth.guard';
-import { AuthService } from './auth.service';
-import { Database } from './database';
-import { EmailService } from './email.service';
-import { ProfileController } from './profile.controller';
-import { RateLimitService } from './rate-limit.service';
-import { AssessmentController } from './assessment.controller';
-import { AssessmentService } from './assessment.service';
-import { ContentController } from './content.controller';
-import { ContentService } from './content.service';
-import { VideoStorageService } from './video-storage.service';
-import { SubscriptionController } from './subscription.controller';
-import { SubscriptionService } from './subscription.service';
+import { AuthController, AuthGuard, AuthService, EmailService } from './modules/identity';
+import { AssessmentController, AssessmentService } from './modules/assessment';
+import { ContentController, ContentService, VideoStorageService } from './modules/content';
+import { SubscriptionController, SubscriptionService } from './modules/subscription';
+import { ProfileController } from './modules/athlete-profile';
+import { Database, RateLimitService } from './shared/infrastructure';
 
 @Module({
   controllers: [
