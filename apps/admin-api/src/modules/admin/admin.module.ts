@@ -8,10 +8,7 @@ import {
   Headers,
   Param,
   UnauthorizedException,
-  UploadedFile,
-  UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import { StorageService } from '../../shared/infrastructure/storage.service';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
@@ -39,66 +36,6 @@ export class AdminController {
   private authorize(key?: string) {
     if (!process.env.ADMIN_API_KEY || key !== process.env.ADMIN_API_KEY)
       throw new UnauthorizedException();
-  }
-
-  @Get('videos')
-  videos(@Headers('x-admin-key') key?: string) {
-    this.authorize(key);
-    return this.db.video.findMany({ orderBy: { createdAt: 'desc' } });
-  }
-
-  @Post('videos')
-  async createVideo(
-    @Headers('x-admin-key') key: string | undefined,
-    @Body() body: { title: string; storageKey: string; description?: string; published?: boolean },
-  ) {
-    this.authorize(key);
-    const video = await this.db.video.create({
-      data: {
-        title: body.title,
-        storageKey: body.storageKey,
-        description: body.description,
-        published: body.published ?? false,
-      },
-    });
-    await this.audit('VIDEO_CREATED', 'Video', video.id, body);
-    return video;
-  }
-
-  @Post('videos/upload')
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadVideo(
-    @Headers('x-admin-key') key: string | undefined,
-    @UploadedFile() file: { buffer: Buffer; mimetype: string; originalname: string },
-  ) {
-    this.authorize(key);
-    if (!file) throw new UnauthorizedException('VIDEO_FILE_REQUIRED');
-    const uploaded = await this.storage.upload(file);
-    const video = await this.db.video.create({
-      data: { title: file.originalname, storageKey: uploaded.storageKey, published: false },
-    });
-    await this.audit('VIDEO_UPLOADED', 'Video', video.id, { storageKey: uploaded.storageKey });
-    return video;
-  }
-
-  @Get('videos/:id/playback-url')
-  async playbackUrl(@Headers('x-admin-key') key: string | undefined, @Param('id') id: string) {
-    this.authorize(key);
-    const video = await this.db.video.findUniqueOrThrow({ where: { id } });
-    return { url: await this.storage.playbackUrl(video.storageKey), expiresIn: 300 };
-  }
-
-  @Patch('videos/:id')
-  async updateVideo(
-    @Headers('x-admin-key') key: string | undefined,
-    @Body() body: { title?: string; description?: string; published?: boolean },
-    @Param('id') entityId: string,
-  ) {
-    this.authorize(key);
-    const id = entityId ?? '';
-    const video = await this.db.video.update({ where: { id }, data: body });
-    await this.audit('VIDEO_UPDATED', 'Video', id, body);
-    return video;
   }
 
   @Get('content')
