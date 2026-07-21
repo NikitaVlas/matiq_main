@@ -11,9 +11,17 @@ import { AssessmentService } from './assessment.service';
 import { ContentController } from './content.controller';
 import { ContentService } from './content.service';
 import { VideoStorageService } from './video-storage.service';
+import { SubscriptionController } from './subscription.controller';
+import { SubscriptionService } from './subscription.service';
 
 @Module({
-  controllers: [AuthController, ProfileController, AssessmentController, ContentController],
+  controllers: [
+    AuthController,
+    ProfileController,
+    AssessmentController,
+    ContentController,
+    SubscriptionController,
+  ],
   providers: [
     Database,
     EmailService,
@@ -23,6 +31,7 @@ import { VideoStorageService } from './video-storage.service';
     AssessmentService,
     ContentService,
     VideoStorageService,
+    SubscriptionService,
   ],
 })
 export class AppModule {}

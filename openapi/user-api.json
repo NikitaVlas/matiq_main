@@ -250,6 +250,62 @@
           "content"
         ]
       }
+    },
+    "/subscription": {
+      "get": {
+        "operationId": "SubscriptionController_current",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "subscription"
+        ]
+      }
+    },
+    "/subscription/activate-trial": {
+      "post": {
+        "operationId": "SubscriptionController_trial",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "subscription"
+        ]
+      }
+    },
+    "/subscription/activate": {
+      "post": {
+        "operationId": "SubscriptionController_activate",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "subscription"
+        ]
+      }
+    },
+    "/subscription/cancel": {
+      "post": {
+        "operationId": "SubscriptionController_cancel",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "subscription"
+        ]
+      }
     }
   },
   "info": {

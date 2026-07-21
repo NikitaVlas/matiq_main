@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { AssessmentContext, Prisma } from '@prisma/client';
 import { Database } from './database';
+import { SubscriptionService } from './subscription.service';
 
 const QUESTION_SEED = [
   {
@@ -46,7 +47,10 @@ const QUESTION_SEED = [
 
 @Injectable()
 export class AssessmentService {
-  constructor(@Inject(Database) private readonly db: Database) {}
+  constructor(
+    @Inject(Database) private readonly db: Database,
+    @Inject(SubscriptionService) private readonly subscriptions: SubscriptionService,
+  ) {}
 
   async questions() {
     for (const question of QUESTION_SEED) {
@@ -99,6 +103,7 @@ export class AssessmentService {
       ),
     ]);
     await this.generateRoadmap(profile.id, scores);
+    await this.subscriptions.startTrial(userId);
     return this.getResult(userId);
   }
 

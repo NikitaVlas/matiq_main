@@ -2,12 +2,14 @@ import { Inject, Injectable } from '@nestjs/common';
 import { AssessmentContext, Discipline } from '@prisma/client';
 import { Database } from './database';
 import { VideoStorageService } from './video-storage.service';
+import { SubscriptionService } from './subscription.service';
 
 @Injectable()
 export class ContentService {
   constructor(
     @Inject(Database) private readonly db: Database,
     @Inject(VideoStorageService) private readonly storage: VideoStorageService,
+    @Inject(SubscriptionService) private readonly subscriptions: SubscriptionService,
   ) {}
 
   async catalog() {
@@ -29,6 +31,7 @@ export class ContentService {
   }
 
   async playback(userId: string, videoId: string) {
+    await this.subscriptions.requireAccess(userId);
     const video = await this.db.video.findUnique({
       where: { id: videoId },
       include: { position: true, technique: true, variant: true, movement: true, drill: true },
