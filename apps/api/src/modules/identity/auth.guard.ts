@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import type { Request } from 'express';
-import { AuthService } from './auth.service';
+import { AuthService } from '../identity/auth.service';
 
 export interface AuthenticatedRequest extends Request {
   userId: string;

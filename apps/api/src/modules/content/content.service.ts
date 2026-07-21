@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AssessmentContext, Discipline } from '@prisma/client';
-import { Database } from './database';
+import { Database } from '../../shared/infrastructure/database';
 import { VideoStorageService } from './video-storage.service';
-import { SubscriptionService } from './subscription.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 
 @Injectable()
 export class ContentService {

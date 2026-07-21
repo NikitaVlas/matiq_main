@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Inject, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { AuthGuard, AuthenticatedRequest } from './auth.guard';
+import { AuthGuard, AuthenticatedRequest } from '../identity/auth.guard';
 import { RoadmapItemDto, SubmitAssessmentDto } from './assessment.dto';
 import { AssessmentService } from './assessment.service';
 

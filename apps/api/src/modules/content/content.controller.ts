@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ContentService } from './content.service';
-import { AuthGuard, AuthenticatedRequest } from './auth.guard';
+import { AuthGuard, AuthenticatedRequest } from '../identity/auth.guard';
 
 @ApiTags('content')
 @Controller('content')

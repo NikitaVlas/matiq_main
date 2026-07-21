@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Inject, Put, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { profileIsComplete } from '@matiq/backend';
-import { AuthGuard, AuthenticatedRequest } from './auth.guard';
-import { Database } from './database';
+import { AuthGuard, AuthenticatedRequest } from '../identity/auth.guard';
+import { Database } from '../../shared/infrastructure/database';
 import { SaveAthleteProfileDto } from './profile.dto';
 
 @ApiTags('athlete-profile')

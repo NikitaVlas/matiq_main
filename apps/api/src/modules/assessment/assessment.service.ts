@@ -1,7 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { AssessmentContext, Prisma } from '@prisma/client';
-import { Database } from './database';
-import { SubscriptionService } from './subscription.service';
+import { Database } from '../../shared/infrastructure/database';
+import { SubscriptionService } from '../subscription/subscription.service';
 
 const QUESTION_SEED = [
   {

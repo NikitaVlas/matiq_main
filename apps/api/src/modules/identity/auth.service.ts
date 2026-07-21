@@ -8,9 +8,9 @@ import {
 import { validatePassword } from '@matiq/backend';
 import bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'node:crypto';
-import { Database } from './database';
+import { Database } from '../../shared/infrastructure/database';
 import { EmailService } from './email.service';
-import { RateLimitService } from './rate-limit.service';
+import { RateLimitService } from '../../shared/infrastructure/rate-limit.service';
 
 const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
 
