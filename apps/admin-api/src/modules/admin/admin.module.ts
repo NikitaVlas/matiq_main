@@ -17,6 +17,7 @@ import { StorageService } from '../../shared/infrastructure/storage.service';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
 import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 import { UseGuards } from '@nestjs/common';
+import { VideoModule } from '../video/video.module';
 
 @ApiTags('health')
 @Controller('health')
@@ -205,6 +206,7 @@ export class AdminController {
 }
 
 @Module({
+  imports: [VideoModule],
   controllers: [HealthController, AdminController],
   providers: [StorageService],
 })
