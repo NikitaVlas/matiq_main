@@ -27,5 +27,21 @@ for (const file of files(path.join(root, 'apps/api/src/modules'))) {
   if (relative.includes('/domain/') && /(nestjs|prisma|infrastructure)/i.test(source)) violations.push(`${relative} imports framework infrastructure`);
 }
 
+const adminRoot = path.join(root, 'apps/admin-api/src');
+const adminFeatures = ['admin-auth', 'dashboard', 'trainer', 'video', 'content', 'assessment', 'audit'];
+for (const feature of adminFeatures) {
+  const featureRoot = path.join(adminRoot, 'modules', feature);
+  if (!fs.existsSync(featureRoot)) violations.push(`admin feature missing: modules/${feature}`);
+  if (!files(featureRoot).some((file) => file.endsWith('.module.ts'))) violations.push(`admin feature missing module: modules/${feature}`);
+  if (!['admin-auth', 'audit'].includes(feature) && !files(featureRoot).some((file) => file.endsWith('.controller.ts'))) violations.push(`admin feature missing controller: modules/${feature}`);
+}
+for (const file of files(adminRoot)) {
+  const relative = path.relative(adminRoot, file).replaceAll('\\', '/');
+  const source = fs.readFileSync(file, 'utf8');
+  if (/new\s+PrismaClient\s*\(/.test(source) && !relative.endsWith('admin-database.service.ts')) violations.push(`${relative} creates PrismaClient directly`);
+  if (relative.endsWith('.module.ts') && /\.create\(|\.update\(|\.delete\(|\.findMany\(/.test(source)) violations.push(`${relative} contains persistence logic`);
+  if (relative.startsWith('shared/infrastructure/') && /from ['"]\.\.\/modules\//.test(source)) violations.push(`${relative} imports feature modules`);
+}
+
 if (violations.length) { console.error(['Architecture boundary violations:', ...violations].join('\n')); process.exit(1); }
 console.log('Architecture boundaries passed.');
