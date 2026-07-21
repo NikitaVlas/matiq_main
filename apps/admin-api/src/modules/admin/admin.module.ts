@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   Module,
-  Post,
   Patch,
   Body,
   Headers,
@@ -15,6 +14,7 @@ import { AdminDatabaseService } from '../../shared/infrastructure/admin-database
 import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { VideoModule } from '../video/video.module';
+import { ContentModule } from '../content/content.module';
 
 @ApiTags('health')
 @Controller('health')
@@ -36,82 +36,6 @@ export class AdminController {
   private authorize(key?: string) {
     if (!process.env.ADMIN_API_KEY || key !== process.env.ADMIN_API_KEY)
       throw new UnauthorizedException();
-  }
-
-  @Get('content')
-  async content(@Headers('x-admin-key') key?: string) {
-    this.authorize(key);
-    return {
-      gameAreas: await this.db.gameArea.findMany({ include: { positions: true } }),
-      positions: await this.db.position.findMany({ include: { skillGroups: true } }),
-      skillGroups: await this.db.skillGroup.findMany({ include: { techniques: true } }),
-      techniques: await this.db.technique.findMany({ include: { variants: true } }),
-      movements: await this.db.movement.findMany(),
-      drills: await this.db.drill.findMany(),
-      flows: await this.db.flow.findMany(),
-    };
-  }
-
-  @Post('content/game-areas')
-  createGameArea(
-    @Headers('x-admin-key') key: string | undefined,
-    @Body() body: { key: string; name: string; discipline: 'BJJ_GI' | 'NO_GI_GRAPPLING' },
-  ) {
-    this.authorize(key);
-    return this.db.gameArea.create({ data: body });
-  }
-
-  @Post('content/positions')
-  createPosition(
-    @Headers('x-admin-key') key: string | undefined,
-    @Body()
-    body: { gameAreaId: string; key: string; name: string; context: 'STANDING' | 'TOP' | 'BOTTOM' },
-  ) {
-    this.authorize(key);
-    return this.db.position.create({ data: body });
-  }
-
-  @Post('content/skill-groups')
-  createSkillGroup(
-    @Headers('x-admin-key') key: string | undefined,
-    @Body() body: { positionId: string; key: string; name: string },
-  ) {
-    this.authorize(key);
-    return this.db.skillGroup.create({ data: body });
-  }
-
-  @Post('content/techniques')
-  createTechnique(
-    @Headers('x-admin-key') key: string | undefined,
-    @Body() body: { skillGroupId: string; key: string; name: string },
-  ) {
-    this.authorize(key);
-    return this.db.technique.create({ data: body });
-  }
-
-  @Post('content/movements')
-  createMovement(
-    @Headers('x-admin-key') key: string | undefined,
-    @Body() body: { key: string; name: string; description?: string },
-  ) {
-    this.authorize(key);
-    return this.db.movement.create({ data: body });
-  }
-
-  @Post('content/drills')
-  createDrill(
-    @Headers('x-admin-key') key: string | undefined,
-    @Body()
-    body: {
-      key: string;
-      name: string;
-      description?: string;
-      techniqueId?: string;
-      movementId?: string;
-    },
-  ) {
-    this.authorize(key);
-    return this.db.drill.create({ data: body });
   }
 
   @Get('assessment/questions')
@@ -143,7 +67,7 @@ export class AdminController {
 }
 
 @Module({
-  imports: [VideoModule],
+  imports: [VideoModule, ContentModule],
   controllers: [HealthController, AdminController],
   providers: [StorageService],
 })
