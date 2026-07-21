@@ -1,10 +1,1 @@
-import ResetPasswordForm from './reset-password-form';
-
-export default async function ResetPasswordPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ token?: string }>;
-}) {
-  const { token = '' } = await searchParams;
-  return <ResetPasswordForm token={token} />;
-}
+export { default } from '../../screens/reset-password/ResetPasswordPage';

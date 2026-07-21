@@ -1,10 +1,1 @@
-import { VerifyEmailForm } from './verify-email-form';
-
-export default async function VerifyEmailPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ token?: string }>;
-}) {
-  const params = await searchParams;
-  return <VerifyEmailForm initialToken={params.token ?? ''} />;
-}
+export { default } from '../../screens/verify-email/VerifyEmailPage';
