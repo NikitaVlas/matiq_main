@@ -109,6 +109,12 @@ importers:
 
   apps/api:
     dependencies:
+      '@aws-sdk/client-s3':
+        specifier: 3.859.0
+        version: 3.859.0
+      '@aws-sdk/s3-request-presigner':
+        specifier: 3.859.0
+        version: 3.859.0
       '@matiq/backend':
         specifier: workspace:*
         version: link:../../packages/backend

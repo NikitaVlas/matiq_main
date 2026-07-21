@@ -56,6 +56,7 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens      PasswordResetToken[]
   sessions                Session[]
+  videoWatches            VideoWatch[]
   athleteProfile          AthleteProfile?
   assessment              Assessment?
 }
@@ -275,6 +276,20 @@ model Video {
   drill         Drill?             @relation(fields: [drillId], references: [id], onDelete: SetNull)
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
+  watchEvents    VideoWatch[]
+}
+
+model VideoWatch {
+  id             String   @id @default(cuid())
+  videoId        String
+  userId         String
+  watchedSeconds Int      @default(0)
+  completed      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  video          Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([videoId, userId])
 }
 
 model AuditLog {

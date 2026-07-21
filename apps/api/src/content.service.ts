@@ -1,10 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AssessmentContext, Discipline } from '@prisma/client';
 import { Database } from './database';
+import { VideoStorageService } from './video-storage.service';
 
 @Injectable()
 export class ContentService {
-  constructor(@Inject(Database) private readonly db: Database) {}
+  constructor(
+    @Inject(Database) private readonly db: Database,
+    @Inject(VideoStorageService) private readonly storage: VideoStorageService,
+  ) {}
 
   async catalog() {
     await this.seed();
@@ -21,6 +25,30 @@ export class ContentService {
           },
         },
       },
+    });
+  }
+
+  async playback(userId: string, videoId: string) {
+    const video = await this.db.video.findUnique({
+      where: { id: videoId },
+      include: { position: true, technique: true, variant: true, movement: true, drill: true },
+    });
+    if (!video || !video.published) throw new Error('VIDEO_NOT_AVAILABLE');
+    return {
+      video,
+      playbackUrl: await this.storage.playbackUrl(video.storageKey),
+      expiresIn: 300,
+      userId,
+    };
+  }
+
+  async recordWatch(userId: string, videoId: string, watchedSeconds: number, completed: boolean) {
+    const video = await this.db.video.findUnique({ where: { id: videoId } });
+    if (!video || !video.published) throw new Error('VIDEO_NOT_AVAILABLE');
+    return this.db.videoWatch.upsert({
+      where: { videoId_userId: { videoId, userId } },
+      create: { videoId, userId, watchedSeconds: Math.max(0, watchedSeconds), completed },
+      update: { watchedSeconds: Math.max(0, watchedSeconds), completed },
     });
   }
 

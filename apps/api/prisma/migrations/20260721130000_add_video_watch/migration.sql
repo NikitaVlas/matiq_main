@@ -1,0 +1,4 @@
+CREATE TABLE "VideoWatch" ("id" TEXT NOT NULL,"videoId" TEXT NOT NULL,"userId" TEXT NOT NULL,"watchedSeconds" INTEGER NOT NULL DEFAULT 0,"completed" BOOLEAN NOT NULL DEFAULT false,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL,CONSTRAINT "VideoWatch_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "VideoWatch_videoId_userId_key" ON "VideoWatch"("videoId","userId");
+ALTER TABLE "VideoWatch" ADD CONSTRAINT "VideoWatch_videoId_fkey" FOREIGN KEY ("videoId") REFERENCES "Video"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "VideoWatch" ADD CONSTRAINT "VideoWatch_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

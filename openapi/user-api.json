@@ -222,6 +222,34 @@
           "content"
         ]
       }
+    },
+    "/content/videos/{id}/playback": {
+      "get": {
+        "operationId": "ContentController_playback",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/content/videos/{id}/watch": {
+      "post": {
+        "operationId": "ContentController_watch",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
     }
   },
   "info": {

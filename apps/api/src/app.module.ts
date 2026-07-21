@@ -10,6 +10,7 @@ import { AssessmentController } from './assessment.controller';
 import { AssessmentService } from './assessment.service';
 import { ContentController } from './content.controller';
 import { ContentService } from './content.service';
+import { VideoStorageService } from './video-storage.service';
 
 @Module({
   controllers: [AuthController, ProfileController, AssessmentController, ContentController],
@@ -21,6 +22,7 @@ import { ContentService } from './content.service';
     AuthGuard,
     AssessmentService,
     ContentService,
+    VideoStorageService,
   ],
 })
 export class AppModule {}
