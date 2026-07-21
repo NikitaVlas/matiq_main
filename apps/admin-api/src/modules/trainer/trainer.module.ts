@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
+import { TrainerController } from './trainer.controller';
 
 /** Trainer management feature boundary. */
-@Module({})
+@Module({ controllers: [TrainerController] })
 export class TrainerModule {}

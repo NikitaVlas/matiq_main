@@ -40,27 +40,6 @@ export class AdminController {
       throw new UnauthorizedException();
   }
 
-  @Get('stats')
-  async stats(@Headers('x-admin-key') key?: string) {
-    this.authorize(key);
-    const [users, trainers, videos, questions] = await Promise.all([
-      this.db.user.count(),
-      this.db.user.count({ where: { role: 'TRAINER' } }),
-      this.db.video.count(),
-      this.db.assessmentQuestion.count({ where: { active: true } }),
-    ]);
-    return { users, trainers, videos, activeAssessmentQuestions: questions };
-  }
-
-  @Get('trainers')
-  trainers(@Headers('x-admin-key') key?: string) {
-    this.authorize(key);
-    return this.db.user.findMany({
-      where: { role: 'TRAINER' },
-      select: { id: true, email: true, createdAt: true },
-    });
-  }
-
   @Get('videos')
   videos(@Headers('x-admin-key') key?: string) {
     this.authorize(key);
