@@ -35,7 +35,9 @@ architecture tests and module documentation.
 ## Residual risks
 
 - No production email provider is selected; local delivery is a console adapter.
-- Admin authentication and MFA are not implemented yet.
+- Local Admin API key authentication is implemented and covered by unit and
+  HTTP integration tests. Role-based Admin/Editor sessions and mandatory MFA
+  are not implemented yet.
 - MinIO is local S3-compatible infrastructure only.
 - Full assessment is the next vertical slice.
 - The MCP index must be refreshed for the new tree.

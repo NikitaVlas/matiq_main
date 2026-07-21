@@ -5,10 +5,10 @@
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",
-    "lint": "eslint src",
+    "lint": "eslint src test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --passWithNoTests",
-    "test:integration": "vitest run --passWithNoTests",
+    "test": "vitest run test/admin-auth.guard.test.ts",
+    "test:integration": "vitest run test/admin-auth.integration.test.ts",
     "openapi:generate": "tsx src/openapi.ts"
   },
   "dependencies": {
@@ -26,7 +26,9 @@
   },
   "devDependencies": {
     "@nestjs/cli": "11.0.7",
+    "@types/supertest": "6.0.3",
     "tsx": "4.20.3",
+    "supertest": "7.1.1",
     "vitest": "3.2.4",
     "@types/multer": "2.0.0"
   }
