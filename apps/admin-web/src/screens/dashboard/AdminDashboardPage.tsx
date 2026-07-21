@@ -1,6 +1,7 @@
 'use client';
 import { FormEvent, useState } from 'react';
-
+import { AdminStats } from '../../widgets/admin-stats/ui/AdminStats';
+import { adminKeyStorage } from '../../features/admin-auth/api/admin-key';
 export default function AdminHome() {
   const [key, setKey] = useState('');
   const [stats, setStats] = useState<{
@@ -21,6 +22,7 @@ export default function AdminHome() {
       setError('Ungültiger Admin-Schlüssel.');
       return;
     }
+    adminKeyStorage.set(key);
     setStats(await response.json());
   }
   return (
@@ -36,28 +38,7 @@ export default function AdminHome() {
         <button>Dashboard laden</button>
       </form>
       {error && <p style={{ color: '#a5221a' }}>{error}</p>}
-      {stats && (
-        <div
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 32 }}
-        >
-          <div className="shell">
-            <strong>{stats.users}</strong>
-            <p>Mitglieder</p>
-          </div>
-          <div className="shell">
-            <strong>{stats.trainers}</strong>
-            <p>Trainer</p>
-          </div>
-          <div className="shell">
-            <strong>{stats.videos}</strong>
-            <p>Videos</p>
-          </div>
-          <div className="shell">
-            <strong>{stats.activeAssessmentQuestions}</strong>
-            <p>Assessment-Fragen</p>
-          </div>
-        </div>
-      )}
+      {stats && <AdminStats stats={stats} />}
     </main>
   );
 }
