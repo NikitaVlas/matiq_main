@@ -8,9 +8,13 @@ import {
   Headers,
   Param,
   UnauthorizedException,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { PrismaClient } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
+import { StorageService } from './storage.service';
 
 @ApiTags('health')
 @Controller('health')
@@ -75,6 +79,29 @@ class AdminController {
     });
     await this.audit('VIDEO_CREATED', 'Video', video.id, body);
     return video;
+  }
+
+  @Post('videos/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadVideo(
+    @Headers('x-admin-key') key: string | undefined,
+    @UploadedFile() file: { buffer: Buffer; mimetype: string; originalname: string },
+  ) {
+    this.authorize(key);
+    if (!file) throw new UnauthorizedException('VIDEO_FILE_REQUIRED');
+    const uploaded = await this.storage.upload(file);
+    const video = await this.db.video.create({
+      data: { title: file.originalname, storageKey: uploaded.storageKey, published: false },
+    });
+    await this.audit('VIDEO_UPLOADED', 'Video', video.id, { storageKey: uploaded.storageKey });
+    return video;
+  }
+
+  @Get('videos/:id/playback-url')
+  async playbackUrl(@Headers('x-admin-key') key: string | undefined, @Param('id') id: string) {
+    this.authorize(key);
+    const video = await this.db.video.findUniqueOrThrow({ where: { id } });
+    return { url: await this.storage.playbackUrl(video.storageKey), expiresIn: 300 };
   }
 
   @Patch('videos/:id')
@@ -192,7 +219,9 @@ class AdminController {
       data: { action, entity, entityId, actor: 'local-admin', metadata: metadata as object },
     });
   }
+
+  constructor(private readonly storage: StorageService) {}
 }
 
-@Module({ controllers: [HealthController, AdminController] })
+@Module({ controllers: [HealthController, AdminController], providers: [StorageService] })
 export class AppModule {}

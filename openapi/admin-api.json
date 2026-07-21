@@ -69,6 +69,34 @@
         ]
       }
     },
+    "/admin/videos/upload": {
+      "post": {
+        "operationId": "AdminController_uploadVideo",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/videos/{id}/playback-url": {
+      "get": {
+        "operationId": "AdminController_playbackUrl",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/videos/{id}": {
       "patch": {
         "operationId": "AdminController_updateVideo",
