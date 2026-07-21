@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Inject, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { AuthGuard, AuthenticatedRequest } from '../identity/auth.guard';
-import { RoadmapItemDto, SubmitAssessmentDto } from './assessment.dto';
-import { AssessmentService } from './assessment.service';
+import { AuthGuard, AuthenticatedRequest } from '../../identity/infrastructure/auth.guard';
+import { RoadmapItemDto, SubmitAssessmentDto } from '../dto/assessment.dto';
+import { AssessmentService } from '../application/assessment.service';
 
 @ApiTags('assessment')
 @Controller('assessment')

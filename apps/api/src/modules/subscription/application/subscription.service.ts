@@ -1,6 +1,6 @@
 import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { SubscriptionStatus } from '@prisma/client';
-import { Database } from '../../shared/infrastructure/database';
+import { Database } from '../../../shared/infrastructure/database';
 
 @Injectable()
 export class SubscriptionService {

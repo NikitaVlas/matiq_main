@@ -1,1 +1,1 @@
-export { ProfileController } from './profile.controller';
+export { ProfileController } from './controllers/profile.controller';

@@ -1,9 +1,9 @@
 import { Body, Controller, Get, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
-import { AuthGuard, AuthenticatedRequest } from '../identity/auth.guard';
-import { EmailDto, LoginDto, RegisterDto, ResetPasswordDto, VerifyEmailDto } from './auth.dto';
-import { AuthService } from '../identity/auth.service';
+import { AuthGuard, AuthenticatedRequest } from '../infrastructure/auth.guard';
+import { EmailDto, LoginDto, RegisterDto, ResetPasswordDto, VerifyEmailDto } from '../dto/auth.dto';
+import { AuthService } from '../application/auth.service';
 
 @ApiTags('authentication')
 @Controller('auth')

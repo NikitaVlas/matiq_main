@@ -1,2 +1,2 @@
-export { AssessmentController } from './assessment.controller';
-export { AssessmentService } from './assessment.service';
+export { AssessmentController } from './controllers/assessment.controller';
+export { AssessmentService } from './application/assessment.service';

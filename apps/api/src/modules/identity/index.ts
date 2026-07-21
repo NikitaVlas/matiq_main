@@ -1,4 +1,4 @@
-export { AuthController } from './auth.controller';
-export { AuthService } from './auth.service';
-export { AuthGuard } from './auth.guard';
-export { EmailService } from './email.service';
+export { AuthController } from './controllers/auth.controller';
+export { AuthService } from './application/auth.service';
+export { AuthGuard } from './infrastructure/auth.guard';
+export { EmailService } from './infrastructure/email.service';

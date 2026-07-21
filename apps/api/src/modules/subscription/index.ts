@@ -1,2 +1,2 @@
-export { SubscriptionController } from './subscription.controller';
-export { SubscriptionService } from './subscription.service';
+export { SubscriptionController } from './controllers/subscription.controller';
+export { SubscriptionService } from './application/subscription.service';
