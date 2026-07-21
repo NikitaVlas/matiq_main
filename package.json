@@ -13,12 +13,13 @@
     "format:check": "prettier --check \"apps/**/*.{ts,tsx,json,css}\" \"packages/**/*.{ts,tsx,json,css}\" \"*.{json,mjs,yaml,yml}\" \".github/**/*.yml\"",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
+    "architecture:check": "node scripts/check-architecture.mjs",
     "test": "turbo run test",
     "test:integration": "turbo run test:integration",
     "openapi:generate": "turbo run openapi:generate",
     "db:generate": "pnpm --filter @matiq/api prisma:generate",
     "db:migrate": "pnpm --filter @matiq/api prisma:migrate",
-    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm format:check && pnpm architecture:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "9.29.0",
