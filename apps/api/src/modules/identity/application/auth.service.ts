@@ -13,6 +13,7 @@ import { EmailService } from '../infrastructure/email.service';
 import { RateLimitService } from '../../../shared/infrastructure/rate-limit.service';
 
 const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
+const reauthenticationWindowMs = 15 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -180,6 +181,56 @@ export class AuthService {
     return this.createSession(userId);
   }
 
+  async exportAccount(userId: string) {
+    const user = await this.db.user.findUniqueOrThrow({
+      where: { id: userId },
+      include: {
+        athleteProfile: { include: { roadmapItems: true } },
+        assessment: { include: { responses: true, scores: true } },
+        subscriptions: true,
+        videoWatches: true,
+      },
+    });
+    return {
+      exportedAt: new Date().toISOString(),
+      account: { email: user.email, role: user.role, createdAt: user.createdAt },
+      athleteProfile: user.athleteProfile,
+      assessment: user.assessment,
+      subscriptions: user.subscriptions,
+      videoWatches: user.videoWatches,
+    };
+  }
+
+  async requestAccountDeletion(userId: string, reauthenticatedAt: Date | null) {
+    if (!reauthenticatedAt || reauthenticatedAt.getTime() < Date.now() - reauthenticationWindowMs)
+      throw new UnauthorizedException('REAUTHENTICATION_REQUIRED');
+    const now = new Date();
+    await this.db.$transaction(async (tx) => {
+      await tx.accountDeletionRequest.upsert({ where: { userId }, create: { userId }, update: {} });
+      await tx.auditLog.create({
+        data: { actor: userId, action: 'ACCOUNT_DELETE', entity: 'User', entityId: userId },
+      });
+      await tx.session.deleteMany({ where: { userId } });
+      await tx.videoWatch.deleteMany({ where: { userId } });
+      await tx.assessment.deleteMany({ where: { userId } });
+      await tx.athleteProfile.deleteMany({ where: { userId } });
+      await tx.emailVerificationToken.deleteMany({ where: { userId } });
+      await tx.passwordResetToken.deleteMany({ where: { userId } });
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          email: `deleted-${userId}@deleted.invalid`,
+          passwordHash: await bcrypt.hash(randomBytes(32).toString('base64url'), 12),
+          emailVerifiedAt: null,
+          deletionRequestedAt: now,
+          deletedAt: now,
+        },
+      });
+      await tx.accountDeletionRequest.update({ where: { userId }, data: { completedAt: now } });
+    });
+    return { accepted: true };
+  }
+
   async verifyEmail(rawToken: string) {
     const record = await this.db.emailVerificationToken.findUnique({
       where: { tokenHash: tokenHash(rawToken) },
@@ -214,7 +265,7 @@ export class AuthService {
       where: { tokenHash: tokenHash(rawToken) },
       include: { user: { include: { athleteProfile: true } } },
     });
-    if (!session || session.expiresAt <= new Date() || !session.user.emailVerifiedAt)
+    if (!session || session.expiresAt <= new Date() || !session.user.emailVerifiedAt || session.user.deletedAt)
       throw new UnauthorizedException();
     await this.db.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() } });
     return session;

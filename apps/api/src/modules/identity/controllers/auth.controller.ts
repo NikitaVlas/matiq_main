@@ -15,6 +15,7 @@ import type { Response } from 'express';
 import { AuthGuard, AuthenticatedRequest } from '../infrastructure/auth.guard';
 import {
   ChangePasswordDto,
+  ConfirmDeletionDto,
   EmailDto,
   LoginDto,
   PasswordDto,
@@ -136,6 +137,24 @@ export class AuthController {
     );
     this.setSessionCookie(response, result.sessionToken);
     return { changed: true };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('account/export')
+  exportAccount(@Req() request: AuthenticatedRequest) {
+    return this.auth.exportAccount(request.userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('account')
+  async deleteAccount(
+    @Body() dto: ConfirmDeletionDto,
+    @Req() request: AuthenticatedRequest,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.auth.requestAccountDeletion(request.userId, request.reauthenticatedAt);
+    response.clearCookie(this.cookieName());
+    return result;
   }
 
   private cookieName() {

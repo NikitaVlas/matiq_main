@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, Length } from 'class-validator';
+import { Equals, IsEmail, IsString, Length } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'athlet@example.de' })
@@ -38,6 +38,12 @@ export class ChangePasswordDto extends PasswordDto {
   @IsString()
   @Length(12, 128)
   currentPassword!: string;
+}
+
+export class ConfirmDeletionDto {
+  @ApiProperty({ example: 'DELETE' })
+  @Equals('DELETE')
+  confirmation!: 'DELETE';
 }
 
 export class ResetPasswordDto {

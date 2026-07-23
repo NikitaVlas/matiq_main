@@ -5,7 +5,7 @@ import { AuthService } from '../application/auth.service';
 export interface AuthenticatedRequest extends Request {
   userId: string;
   sessionId: string;
-  reauthenticatedAt: Date;
+  reauthenticatedAt: Date | null;
 }
 
 @Injectable()
