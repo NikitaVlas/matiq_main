@@ -46,12 +46,21 @@ export class ContentService {
   }
 
   async recordWatch(userId: string, videoId: string, watchedSeconds: number, completed: boolean) {
+    await this.subscriptions.requireAccess(userId);
     const video = await this.db.video.findUnique({ where: { id: videoId } });
     if (!video || !video.published) throw new Error('VIDEO_NOT_AVAILABLE');
     return this.db.videoWatch.upsert({
       where: { videoId_userId: { videoId, userId } },
       create: { videoId, userId, watchedSeconds: Math.max(0, watchedSeconds), completed },
       update: { watchedSeconds: Math.max(0, watchedSeconds), completed },
+    });
+  }
+
+  async history(userId: string) {
+    return this.db.videoWatch.findMany({
+      where: { userId, video: { published: true } },
+      include: { video: true },
+      orderBy: { updatedAt: 'desc' },
     });
   }
 

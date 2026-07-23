@@ -26,4 +26,10 @@ export class ContentController {
   ) {
     return this.content.recordWatch(req.userId, id, body.watchedSeconds, Boolean(body.completed));
   }
+
+  @UseGuards(AuthGuard)
+  @Get('history')
+  history(@Req() req: AuthenticatedRequest) {
+    return this.content.history(req.userId);
+  }
 }
