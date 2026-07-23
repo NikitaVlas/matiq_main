@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthGuard, AuthenticatedRequest } from '../../identity/infrastructure/auth.guard';
 import { RoadmapItemDto, SubmitAssessmentDto } from '../dto/assessment.dto';
@@ -20,5 +20,8 @@ export class AssessmentController {
   }
   @Post('roadmap-items') add(@Req() req: AuthenticatedRequest, @Body() dto: RoadmapItemDto) {
     return this.assessment.addRoadmapItem(req.userId, dto.title, dto.skillKey);
+  }
+  @Patch('roadmap-items/:id') update(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() body: { isHidden?: boolean; direction?: 'up' | 'down' }) {
+    return this.assessment.updateRoadmapItem(req.userId, id, body);
   }
 }

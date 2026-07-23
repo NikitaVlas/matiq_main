@@ -142,6 +142,21 @@ export class AssessmentService {
     });
   }
 
+  async updateRoadmapItem(userId: string, itemId: string, change: { isHidden?: boolean; direction?: 'up' | 'down' }) {
+    const profile = await this.db.athleteProfile.findUniqueOrThrow({ where: { userId } });
+    const item = await this.db.roadmapItem.findFirst({ where: { id: itemId, athleteProfileId: profile.id } });
+    if (!item) throw new NotFoundException('ROADMAP_ITEM_NOT_FOUND');
+    if (typeof change.isHidden === 'boolean') return this.db.roadmapItem.update({ where: { id: item.id }, data: { isHidden: change.isHidden } });
+    if (!change.direction) return item;
+    const neighbor = await this.db.roadmapItem.findFirst({ where: { athleteProfileId: profile.id, isHidden: false, position: change.direction === 'up' ? { lt: item.position } : { gt: item.position } }, orderBy: { position: change.direction === 'up' ? 'desc' : 'asc' } });
+    if (!neighbor) return item;
+    await this.db.$transaction([
+      this.db.roadmapItem.update({ where: { id: item.id }, data: { position: neighbor.position } }),
+      this.db.roadmapItem.update({ where: { id: neighbor.id }, data: { position: item.position } }),
+    ]);
+    return this.db.roadmapItem.findUniqueOrThrow({ where: { id: item.id } });
+  }
+
   private async generateRoadmap(profileId: string, scores: Map<string, number>) {
     await this.db.roadmapItem.deleteMany({
       where: { athleteProfileId: profileId, isAddedByUser: false },
