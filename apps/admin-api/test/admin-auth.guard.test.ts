@@ -1,29 +1,50 @@
 import { ExecutionContext } from '@nestjs/common';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AdminAuthGuard } from '../src/modules/admin-auth/admin-auth.guard';
 
-const context = (key?: string) =>
+const context = (cookie?: string) =>
   ({
-    switchToHttp: () => ({ getRequest: () => ({ headers: { 'x-admin-key': key } }) }),
+    switchToHttp: () => ({ getRequest: () => ({ headers: { cookie } }) }),
   }) as unknown as ExecutionContext;
 
+const session = {
+  userId: 'admin-user',
+  expiresAt: new Date(Date.now() + 60_000),
+  user: {
+    deletedAt: null,
+    emailVerifiedAt: new Date(),
+    role: 'ADMIN',
+    mfaSecretEncrypted: 'encrypted-secret',
+    mfaEnabledAt: new Date(),
+  },
+};
+
 describe('AdminAuthGuard', () => {
-  afterEach(() => {
-    delete process.env.ADMIN_API_KEY;
+  afterEach(() => vi.restoreAllMocks());
+
+  it('rejects a missing session cookie', async () => {
+    const db = { session: { findUnique: vi.fn() } };
+    await expect(new AdminAuthGuard(db as never).canActivate(context())).rejects.toThrow();
+    expect(db.session.findUnique).not.toHaveBeenCalled();
   });
 
-  it('rejects requests when no key is configured', () => {
-    expect(() => new AdminAuthGuard().canActivate(context('anything'))).toThrow();
+  it('rejects a session without an MFA-enabled administrator', async () => {
+    const db = {
+      session: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ ...session, user: { ...session.user, role: 'EDITOR' } }),
+      },
+    };
+    await expect(
+      new AdminAuthGuard(db as never).canActivate(context('matiq_session=session-token')),
+    ).rejects.toThrow();
   });
 
-  it('rejects a missing or incorrect key', () => {
-    process.env.ADMIN_API_KEY = 'local-admin-secret';
-    expect(() => new AdminAuthGuard().canActivate(context())).toThrow();
-    expect(() => new AdminAuthGuard().canActivate(context('wrong'))).toThrow();
-  });
-
-  it('allows the configured key', () => {
-    process.env.ADMIN_API_KEY = 'local-admin-secret';
-    expect(new AdminAuthGuard().canActivate(context('local-admin-secret'))).toBe(true);
+  it('allows an active MFA-enabled administrator session', async () => {
+    const db = { session: { findUnique: vi.fn().mockResolvedValue(session) } };
+    await expect(
+      new AdminAuthGuard(db as never).canActivate(context('matiq_session=session-token')),
+    ).resolves.toBe(true);
   });
 });
