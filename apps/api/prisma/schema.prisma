@@ -47,7 +47,10 @@ enum RoadmapItemType {
 
 enum SubscriptionStatus {
   TRIAL
+  INCOMPLETE
   ACTIVE
+  PAST_DUE
+  CANCEL_AT_PERIOD_END
   EXPIRED
   CANCELED
 }
@@ -315,8 +318,20 @@ model Subscription {
   endsAt    DateTime
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
+  providerSubscriptionId String? @unique
+  providerCustomerId String?
+  cancelAtPeriodEnd Boolean @default(false)
   user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([userId, status, endsAt])
+}
+
+model PaymentWebhookEvent {
+  id        String   @id @default(cuid())
+  providerEventId String @unique
+  eventType String
+  receivedAt DateTime @default(now())
+  processedAt DateTime?
+  payload Json
 }
 
 model AuditLog {

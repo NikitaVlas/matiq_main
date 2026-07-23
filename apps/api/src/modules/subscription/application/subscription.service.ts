@@ -1,10 +1,15 @@
 import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { SubscriptionStatus } from '@prisma/client';
 import { Database } from '../../../shared/infrastructure/database';
+import { StripeBillingService } from '../infrastructure/stripe-billing.service';
+import Stripe from 'stripe';
 
 @Injectable()
 export class SubscriptionService {
-  constructor(@Inject(Database) private readonly db: Database) {}
+  constructor(
+    @Inject(Database) private readonly db: Database,
+    @Inject(StripeBillingService) private readonly stripe: StripeBillingService,
+  ) {}
   async startTrial(userId: string) {
     const existing = await this.db.subscription.findFirst({
       where: { userId },
@@ -35,7 +40,12 @@ export class SubscriptionService {
     return {
       ...subscription,
       status,
-      hasAccess: status === SubscriptionStatus.TRIAL || status === SubscriptionStatus.ACTIVE,
+      hasAccess:
+        status === SubscriptionStatus.TRIAL ||
+        status === SubscriptionStatus.ACTIVE ||
+        status === SubscriptionStatus.CANCEL_AT_PERIOD_END ||
+        (status === SubscriptionStatus.PAST_DUE &&
+          subscription.updatedAt > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)),
     };
   }
   async requireAccess(userId: string) {
@@ -43,14 +53,22 @@ export class SubscriptionService {
     if (!current.hasAccess) throw new ForbiddenException('SUBSCRIPTION_REQUIRED');
     return current;
   }
-  activate(userId: string) {
-    return this.db.subscription.create({
+  async checkout(
+    userId: string,
+    immediateAccessConsent: boolean,
+    withdrawalAcknowledgement: boolean,
+  ) {
+    if (!immediateAccessConsent || !withdrawalAcknowledgement)
+      throw new ForbiddenException('CHECKOUT_CONSENT_REQUIRED');
+    await this.db.auditLog.create({
       data: {
-        userId,
-        status: SubscriptionStatus.ACTIVE,
-        endsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        action: 'SUBSCRIPTION_CHECKOUT_REQUESTED',
+        entity: 'Subscription',
+        actor: userId,
+        metadata: { priceMinor: 1500, currency: 'EUR', taxIncluded: true },
       },
     });
+    return this.stripe.checkout(userId);
   }
   async cancel(userId: string) {
     const current = await this.db.subscription.findFirst({
@@ -58,10 +76,66 @@ export class SubscriptionService {
       orderBy: { createdAt: 'desc' },
     });
     if (!current) return { canceled: false };
+    if (current.providerSubscriptionId) {
+      await this.stripe.cancelAtPeriodEnd(current.providerSubscriptionId);
+      await this.db.subscription.update({
+        where: { id: current.id },
+        data: { status: SubscriptionStatus.CANCEL_AT_PERIOD_END, cancelAtPeriodEnd: true },
+      });
+      return { canceled: true, accessUntil: current.endsAt };
+    }
     await this.db.subscription.update({
       where: { id: current.id },
       data: { status: SubscriptionStatus.CANCELED },
     });
     return { canceled: true };
+  }
+
+  async processStripeEvent(event: Stripe.Event) {
+    const seen = await this.db.paymentWebhookEvent.findUnique({
+      where: { providerEventId: event.id },
+    });
+    if (seen) return;
+    await this.db.paymentWebhookEvent.create({
+      data: {
+        providerEventId: event.id,
+        eventType: event.type,
+        payload: event.data.object as object,
+      },
+    });
+    if (!event.type.startsWith('customer.subscription.')) return;
+    const subscription = event.data.object as Stripe.Subscription;
+    const userId = subscription.metadata.matiqUserId;
+    if (!userId) return;
+    const periodEnd = subscription.items.data[0]?.current_period_end ?? subscription.start_date;
+    const status =
+      subscription.status === 'active'
+        ? SubscriptionStatus.ACTIVE
+        : subscription.status === 'past_due'
+          ? SubscriptionStatus.PAST_DUE
+          : subscription.cancel_at_period_end
+            ? SubscriptionStatus.CANCEL_AT_PERIOD_END
+            : SubscriptionStatus.CANCELED;
+    await this.db.subscription.upsert({
+      where: { providerSubscriptionId: subscription.id },
+      create: {
+        userId,
+        status,
+        startsAt: new Date(subscription.start_date * 1000),
+        endsAt: new Date(periodEnd * 1000),
+        providerSubscriptionId: subscription.id,
+        providerCustomerId: String(subscription.customer),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      },
+      update: {
+        status,
+        endsAt: new Date(periodEnd * 1000),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      },
+    });
+    await this.db.paymentWebhookEvent.update({
+      where: { providerEventId: event.id },
+      data: { processedAt: new Date() },
+    });
   }
 }

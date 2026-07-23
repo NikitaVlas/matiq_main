@@ -1,4 +1,9 @@
 import 'reflect-metadata';
+import dotenv from 'dotenv';
+import { resolve } from 'node:path';
+
+dotenv.config();
+dotenv.config({ path: resolve(process.cwd(), '../../.env'), override: false });
 import { createApp } from './bootstrap';
 
 async function main() {

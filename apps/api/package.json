@@ -7,8 +7,8 @@
     "dev": "nest start --watch",
     "lint": "eslint src test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run test/password.test.ts test/totp.test.ts test/bootstrap-admin.test.ts test/app-module.smoke.test.ts",
-    "test:integration": "vitest run test/vertical.integration.test.ts test/account-session.integration.test.ts test/account-deletion.integration.test.ts test/mfa.integration.test.ts",
+    "test": "vitest run test/password.test.ts test/totp.test.ts test/bootstrap-admin.test.ts test/stripe-webhook.test.ts test/app-module.smoke.test.ts",
+    "test:integration": "vitest run test/vertical.integration.test.ts test/account-session.integration.test.ts test/account-deletion.integration.test.ts test/mfa.integration.test.ts test/stripe-webhook.integration.test.ts",
     "openapi:generate": "tsx src/openapi.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -16,22 +16,24 @@
     "admin:bootstrap": "tsx src/scripts/bootstrap-admin.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.859.0",
+    "@aws-sdk/s3-request-presigner": "3.859.0",
     "@matiq/backend": "workspace:*",
     "@matiq/contracts": "workspace:*",
     "@nestjs/common": "11.1.3",
     "@nestjs/core": "11.1.3",
     "@nestjs/platform-express": "11.1.3",
     "@nestjs/swagger": "11.2.0",
-    "@aws-sdk/client-s3": "3.859.0",
-    "@aws-sdk/s3-request-presigner": "3.859.0",
     "@prisma/client": "6.10.1",
     "bcrypt": "6.0.0",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.2",
     "cookie-parser": "1.4.7",
+    "dotenv": "16.6.1",
     "nodemailer": "7.0.3",
     "reflect-metadata": "0.2.2",
-    "rxjs": "7.8.2"
+    "rxjs": "7.8.2",
+    "stripe": "18.2.1"
   },
   "devDependencies": {
     "@nestjs/cli": "11.0.7",
