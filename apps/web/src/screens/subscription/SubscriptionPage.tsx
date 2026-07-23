@@ -16,6 +16,7 @@ export default function SubscriptionPage() {
   const [subscription, setSubscription] = useState<{
     status: string;
     endsAt?: string;
+    graceEndsAt?: string;
     hasAccess: boolean;
   }>();
   const [immediateAccessConsent, setImmediateAccessConsent] = useState(false);
@@ -59,6 +60,13 @@ export default function SubscriptionPage() {
                 Deine Kündigung ist vorgemerkt. Dein Zugang bleibt bis zum{' '}
                 {new Date(subscription.endsAt).toLocaleDateString('de-DE')} aktiv; es erfolgen keine
                 weiteren Abbuchungen.
+              </p>
+            )}
+            {subscription.status === 'PAST_DUE' && subscription.graceEndsAt && (
+              <p>
+                Die letzte Zahlung war nicht erfolgreich. Dein Zugang bleibt bis zum{' '}
+                {new Date(subscription.graceEndsAt).toLocaleDateString('de-DE')} aktiv. Bitte
+                aktualisiere deine Zahlungsmethode in Stripe.
               </p>
             )}
             {!subscription.hasAccess && (

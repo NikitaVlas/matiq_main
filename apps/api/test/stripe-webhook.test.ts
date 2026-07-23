@@ -37,6 +37,63 @@ describe('Stripe webhook processing', () => {
     const db = { paymentWebhookEvent: { findUnique: vi.fn().mockResolvedValue({ id: 'seen' }) } };
     const service = new SubscriptionService(db as never, {} as never);
     await service.processStripeEvent(event as never);
-    expect(db.paymentWebhookEvent.findUnique).toHaveBeenCalledWith({ where: { providerEventId: 'evt_1' } });
+    expect(db.paymentWebhookEvent.findUnique).toHaveBeenCalledWith({
+      where: { providerEventId: 'evt_1' },
+    });
+  });
+
+  it('starts a three-day grace period after a failed renewal', async () => {
+    const db = {
+      paymentWebhookEvent: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({}),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      subscription: { upsert: vi.fn().mockResolvedValue({}) },
+    };
+    const service = new SubscriptionService(db as never, {} as never);
+    await service.processStripeEvent({
+      ...event,
+      id: 'evt_past_due',
+      data: { object: { ...event.data.object, status: 'past_due' } },
+    } as never);
+    const upsertData = db.subscription.upsert.mock.calls[0][0];
+    expect(upsertData.create.graceEndsAt).toBeInstanceOf(Date);
+    expect(upsertData.create.graceEndsAt.getTime()).toBeGreaterThan(
+      Date.now() + 2 * 24 * 60 * 60 * 1000,
+    );
+    expect(upsertData.update.graceEndsAt).toBeInstanceOf(Date);
+  });
+
+  it('keeps access only while the past-due grace period is active', async () => {
+    const subscription = {
+      id: 'subscription_1',
+      status: 'PAST_DUE',
+      endsAt: new Date(Date.now() - 60_000),
+      graceEndsAt: new Date(Date.now() + 60_000),
+      updatedAt: new Date(),
+    };
+    const db = {
+      subscription: {
+        findFirst: vi.fn().mockResolvedValue(subscription),
+        update: vi.fn(),
+      },
+    };
+    const service = new SubscriptionService(db as never, {} as never);
+    await expect(service.current('user_1')).resolves.toMatchObject({
+      status: 'PAST_DUE',
+      hasAccess: true,
+    });
+    expect(db.subscription.update).not.toHaveBeenCalled();
+
+    subscription.graceEndsAt = new Date(Date.now() - 60_000);
+    await expect(service.current('user_1')).resolves.toMatchObject({
+      status: 'EXPIRED',
+      hasAccess: false,
+    });
+    expect(db.subscription.update).toHaveBeenCalledWith({
+      where: { id: 'subscription_1' },
+      data: { status: 'EXPIRED' },
+    });
   });
 });

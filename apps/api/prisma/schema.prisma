@@ -321,6 +321,7 @@ model Subscription {
   providerSubscriptionId String? @unique
   providerCustomerId String?
   cancelAtPeriodEnd Boolean @default(false)
+  graceEndsAt DateTime?
   user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([userId, status, endsAt])
 }

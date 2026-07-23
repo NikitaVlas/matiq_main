@@ -30,13 +30,24 @@ export class SubscriptionService {
       orderBy: { createdAt: 'desc' },
     });
     if (!subscription) return { status: 'NONE', hasAccess: false };
-    if (subscription.endsAt <= new Date() && subscription.status !== SubscriptionStatus.CANCELED)
+    const now = new Date();
+    const graceActive =
+      subscription.status === SubscriptionStatus.PAST_DUE &&
+      subscription.graceEndsAt !== null &&
+      subscription.graceEndsAt > now;
+    const shouldExpire =
+      subscription.status !== SubscriptionStatus.CANCELED &&
+      !graceActive &&
+      (subscription.endsAt <= now ||
+        (subscription.status === SubscriptionStatus.PAST_DUE &&
+          subscription.graceEndsAt !== null &&
+          subscription.graceEndsAt <= now));
+    if (shouldExpire)
       await this.db.subscription.update({
         where: { id: subscription.id },
         data: { status: SubscriptionStatus.EXPIRED },
       });
-    const status =
-      subscription.endsAt <= new Date() ? SubscriptionStatus.EXPIRED : subscription.status;
+    const status = shouldExpire ? SubscriptionStatus.EXPIRED : subscription.status;
     return {
       ...subscription,
       status,
@@ -44,8 +55,7 @@ export class SubscriptionService {
         status === SubscriptionStatus.TRIAL ||
         status === SubscriptionStatus.ACTIVE ||
         status === SubscriptionStatus.CANCEL_AT_PERIOD_END ||
-        (status === SubscriptionStatus.PAST_DUE &&
-          subscription.updatedAt > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)),
+        graceActive,
     };
   }
   async requireAccess(userId: string) {
@@ -116,6 +126,10 @@ export class SubscriptionService {
           : subscription.cancel_at_period_end
             ? SubscriptionStatus.CANCEL_AT_PERIOD_END
             : SubscriptionStatus.CANCELED;
+    const graceEndsAt =
+      status === SubscriptionStatus.PAST_DUE
+        ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+        : null;
     await this.db.subscription.upsert({
       where: { providerSubscriptionId: subscription.id },
       create: {
@@ -126,11 +140,13 @@ export class SubscriptionService {
         providerSubscriptionId: subscription.id,
         providerCustomerId: String(subscription.customer),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        graceEndsAt,
       },
       update: {
         status,
         endsAt: new Date(periodEnd * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        graceEndsAt,
       },
     });
     await this.db.paymentWebhookEvent.update({
