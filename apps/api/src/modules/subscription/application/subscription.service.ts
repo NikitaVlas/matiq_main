@@ -1,4 +1,4 @@
-import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { SubscriptionStatus } from '@prisma/client';
 import { Database } from '../../../shared/infrastructure/database';
 import { StripeBillingService } from '../infrastructure/stripe-billing.service';
@@ -80,7 +80,8 @@ export class SubscriptionService {
     });
     return this.stripe.checkout(userId);
   }
-  async cancel(userId: string) {
+  async cancel(userId: string, confirmed: boolean) {
+    if (!confirmed) throw new BadRequestException('CANCELLATION_CONFIRMATION_REQUIRED');
     const current = await this.db.subscription.findFirst({
       where: { userId, status: { in: [SubscriptionStatus.TRIAL, SubscriptionStatus.ACTIVE] } },
       orderBy: { createdAt: 'desc' },
@@ -92,6 +93,14 @@ export class SubscriptionService {
         where: { id: current.id },
         data: { status: SubscriptionStatus.CANCEL_AT_PERIOD_END, cancelAtPeriodEnd: true },
       });
+      await this.db.auditLog.create({
+        data: {
+          action: 'SUBSCRIPTION_CANCELLATION_SCHEDULED',
+          entity: 'Subscription',
+          entityId: current.id,
+          actor: userId,
+        },
+      });
       return { canceled: true, accessUntil: current.endsAt };
     }
     await this.db.subscription.update({
@@ -99,6 +108,48 @@ export class SubscriptionService {
       data: { status: SubscriptionStatus.CANCELED },
     });
     return { canceled: true };
+  }
+
+  async resume(userId: string) {
+    const current = await this.db.subscription.findFirst({
+      where: { userId, status: SubscriptionStatus.CANCEL_AT_PERIOD_END },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!current?.providerSubscriptionId) return { resumed: false };
+    await this.stripe.resume(current.providerSubscriptionId);
+    await this.db.subscription.update({
+      where: { id: current.id },
+      data: { status: SubscriptionStatus.ACTIVE, cancelAtPeriodEnd: false },
+    });
+    await this.db.auditLog.create({
+      data: {
+        action: 'SUBSCRIPTION_CANCELLATION_RESUMED',
+        entity: 'Subscription',
+        entityId: current.id,
+        actor: userId,
+      },
+    });
+    return { resumed: true, nextChargeAt: current.endsAt };
+  }
+
+  async billingPortal(userId: string) {
+    const subscription = await this.db.subscription.findFirst({
+      where: {
+        userId,
+        status: {
+          in: [
+            SubscriptionStatus.ACTIVE,
+            SubscriptionStatus.PAST_DUE,
+            SubscriptionStatus.CANCEL_AT_PERIOD_END,
+          ],
+        },
+        providerCustomerId: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!subscription?.providerCustomerId)
+      throw new ForbiddenException('BILLING_PORTAL_NOT_AVAILABLE');
+    return this.stripe.paymentUpdatePortal(subscription.providerCustomerId);
   }
 
   async paymentUpdatePortal(userId: string) {

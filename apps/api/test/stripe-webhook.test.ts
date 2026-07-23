@@ -120,4 +120,32 @@ describe('Stripe webhook processing', () => {
       orderBy: { createdAt: 'desc' },
     });
   });
+
+  it('requires cancellation confirmation and can resume a scheduled cancellation', async () => {
+    const db = {
+      subscription: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'subscription_1',
+          providerSubscriptionId: 'sub_1',
+          endsAt: new Date('2026-08-23T00:00:00Z'),
+        }),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      auditLog: { create: vi.fn().mockResolvedValue({}) },
+    };
+    const stripe = { resume: vi.fn().mockResolvedValue({}) };
+    const service = new SubscriptionService(db as never, stripe as never);
+    await expect(service.cancel('user_1', false)).rejects.toMatchObject({
+      response: { message: 'CANCELLATION_CONFIRMATION_REQUIRED' },
+    });
+    await expect(service.resume('user_1')).resolves.toEqual({
+      resumed: true,
+      nextChargeAt: new Date('2026-08-23T00:00:00Z'),
+    });
+    expect(stripe.resume).toHaveBeenCalledWith('sub_1');
+    expect(db.subscription.update).toHaveBeenCalledWith({
+      where: { id: 'subscription_1' },
+      data: { status: 'ACTIVE', cancelAtPeriodEnd: false },
+    });
+  });
 });

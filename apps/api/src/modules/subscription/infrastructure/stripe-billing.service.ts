@@ -46,4 +46,12 @@ export class StripeBillingService {
     });
     return { url: session.url };
   }
+
+  async resume(providerSubscriptionId: string) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) throw new ServiceUnavailableException('BILLING_PROVIDER_NOT_CONFIGURED');
+    await new Stripe(key).subscriptions.update(providerSubscriptionId, {
+      cancel_at_period_end: false,
+    });
+  }
 }

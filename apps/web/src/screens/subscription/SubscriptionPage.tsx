@@ -21,6 +21,7 @@ export default function SubscriptionPage() {
   }>();
   const [immediateAccessConsent, setImmediateAccessConsent] = useState(false);
   const [withdrawalAcknowledgement, setWithdrawalAcknowledgement] = useState(false);
+  const [cancellationConfirmationOpen, setCancellationConfirmationOpen] = useState(false);
   async function refresh() {
     const response = await fetch(`${api}/subscription`, { credentials: 'include' });
     setSubscription(await response.json());
@@ -28,8 +29,13 @@ export default function SubscriptionPage() {
   useEffect(() => {
     refresh();
   }, []);
-  async function action(path: string) {
-    await fetch(`${api}/subscription/${path}`, { method: 'POST', credentials: 'include' });
+  async function action(path: string, body?: object) {
+    await fetch(`${api}/subscription/${path}`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: body ? { 'content-type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
     await refresh();
   }
   async function checkout() {
@@ -50,6 +56,18 @@ export default function SubscriptionPage() {
     if (!response.ok) return;
     window.location.assign((await response.json()).url);
   }
+  async function billingPortal() {
+    const response = await fetch(`${api}/subscription/billing-portal`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!response.ok) return;
+    window.location.assign((await response.json()).url);
+  }
+  async function cancel() {
+    await action('cancel', { confirmed: true });
+    setCancellationConfirmationOpen(false);
+  }
   return (
     <main>
       <section className="shell">
@@ -62,6 +80,12 @@ export default function SubscriptionPage() {
             </p>
             {subscription.endsAt && (
               <p>Gültig bis: {new Date(subscription.endsAt).toLocaleDateString('de-DE')}</p>
+            )}
+            {subscription.status === 'ACTIVE' && subscription.endsAt && (
+              <p>
+                Nächste Abbuchung: 15,00 € am{' '}
+                {new Date(subscription.endsAt).toLocaleDateString('de-DE')}.
+              </p>
             )}
             {subscription.status === 'CANCEL_AT_PERIOD_END' && subscription.endsAt && (
               <p>
@@ -80,6 +104,13 @@ export default function SubscriptionPage() {
                 <button onClick={paymentUpdatePortal}>Zahlungsmethode aktualisieren</button>
               </>
             )}
+            {subscription.status === 'CANCEL_AT_PERIOD_END' && (
+              <button onClick={() => action('resume')}>Mitgliedschaft fortsetzen</button>
+            )}
+            {subscription.hasAccess &&
+              ['ACTIVE', 'PAST_DUE', 'CANCEL_AT_PERIOD_END'].includes(subscription.status) && (
+                <button onClick={billingPortal}>Rechnungen und Zahlungsmethode verwalten</button>
+              )}
             {!subscription.hasAccess && (
               <button onClick={() => action('activate-trial')}>7 Tage Trial starten</button>
             )}
@@ -115,9 +146,23 @@ export default function SubscriptionPage() {
                 </button>
               </section>
             )}
-            {subscription.hasAccess && subscription.status !== 'CANCEL_AT_PERIOD_END' && (
-              <button onClick={() => action('cancel')}>Mitgliedschaft kündigen</button>
+            {cancellationConfirmationOpen && (
+              <section>
+                <p>
+                  Möchtest du die automatische Verlängerung wirklich beenden? Dein Zugang bleibt bis
+                  zum Ende des bereits bezahlten Zeitraums aktiv.
+                </p>
+                <button onClick={cancel}>Kündigung bestätigen</button>
+                <button onClick={() => setCancellationConfirmationOpen(false)}>Abbrechen</button>
+              </section>
             )}
+            {subscription.hasAccess &&
+              subscription.status !== 'CANCEL_AT_PERIOD_END' &&
+              !cancellationConfirmationOpen && (
+                <button onClick={() => setCancellationConfirmationOpen(true)}>
+                  Mitgliedschaft kündigen
+                </button>
+              )}
           </>
         ) : (
           <p>Lade Status …</p>
