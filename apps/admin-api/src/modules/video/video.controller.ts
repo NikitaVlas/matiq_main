@@ -111,9 +111,22 @@ export class VideoController {
     @Req() request: { adminUserId: string },
   ) {
     const current = await this.db.video.findUniqueOrThrow({ where: { id } });
-    if (current.published) throw new UnauthorizedException('PUBLISHED_VIDEO_REQUIRES_ADMIN_REVISION');
+    if (current.published) {
+      const revision = await this.db.videoRevision.create({ data: { videoId: id, title: body.title ?? current.title, description: body.description ?? current.description, createdBy: request.adminUserId } });
+      await this.audit('VIDEO_REVISION_CREATED', id, request.adminUserId, { revisionId: revision.id });
+      return revision;
+    }
     const video = await this.videos.update(id, body);
     await this.audit('VIDEO_DRAFT_UPDATED', id, request.adminUserId, body);
+    return video;
+  }
+  @AdminRoles('ADMIN')
+  @Post(':id/revisions/:revisionId/approve')
+  async approveRevision(@Param('id') id: string, @Param('revisionId') revisionId: string, @Req() request: { adminUserId: string }) {
+    const revision = await this.db.videoRevision.findFirstOrThrow({ where: { id: revisionId, videoId: id, approvedAt: null } });
+    const video = await this.db.video.update({ where: { id }, data: { title: revision.title, description: revision.description } });
+    await this.db.videoRevision.update({ where: { id: revisionId }, data: { approvedAt: new Date() } });
+    await this.audit('VIDEO_REVISION_APPROVED', id, request.adminUserId, { revisionId });
     return video;
   }
   private audit(action: string, entityId: string, actor: string, metadata: unknown) {

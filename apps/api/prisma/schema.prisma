@@ -297,6 +297,19 @@ model Video {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   watchEvents    VideoWatch[]
+  revisions      VideoRevision[]
+}
+
+model VideoRevision {
+  id          String   @id @default(cuid())
+  videoId     String
+  title       String
+  description String?
+  createdBy   String
+  approvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  @@index([videoId, approvedAt])
 }
 
 model VideoWatch {
