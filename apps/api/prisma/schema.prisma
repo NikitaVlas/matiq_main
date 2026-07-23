@@ -282,6 +282,8 @@ model Video {
   storageKey    String
   published     Boolean            @default(false)
   durationSec   Int?
+  previewStartSec Int?
+  previewEndSec Int?
   positionId    String?
   techniqueId   String?
   variantId     String?
