@@ -4,6 +4,8 @@ import { AuthService } from '../application/auth.service';
 
 export interface AuthenticatedRequest extends Request {
   userId: string;
+  sessionId: string;
+  reauthenticatedAt: Date;
 }
 
 @Injectable()
@@ -14,8 +16,10 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const cookieName = process.env.SESSION_COOKIE_NAME ?? 'matiq_session';
     const token = request.cookies?.[cookieName] as string | undefined;
-    const user = await this.auth.userForToken(token);
-    request.userId = user.id;
+    const session = await this.auth.sessionForToken(token);
+    request.userId = session.user.id;
+    request.sessionId = session.id;
+    request.reauthenticatedAt = session.reauthenticatedAt;
     return true;
   }
 }

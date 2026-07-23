@@ -1,8 +1,27 @@
-import { Body, Controller, Get, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { AuthGuard, AuthenticatedRequest } from '../infrastructure/auth.guard';
-import { EmailDto, LoginDto, RegisterDto, ResetPasswordDto, VerifyEmailDto } from '../dto/auth.dto';
+import {
+  ChangePasswordDto,
+  EmailDto,
+  LoginDto,
+  PasswordDto,
+  RegisterDto,
+  ResetPasswordDto,
+  VerifyEmailDto,
+} from '../dto/auth.dto';
 import { AuthService } from '../application/auth.service';
 
 @ApiTags('authentication')
@@ -81,7 +100,42 @@ export class AuthController {
       email: user.email,
       emailVerified: Boolean(user.emailVerifiedAt),
       athleteProfileCompleted: Boolean(user.athleteProfile?.completedAt),
+      role: user.role,
     };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('sessions')
+  sessions(@Req() request: AuthenticatedRequest) {
+    return this.auth.sessions(request.userId, request.sessionId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('sessions/:id')
+  revokeSession(@Param('id') sessionId: string, @Req() request: AuthenticatedRequest) {
+    return this.auth.revokeSession(request.userId, sessionId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('reauthenticate')
+  reauthenticate(@Body() dto: PasswordDto, @Req() request: AuthenticatedRequest) {
+    return this.auth.reauthenticate(request.userId, request.sessionId, dto.password);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('change-password')
+  async changePassword(
+    @Body() dto: ChangePasswordDto,
+    @Req() request: AuthenticatedRequest,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.auth.changePassword(
+      request.userId,
+      dto.currentPassword,
+      dto.password,
+    );
+    this.setSessionCookie(response, result.sessionToken);
+    return { changed: true };
   }
 
   private cookieName() {

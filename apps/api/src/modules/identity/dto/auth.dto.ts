@@ -26,6 +26,20 @@ export class EmailDto {
 
 export class LoginDto extends RegisterDto {}
 
+export class PasswordDto {
+  @ApiProperty({ minLength: 12 })
+  @IsString()
+  @Length(12, 128)
+  password!: string;
+}
+
+export class ChangePasswordDto extends PasswordDto {
+  @ApiProperty({ minLength: 12 })
+  @IsString()
+  @Length(12, 128)
+  currentPassword!: string;
+}
+
 export class ResetPasswordDto {
   @ApiProperty()
   @IsString()

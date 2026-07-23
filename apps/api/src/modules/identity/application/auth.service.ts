@@ -138,6 +138,48 @@ export class AuthService {
     return { loggedOut: true };
   }
 
+  async sessions(userId: string, currentSessionId: string) {
+    const sessions = await this.db.session.findMany({
+      where: { userId },
+      orderBy: { lastSeenAt: 'desc' },
+      select: { id: true, createdAt: true, lastSeenAt: true, reauthenticatedAt: true },
+    });
+    return sessions.map((session) => ({ ...session, current: session.id === currentSessionId }));
+  }
+
+  async revokeSession(userId: string, sessionId: string) {
+    const result = await this.db.session.deleteMany({ where: { id: sessionId, userId } });
+    if (!result.count) throw new BadRequestException('SESSION_NOT_FOUND');
+    return { revoked: true };
+  }
+
+  async reauthenticate(userId: string, sessionId: string, password: string) {
+    const user = await this.db.user.findUniqueOrThrow({ where: { id: userId } });
+    if (!(await bcrypt.compare(password, user.passwordHash)))
+      throw new UnauthorizedException('INVALID_CREDENTIALS');
+    await this.db.session.update({
+      where: { id: sessionId },
+      data: { reauthenticatedAt: new Date() },
+    });
+    return { reauthenticated: true };
+  }
+
+  async changePassword(userId: string, currentPassword: string, password: string) {
+    const errors = validatePassword(password);
+    if (errors.length) throw new BadRequestException({ code: 'INVALID_PASSWORD', errors });
+    const user = await this.db.user.findUniqueOrThrow({ where: { id: userId } });
+    if (!(await bcrypt.compare(currentPassword, user.passwordHash)))
+      throw new UnauthorizedException('INVALID_CREDENTIALS');
+    await this.db.$transaction([
+      this.db.user.update({
+        where: { id: userId },
+        data: { passwordHash: await bcrypt.hash(password, 12) },
+      }),
+      this.db.session.deleteMany({ where: { userId } }),
+    ]);
+    return this.createSession(userId);
+  }
+
   async verifyEmail(rawToken: string) {
     const record = await this.db.emailVerificationToken.findUnique({
       where: { tokenHash: tokenHash(rawToken) },
@@ -166,7 +208,7 @@ export class AuthService {
     return { sessionToken, sessionId: session.id };
   }
 
-  async userForToken(rawToken?: string) {
+  async sessionForToken(rawToken?: string) {
     if (!rawToken) throw new UnauthorizedException();
     const session = await this.db.session.findUnique({
       where: { tokenHash: tokenHash(rawToken) },
@@ -174,6 +216,11 @@ export class AuthService {
     });
     if (!session || session.expiresAt <= new Date() || !session.user.emailVerifiedAt)
       throw new UnauthorizedException();
-    return session.user;
+    await this.db.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() } });
+    return session;
+  }
+
+  async userForToken(rawToken?: string) {
+    return (await this.sessionForToken(rawToken)).user;
   }
 }
