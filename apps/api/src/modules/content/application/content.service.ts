@@ -45,14 +45,16 @@ export class ContentService {
     };
   }
 
-  async recordWatch(userId: string, videoId: string, watchedSeconds: number, completed: boolean) {
+  async recordWatch(userId: string, videoId: string, watchedSeconds: number, _completed: boolean) {
     await this.subscriptions.requireAccess(userId);
     const video = await this.db.video.findUnique({ where: { id: videoId } });
     if (!video || !video.published) throw new Error('VIDEO_NOT_AVAILABLE');
+    const seconds = Math.max(0, watchedSeconds);
+    const watched = Boolean(video.durationSec && seconds >= video.durationSec * 0.8);
     return this.db.videoWatch.upsert({
       where: { videoId_userId: { videoId, userId } },
-      create: { videoId, userId, watchedSeconds: Math.max(0, watchedSeconds), completed },
-      update: { watchedSeconds: Math.max(0, watchedSeconds), completed },
+      create: { videoId, userId, watchedSeconds: seconds, completed: watched },
+      update: { watchedSeconds: seconds, completed: watched },
     });
   }
 
