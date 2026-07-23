@@ -14,6 +14,7 @@ type Video = {
 export default function VideosPage() {
   const [videos, setVideos] = useState<Video[]>();
   const [hasAccess, setHasAccess] = useState(false);
+  const [progress, setProgress] = useState<Record<string, { watchedSeconds: number; completed: boolean }>>({});
 
   useEffect(() => {
     fetch(`${api}/content/catalog`)
@@ -32,6 +33,9 @@ export default function VideosPage() {
     fetch(`${api}/subscription`, { credentials: 'include' })
       .then((response) => (response.ok ? response.json() : { hasAccess: false }))
       .then((subscription) => setHasAccess(Boolean(subscription.hasAccess)));
+    fetch(`${api}/content/history`, { credentials: 'include' })
+      .then((response) => (response.ok ? response.json() : []))
+      .then((items) => setProgress(Object.fromEntries(items.map((item: { video: { id: string }; watchedSeconds: number; completed: boolean }) => [item.video.id, item]))));
   }, []);
 
   return (
@@ -49,6 +53,7 @@ export default function VideosPage() {
               <div>
                 <strong>{video.title}</strong>
                 <p>{video.description ?? 'Kuratierte Lernlektion'}</p>
+                <p>{progress[video.id]?.completed ? 'Angesehen' : progress[video.id] ? `Weiter ab ${Math.floor(progress[video.id].watchedSeconds / 60)}:${String(progress[video.id].watchedSeconds % 60).padStart(2, '0')}` : 'Neu'}</p>
               </div>
               <a href={hasAccess ? `/video/${video.id}` : '/subscription'}>
                 {hasAccess ? 'Ansehen' : 'Mitgliedschaft erforderlich'}
