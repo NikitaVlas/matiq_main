@@ -69,6 +69,8 @@ describe('account export and deletion', () => {
     const deleted = await db.user.findUniqueOrThrow({ where: { id: userId } });
     expect(deleted.email).toBe(`deleted-${userId}@deleted.invalid`);
     expect(deleted.deletedAt).toBeTruthy();
-    await expect(db.auditLog.findFirst({ where: { action: 'ACCOUNT_DELETE', entityId: userId } })).resolves.toBeTruthy();
+    await expect(
+      db.auditLog.findFirst({ where: { action: 'ACCOUNT_DELETE', entityId: userId } }),
+    ).resolves.toBeTruthy();
   });
 });

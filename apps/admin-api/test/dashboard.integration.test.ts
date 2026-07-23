@@ -12,8 +12,10 @@ if (!databaseUrl?.includes('/matiq_test')) {
 describe('Admin dashboard', () => {
   const db = new PrismaClient();
   const controller = new DashboardController(db);
+  let baseline: Awaited<ReturnType<DashboardController['stats']>>;
 
   beforeAll(async () => {
+    baseline = await controller.stats();
     await db.user.createMany({
       data: [
         {
@@ -68,10 +70,10 @@ describe('Admin dashboard', () => {
 
   it('returns aggregate counts from the database', async () => {
     await expect(controller.stats()).resolves.toEqual({
-      users: 3,
-      trainers: 2,
-      videos: 1,
-      activeAssessmentQuestions: 1,
+      users: baseline.users + 3,
+      trainers: baseline.trainers + 2,
+      videos: baseline.videos + 1,
+      activeAssessmentQuestions: baseline.activeAssessmentQuestions + 1,
     });
   });
 });
