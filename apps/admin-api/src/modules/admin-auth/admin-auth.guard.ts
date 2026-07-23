@@ -5,8 +5,11 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { UserRole } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
+import { ADMIN_ROLES_KEY } from './admin-roles.decorator';
 
 const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
 
@@ -19,7 +22,10 @@ function cookieValue(header: string | undefined, name: string) {
 
 @Injectable()
 export class AdminAuthGuard implements CanActivate {
-  constructor(@Inject(AdminDatabaseService) private readonly db: AdminDatabaseService) {}
+  constructor(
+    @Inject(AdminDatabaseService) private readonly db: AdminDatabaseService,
+    @Inject(Reflector) private readonly reflector: Reflector,
+  ) {}
 
   async canActivate(context: ExecutionContext) {
     const request = context
@@ -39,12 +45,17 @@ export class AdminAuthGuard implements CanActivate {
       session.expiresAt <= new Date() ||
       session.user.deletedAt ||
       !session.user.emailVerifiedAt ||
-      session.user.role !== 'ADMIN' ||
+      (session.user.role !== 'ADMIN' && session.user.role !== 'EDITOR') ||
       !session.user.mfaSecretEncrypted ||
       !session.user.mfaEnabledAt
     ) {
       throw new UnauthorizedException();
     }
+    const permittedRoles = this.reflector.getAllAndOverride<UserRole[]>(ADMIN_ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]) ?? ['ADMIN'];
+    if (!permittedRoles.includes(session.user.role)) throw new UnauthorizedException();
     request.adminUserId = session.userId;
     return true;
   }

@@ -20,11 +20,12 @@ describe('Admin API authentication', () => {
   let app: INestApplication;
   let adminCookie: string;
   let athleteCookie: string;
+  let editorCookie: string;
   let userIds: string[];
   let secondAdminId: string;
 
   beforeAll(async () => {
-    const [admin, athlete, secondAdmin] = await Promise.all([
+    const [admin, athlete, secondAdmin, editor] = await Promise.all([
       db.user.create({
         data: {
           email,
@@ -52,8 +53,18 @@ describe('Admin API authentication', () => {
           mfaEnabledAt: new Date(),
         },
       }),
+      db.user.create({
+        data: {
+          email: `editor-${email}`,
+          passwordHash: 'test-password-hash',
+          emailVerifiedAt: new Date(),
+          role: 'EDITOR',
+          mfaSecretEncrypted: 'encrypted-secret',
+          mfaEnabledAt: new Date(),
+        },
+      }),
     ]);
-    userIds = [admin.id, athlete.id, secondAdmin.id];
+    userIds = [admin.id, athlete.id, secondAdmin.id, editor.id];
     secondAdminId = secondAdmin.id;
     const createSession = async (userId: string) => {
       const token = randomBytes(32).toString('base64url');
@@ -66,9 +77,10 @@ describe('Admin API authentication', () => {
       });
       return `matiq_session=${token}`;
     };
-    [adminCookie, athleteCookie] = await Promise.all([
+    [adminCookie, athleteCookie, editorCookie] = await Promise.all([
       createSession(admin.id),
       createSession(athlete.id),
+      createSession(editor.id),
     ]);
 
     const created = await createApp();
@@ -117,5 +129,14 @@ describe('Admin API authentication', () => {
         where: { action: 'USER_ROLE_CHANGED', entityId: secondAdminId, actor: userIds[0] },
       }),
     ).resolves.toBeTruthy();
+  });
+
+  it('allows an Editor to access editorial routes but not administrator routes', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/assessment/questions')
+      .set('Cookie', editorCookie)
+      .expect(200);
+    await request(app.getHttpServer()).get('/admin/stats').set('Cookie', editorCookie).expect(401);
+    await request(app.getHttpServer()).get('/admin/users').set('Cookie', editorCookie).expect(401);
   });
 });

@@ -1,16 +1,18 @@
-import { Body, Controller, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Patch, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
 import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
+import { AdminRoles } from '../admin-auth/admin-roles.decorator';
 import { AuditService } from '../audit/audit.service';
 
 @ApiTags('admin-assessment')
 @Controller('admin/assessment')
 @UseGuards(AdminAuthGuard)
+@AdminRoles('ADMIN', 'EDITOR')
 export class AssessmentController {
   constructor(
-    private readonly db: AdminDatabaseService,
-    private readonly audit: AuditService,
+    @Inject(AdminDatabaseService) private readonly db: AdminDatabaseService,
+    @Inject(AuditService) private readonly audit: AuditService,
   ) {}
   @Get('questions') questions() {
     return this.db.assessmentQuestion.findMany({ orderBy: { createdAt: 'asc' } });

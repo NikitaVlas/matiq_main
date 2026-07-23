@@ -2,10 +2,12 @@ import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
 import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
+import { AdminRoles } from '../admin-auth/admin-roles.decorator';
 
 @ApiTags('admin-content')
 @Controller('admin/content')
 @UseGuards(AdminAuthGuard)
+@AdminRoles('ADMIN', 'EDITOR')
 export class ContentController {
   constructor(private readonly db: AdminDatabaseService) {}
   @Get() catalog() {

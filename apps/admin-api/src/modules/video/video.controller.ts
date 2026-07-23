@@ -14,11 +14,13 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
 import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
+import { AdminRoles } from '../admin-auth/admin-roles.decorator';
 import { VideoService } from './video.service';
 
 @ApiTags('admin-videos')
 @Controller('admin/videos')
 @UseGuards(AdminAuthGuard)
+@AdminRoles('ADMIN', 'EDITOR')
 export class VideoController {
   constructor(
     private readonly videos: VideoService,
