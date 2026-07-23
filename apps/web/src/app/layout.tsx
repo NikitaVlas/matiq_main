@@ -12,6 +12,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <nav className="navigation" aria-label="Hauptnavigation">
           <a href="/dashboard">Dashboard</a>
+          <a href="/roadmap">Roadmap</a>
           <a href="/videos">Videos</a>
           <a href="/history">Verlauf</a>
           <a href="/subscription">Mitgliedschaft</a>
