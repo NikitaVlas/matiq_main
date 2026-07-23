@@ -36,4 +36,14 @@ export class StripeBillingService {
       cancel_at_period_end: true,
     });
   }
+
+  async paymentUpdatePortal(providerCustomerId: string) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) throw new ServiceUnavailableException('BILLING_PROVIDER_NOT_CONFIGURED');
+    const session = await new Stripe(key).billingPortal.sessions.create({
+      customer: providerCustomerId,
+      return_url: `${process.env.WEB_URL ?? 'http://localhost:3000'}/subscription`,
+    });
+    return { url: session.url };
+  }
 }

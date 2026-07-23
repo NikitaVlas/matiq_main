@@ -26,4 +26,7 @@ export class SubscriptionController {
   @Post('cancel') cancel(@Req() req: AuthenticatedRequest) {
     return this.subscriptions.cancel(req.userId);
   }
+  @Post('payment-update-portal') paymentUpdatePortal(@Req() req: AuthenticatedRequest) {
+    return this.subscriptions.paymentUpdatePortal(req.userId);
+  }
 }

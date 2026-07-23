@@ -101,6 +101,20 @@ export class SubscriptionService {
     return { canceled: true };
   }
 
+  async paymentUpdatePortal(userId: string) {
+    const subscription = await this.db.subscription.findFirst({
+      where: {
+        userId,
+        status: SubscriptionStatus.PAST_DUE,
+        providerCustomerId: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!subscription?.providerCustomerId)
+      throw new ForbiddenException('PAYMENT_UPDATE_NOT_AVAILABLE');
+    return this.stripe.paymentUpdatePortal(subscription.providerCustomerId);
+  }
+
   async processStripeEvent(event: Stripe.Event) {
     const seen = await this.db.paymentWebhookEvent.findUnique({
       where: { providerEventId: event.id },

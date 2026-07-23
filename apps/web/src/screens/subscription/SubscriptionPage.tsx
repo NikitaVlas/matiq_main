@@ -42,6 +42,14 @@ export default function SubscriptionPage() {
     if (!response.ok) return;
     window.location.assign((await response.json()).url);
   }
+  async function paymentUpdatePortal() {
+    const response = await fetch(`${api}/subscription/payment-update-portal`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!response.ok) return;
+    window.location.assign((await response.json()).url);
+  }
   return (
     <main>
       <section className="shell">
@@ -63,11 +71,14 @@ export default function SubscriptionPage() {
               </p>
             )}
             {subscription.status === 'PAST_DUE' && subscription.graceEndsAt && (
-              <p>
-                Die letzte Zahlung war nicht erfolgreich. Dein Zugang bleibt bis zum{' '}
-                {new Date(subscription.graceEndsAt).toLocaleDateString('de-DE')} aktiv. Bitte
-                aktualisiere deine Zahlungsmethode in Stripe.
-              </p>
+              <>
+                <p>
+                  Die letzte Zahlung war nicht erfolgreich. Dein Zugang bleibt bis zum{' '}
+                  {new Date(subscription.graceEndsAt).toLocaleDateString('de-DE')} aktiv. Bitte
+                  aktualisiere deine Zahlungsmethode in Stripe.
+                </p>
+                <button onClick={paymentUpdatePortal}>Zahlungsmethode aktualisieren</button>
+              </>
             )}
             {!subscription.hasAccess && (
               <button onClick={() => action('activate-trial')}>7 Tage Trial starten</button>

@@ -96,4 +96,28 @@ describe('Stripe webhook processing', () => {
       data: { status: 'EXPIRED' },
     });
   });
+
+  it('opens a payment-update portal only for a past-due customer', async () => {
+    const db = {
+      subscription: {
+        findFirst: vi.fn().mockResolvedValue({ providerCustomerId: 'cus_1' }),
+      },
+    };
+    const stripe = {
+      paymentUpdatePortal: vi.fn().mockResolvedValue({ url: 'https://stripe.test' }),
+    };
+    const service = new SubscriptionService(db as never, stripe as never);
+    await expect(service.paymentUpdatePortal('user_1')).resolves.toEqual({
+      url: 'https://stripe.test',
+    });
+    expect(stripe.paymentUpdatePortal).toHaveBeenCalledWith('cus_1');
+    expect(db.subscription.findFirst).toHaveBeenCalledWith({
+      where: {
+        userId: 'user_1',
+        status: 'PAST_DUE',
+        providerCustomerId: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  });
 });
