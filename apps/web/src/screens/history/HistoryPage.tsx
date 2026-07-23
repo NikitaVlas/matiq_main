@@ -29,7 +29,7 @@ export default function HistoryPage() {
             <article key={item.video.id}>
               <div>
                 <strong>{item.video.title}</strong>
-                <p>{item.completed ? 'Angesehen' : `${item.watchedSeconds} Sekunden angesehen`}</p>
+                <p>{item.completed ? 'Angesehen' : `Weiter ab ${Math.floor(item.watchedSeconds / 60)}:${String(item.watchedSeconds % 60).padStart(2, '0')}`}</p>
               </div>
               <a href={`/video/${item.video.id}`}>Fortsetzen</a>
             </article>

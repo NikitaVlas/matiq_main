@@ -34,7 +34,7 @@ export class ContentService {
     await this.subscriptions.requireAccess(userId);
     const video = await this.db.video.findUnique({
       where: { id: videoId },
-      include: { position: true, technique: true, variant: true, movement: true, drill: true },
+      include: { position: true, technique: true, variant: true, movement: true, drill: true, watchEvents: { where: { userId }, take: 1 } },
     });
     if (!video || !video.published) throw new Error('VIDEO_NOT_AVAILABLE');
     return {
@@ -42,6 +42,7 @@ export class ContentService {
       playbackUrl: await this.storage.playbackUrl(video.storageKey),
       expiresIn: 300,
       userId,
+      watchedSeconds: video.watchEvents[0]?.watchedSeconds ?? 0,
     };
   }
 

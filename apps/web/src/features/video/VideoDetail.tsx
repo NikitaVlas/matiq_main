@@ -7,6 +7,7 @@ export default function VideoDetail({ id }: { id: string }) {
   const [data, setData] = useState<{
     video: { title: string; description?: string; durationSec?: number };
     playbackUrl: string;
+    watchedSeconds: number;
   }>();
   const [error, setError] = useState('');
   const [locked, setLocked] = useState(false);
@@ -62,6 +63,7 @@ export default function VideoDetail({ id }: { id: string }) {
           controls
           controlsList="nodownload"
           src={data.playbackUrl}
+          onLoadedMetadata={(event) => { event.currentTarget.currentTime = data.watchedSeconds; }}
           onTimeUpdate={(event) => {
             const element = event.currentTarget;
             if (Math.floor(element.currentTime) % 15 === 0)
