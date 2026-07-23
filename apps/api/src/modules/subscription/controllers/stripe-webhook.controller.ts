@@ -1,4 +1,13 @@
-import { Controller, Headers, HttpCode, Inject, Post, Req } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Headers,
+  HttpCode,
+  Inject,
+  Post,
+  Req,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import Stripe from 'stripe';
 import { SubscriptionService } from '../application/subscription.service';
 
@@ -14,9 +23,14 @@ export class StripeWebhookController {
   ) {
     const key = process.env.STRIPE_SECRET_KEY;
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (!key || !secret || !signature || !request.rawBody)
-      throw new Error('INVALID_STRIPE_WEBHOOK');
-    const event = new Stripe(key).webhooks.constructEvent(request.rawBody, signature, secret);
+    if (!key || !secret) throw new ServiceUnavailableException('STRIPE_WEBHOOK_NOT_CONFIGURED');
+    if (!signature || !request.rawBody) throw new BadRequestException('INVALID_STRIPE_WEBHOOK');
+    let event: Stripe.Event;
+    try {
+      event = new Stripe(key).webhooks.constructEvent(request.rawBody, signature, secret);
+    } catch {
+      throw new BadRequestException('INVALID_STRIPE_WEBHOOK');
+    }
     await this.subscriptions.processStripeEvent(event);
     return { received: true };
   }

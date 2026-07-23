@@ -3,6 +3,15 @@
 import { useEffect, useState } from 'react';
 const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
 
+const statusLabels: Record<string, string> = {
+  ACTIVE: 'Aktiv',
+  CANCEL_AT_PERIOD_END: 'Kündigung vorgemerkt',
+  CANCELED: 'Gekündigt',
+  EXPIRED: 'Abgelaufen',
+  PAST_DUE: 'Zahlung ausstehend',
+  TRIAL: 'Testphase',
+};
+
 export default function SubscriptionPage() {
   const [subscription, setSubscription] = useState<{
     status: string;
@@ -40,10 +49,17 @@ export default function SubscriptionPage() {
         {subscription ? (
           <>
             <p>
-              Status: <strong>{subscription.status}</strong>
+              Status: <strong>{statusLabels[subscription.status] ?? subscription.status}</strong>
             </p>
             {subscription.endsAt && (
               <p>Gültig bis: {new Date(subscription.endsAt).toLocaleDateString('de-DE')}</p>
+            )}
+            {subscription.status === 'CANCEL_AT_PERIOD_END' && subscription.endsAt && (
+              <p>
+                Deine Kündigung ist vorgemerkt. Dein Zugang bleibt bis zum{' '}
+                {new Date(subscription.endsAt).toLocaleDateString('de-DE')} aktiv; es erfolgen keine
+                weiteren Abbuchungen.
+              </p>
             )}
             {!subscription.hasAccess && (
               <button onClick={() => action('activate-trial')}>7 Tage Trial starten</button>
@@ -80,7 +96,7 @@ export default function SubscriptionPage() {
                 </button>
               </section>
             )}
-            {subscription.hasAccess && (
+            {subscription.hasAccess && subscription.status !== 'CANCEL_AT_PERIOD_END' && (
               <button onClick={() => action('cancel')}>Mitgliedschaft kündigen</button>
             )}
           </>

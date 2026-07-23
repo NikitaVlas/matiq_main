@@ -13,6 +13,8 @@ if (!databaseUrl?.includes('/matiq_test'))
 
 describe('Stripe webhook', () => {
   const db = new PrismaClient();
+  const runId = Date.now().toString();
+  const providerSubscriptionId = `sub_http_${runId}`;
   let app: INestApplication;
   let userId: string;
   const payload = (id: string) =>
@@ -22,7 +24,7 @@ describe('Stripe webhook', () => {
       type: 'customer.subscription.updated',
       data: {
         object: {
-          id: 'sub_http_1',
+          id: providerSubscriptionId,
           object: 'subscription',
           status: 'active',
           start_date: 1700000000,
@@ -52,7 +54,8 @@ describe('Stripe webhook', () => {
   });
 
   it('verifies a signed webhook and ignores its duplicate', async () => {
-    const body = payload('evt_http_1').replace(
+    const eventId = `evt_http_${runId}`;
+    const body = payload(eventId).replace(
       '"metadata":{}',
       `"metadata":{"matiqUserId":"${userId}"}`,
     );
@@ -73,9 +76,9 @@ describe('Stripe webhook', () => {
       .send(body)
       .expect(200);
     await expect(
-      db.subscription.findUnique({ where: { providerSubscriptionId: 'sub_http_1' } }),
+      db.subscription.findUnique({ where: { providerSubscriptionId } }),
     ).resolves.toBeTruthy();
-    expect(await db.paymentWebhookEvent.count({ where: { providerEventId: 'evt_http_1' } })).toBe(
+    expect(await db.paymentWebhookEvent.count({ where: { providerEventId: eventId } })).toBe(
       1,
     );
   });
@@ -85,6 +88,6 @@ describe('Stripe webhook', () => {
       .post('/billing/stripe/webhook')
       .set('stripe-signature', 'invalid')
       .send(payload('evt_invalid'))
-      .expect(500);
+      .expect(400);
   });
 });
