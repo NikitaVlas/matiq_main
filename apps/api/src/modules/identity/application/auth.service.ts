@@ -11,7 +11,12 @@ import { createHash, randomBytes } from 'node:crypto';
 import { Database } from '../../../shared/infrastructure/database';
 import { EmailService } from '../infrastructure/email.service';
 import { RateLimitService } from '../../../shared/infrastructure/rate-limit.service';
-import { createTotpSecret, decryptTotpSecret, encryptTotpSecret, verifyTotp } from '../infrastructure/totp';
+import {
+  createTotpSecret,
+  decryptTotpSecret,
+  encryptTotpSecret,
+  verifyTotp,
+} from '../infrastructure/totp';
 
 const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
 const reauthenticationWindowMs = 15 * 60 * 1000;
@@ -84,7 +89,7 @@ export class AuthService {
     if (!user.emailVerifiedAt) throw new UnauthorizedException('EMAIL_NOT_VERIFIED');
     if (user.role === 'ADMIN' || user.role === 'EDITOR') {
       if (!user.mfaSecretEncrypted || !user.mfaEnabledAt)
-        throw new UnauthorizedException('MFA_SETUP_REQUIRED');
+        return { ...(await this.createSession(user.id)), mfaSetupRequired: true };
       if (!(await this.verifyMfaCode(user.id, user.mfaSecretEncrypted, mfaCode)))
         throw new UnauthorizedException('MFA_REQUIRED');
     }
@@ -93,7 +98,10 @@ export class AuthService {
 
   async beginMfaSetup(userId: string) {
     const secret = createTotpSecret();
-    await this.db.user.update({ where: { id: userId }, data: { mfaSecretEncrypted: encryptTotpSecret(secret) } });
+    await this.db.user.update({
+      where: { id: userId },
+      data: { mfaSecretEncrypted: encryptTotpSecret(secret) },
+    });
     return { secret, otpauthUrl: `otpauth://totp/MATIQ:${userId}?secret=${secret}&issuer=MATIQ` };
   }
 
@@ -105,7 +113,9 @@ export class AuthService {
     await this.db.$transaction([
       this.db.user.update({ where: { id: userId }, data: { mfaEnabledAt: new Date() } }),
       this.db.mfaRecoveryCode.deleteMany({ where: { userId } }),
-      this.db.mfaRecoveryCode.createMany({ data: recoveryCodes.map((code) => ({ userId, codeHash: tokenHash(code) })) }),
+      this.db.mfaRecoveryCode.createMany({
+        data: recoveryCodes.map((code) => ({ userId, codeHash: tokenHash(code) })),
+      }),
     ]);
     return { recoveryCodes };
   }
@@ -113,9 +123,14 @@ export class AuthService {
   private async verifyMfaCode(userId: string, encryptedSecret: string, code?: string) {
     if (!code) return false;
     if (verifyTotp(decryptTotpSecret(encryptedSecret), code)) return true;
-    const recovery = await this.db.mfaRecoveryCode.findFirst({ where: { userId, codeHash: tokenHash(code), usedAt: null } });
+    const recovery = await this.db.mfaRecoveryCode.findFirst({
+      where: { userId, codeHash: tokenHash(code), usedAt: null },
+    });
     if (!recovery) return false;
-    await this.db.mfaRecoveryCode.update({ where: { id: recovery.id }, data: { usedAt: new Date() } });
+    await this.db.mfaRecoveryCode.update({
+      where: { id: recovery.id },
+      data: { usedAt: new Date() },
+    });
     return true;
   }
 
@@ -300,7 +315,12 @@ export class AuthService {
       where: { tokenHash: tokenHash(rawToken) },
       include: { user: { include: { athleteProfile: true } } },
     });
-    if (!session || session.expiresAt <= new Date() || !session.user.emailVerifiedAt || session.user.deletedAt)
+    if (
+      !session ||
+      session.expiresAt <= new Date() ||
+      !session.user.emailVerifiedAt ||
+      session.user.deletedAt
+    )
       throw new UnauthorizedException();
     await this.db.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() } });
     return session;

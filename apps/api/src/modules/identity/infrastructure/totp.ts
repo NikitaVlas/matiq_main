@@ -1,11 +1,20 @@
-import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from 'node:crypto';
 
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
 export function createTotpSecret() {
   let bits = '';
   for (const byte of randomBytes(20)) bits += byte.toString(2).padStart(8, '0');
-  return (bits.match(/.{1,5}/g) ?? []).map((chunk) => alphabet[Number.parseInt(chunk.padEnd(5, '0'), 2)]).join('');
+  return (bits.match(/.{1,5}/g) ?? [])
+    .map((chunk) => alphabet[Number.parseInt(chunk.padEnd(5, '0'), 2)])
+    .join('');
 }
 
 function decodeBase32(value: string) {
@@ -21,15 +30,18 @@ function decodeBase32(value: string) {
 export function verifyTotp(secret: string, code: string, timestamp = Date.now()) {
   if (!/^\d{6}$/.test(code)) return false;
   for (const offset of [-1, 0, 1]) {
-    const counter = Math.floor(timestamp / 30_000) + offset;
-    const input = Buffer.alloc(8);
-    input.writeBigUInt64BE(BigInt(counter));
-    const digest = createHmac('sha1', decodeBase32(secret)).update(input).digest();
-    const start = digest.at(-1)! & 15;
-    const expected = String(((digest.readUInt32BE(start) & 0x7fffffff) % 1_000_000)).padStart(6, '0');
+    const expected = createTotpCode(secret, timestamp + offset * 30_000);
     if (timingSafeEqual(Buffer.from(code), Buffer.from(expected))) return true;
   }
   return false;
+}
+
+export function createTotpCode(secret: string, timestamp = Date.now()) {
+  const input = Buffer.alloc(8);
+  input.writeBigUInt64BE(BigInt(Math.floor(timestamp / 30_000)));
+  const digest = createHmac('sha1', decodeBase32(secret)).update(input).digest();
+  const start = digest.at(-1)! & 15;
+  return String((digest.readUInt32BE(start) & 0x7fffffff) % 1_000_000).padStart(6, '0');
 }
 
 function encryptionKey() {

@@ -57,7 +57,10 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
     const result = await this.auth.login(dto.email, dto.password, dto.mfaCode);
     this.setSessionCookie(response, result.sessionToken);
-    return { authenticated: true };
+    return {
+      authenticated: true,
+      mfaSetupRequired: 'mfaSetupRequired' in result && result.mfaSetupRequired,
+    };
   }
 
   @Post('forgot-password')
@@ -153,7 +156,10 @@ export class AuthController {
     @Req() request: AuthenticatedRequest,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const result = await this.auth.requestAccountDeletion(request.userId, request.reauthenticatedAt);
+    const result = await this.auth.requestAccountDeletion(
+      request.userId,
+      request.reauthenticatedAt,
+    );
     response.clearCookie(this.cookieName());
     return result;
   }
