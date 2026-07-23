@@ -9,14 +9,30 @@ export default function VideoDetail({ id }: { id: string }) {
     playbackUrl: string;
   }>();
   const [error, setError] = useState('');
+  const [locked, setLocked] = useState(false);
   useEffect(() => {
     fetch(`${api}/content/videos/${id}/playback`, { credentials: 'include' })
       .then(async (response) => {
+        if (response.status === 403) {
+          setLocked(true);
+          return;
+        }
         if (!response.ok) throw new Error();
         setData(await response.json());
       })
       .catch(() => setError('Dieses Video ist nicht verfügbar oder deine Sitzung ist abgelaufen.'));
   }, [id]);
+  if (locked)
+    return (
+      <main>
+        <section className="shell">
+          <p className="eyebrow">Mitgliedschaft erforderlich</p>
+          <h1>DIESES VIDEO IST GESCHÜTZT.</h1>
+          <p>Starte deinen Testzugang oder wähle eine Mitgliedschaft, um dieses Video anzusehen.</p>
+          <a href="/subscription">Zugang freischalten</a>
+        </section>
+      </main>
+    );
   if (error)
     return (
       <main>
