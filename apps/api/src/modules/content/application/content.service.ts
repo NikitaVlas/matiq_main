@@ -51,10 +51,12 @@ export class ContentService {
     if (!video || !video.published) throw new Error('VIDEO_NOT_AVAILABLE');
     const seconds = Math.max(0, watchedSeconds);
     const watched = Boolean(video.durationSec && seconds >= video.durationSec * 0.8);
+    const existing = await this.db.videoWatch.findUnique({ where: { videoId_userId: { videoId, userId } } });
+    const progress = Math.max(existing?.watchedSeconds ?? 0, seconds);
     return this.db.videoWatch.upsert({
       where: { videoId_userId: { videoId, userId } },
-      create: { videoId, userId, watchedSeconds: seconds, completed: watched },
-      update: { watchedSeconds: seconds, completed: watched },
+      create: { videoId, userId, watchedSeconds: progress, completed: watched },
+      update: { watchedSeconds: progress, completed: existing?.completed || watched },
     });
   }
 

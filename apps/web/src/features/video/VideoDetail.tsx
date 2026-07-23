@@ -50,6 +50,9 @@ export default function VideoDetail({ id }: { id: string }) {
         </section>
       </main>
     );
+  function saveProgress(element: HTMLVideoElement) {
+    fetch(`${api}/content/videos/${id}/watch`, { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ watchedSeconds: Math.floor(element.currentTime), completed: element.ended }) });
+  }
   return (
     <main>
       <section className="shell">
@@ -74,6 +77,8 @@ export default function VideoDetail({ id }: { id: string }) {
                 }),
               });
           }}
+          onPause={(event) => saveProgress(event.currentTarget)}
+          onEnded={(event) => saveProgress(event.currentTarget)}
           style={{ width: '100%', background: '#111' }}
         />
         <details>
