@@ -1,7 +1,7 @@
 # SPEC-0003: Local administration and content operations
 
 The local Admin API is isolated from User API and is protected by an
-`x-admin-key` header. It exposes dashboard statistics, trainer listing, video
+MFA-enabled Admin or Editor user sessions with explicit route permissions. It exposes dashboard statistics, trainer listing, video
 listing, and administrator-only video registration. Content remains unpublished
 until an administrator explicitly sets `published`.
 

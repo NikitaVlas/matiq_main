@@ -2,7 +2,7 @@
 
 ## Metadata
 
-- Status: In Progress
+- Status: Implemented (legal review pending)
 - Owner: MATIQ team
 - Updated: 2026-07-23
 - Related requirements: `FR-USER-002`, `FR-USER-003`, `NFR-SEC-001`, `NFR-SEC-002`, `NFR-SEC-007`, `NFR-SEC-008`, `NFR-PRIV-006`, `NFR-PRIV-007`
@@ -18,14 +18,14 @@
 
 ## Acceptance criteria
 
-- [ ] Authenticated users can list and revoke their own sessions, change password, export account data, and start account deletion.
-- [ ] An account-deletion request requires a re-authentication no older than 15 minutes and revokes all sessions.
+- [x] Authenticated users can list and revoke their own sessions, change password, export account data, and start account deletion.
+- [x] An account-deletion request requires a re-authentication no older than 15 minutes and revokes all sessions.
 - [ ] General limitations are structured optional flags, never diagnoses or free medical text, and include a German non-medical notice.
-- [ ] Admin and Editor login requires configured TOTP MFA; recovery codes are one-time and stored only as hashes.
-- [ ] Admin API authorises a verified Admin or Editor session on the server and checks explicit permissions.
-- [ ] Role changes, MFA changes, export, deletion, and critical Admin actions create immutable audit events.
-- [ ] The local CLI can create exactly one explicitly requested verified Admin account.
-- [ ] Unit and PostgreSQL integration tests cover positive, negative, and critical security cases.
+- [x] Admin and Editor login requires configured TOTP MFA; recovery codes are one-time and stored only as hashes.
+- [x] Admin API authorises a verified Admin or Editor session on the server and checks explicit permissions.
+- [x] Role changes, export, deletion, and critical Admin actions create immutable audit events.
+- [x] The local CLI can create exactly one explicitly requested verified Admin account.
+- [x] Unit and PostgreSQL integration tests cover positive, negative, and critical security cases.
 
 ## Known limitations
 
@@ -33,7 +33,7 @@
 
 ## Document status
 
-- Status: In Progress
+- Status: Implemented (legal review pending)
 - Owner: MATIQ team
 - Last reviewed: 2026-07-23
 - Related code: `apps/api`, `apps/admin-api`, `apps/web`, `apps/admin-web`

@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Req,
   UnauthorizedException,
   UploadedFile,
   UseGuards,
@@ -15,6 +16,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
 import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 import { AdminRoles } from '../admin-auth/admin-roles.decorator';
+import { AuditService } from '../audit/audit.service';
 import { VideoService } from './video.service';
 
 @ApiTags('admin-videos')
@@ -25,27 +27,34 @@ export class VideoController {
   constructor(
     private readonly videos: VideoService,
     private readonly db: AdminDatabaseService,
+    private readonly auditService: AuditService,
   ) {}
   @Get() list() {
     return this.videos.list();
   }
   @Post() async create(
     @Body() body: { title: string; storageKey: string; description?: string; published?: boolean },
+    @Req() request: { adminUserId: string },
   ) {
     const video = await this.videos.create(body);
-    await this.audit('VIDEO_CREATED', video.id, body);
+    await this.audit('VIDEO_CREATED', video.id, request.adminUserId, body);
     return video;
   }
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async upload(@UploadedFile() file: { buffer: Buffer; mimetype: string; originalname: string }) {
+  async upload(
+    @UploadedFile() file: { buffer: Buffer; mimetype: string; originalname: string },
+    @Req() request: { adminUserId: string },
+  ) {
     if (!file) throw new UnauthorizedException('VIDEO_FILE_REQUIRED');
     const uploaded = await this.videos.upload(file);
     const video = await this.videos.create({
       title: file.originalname,
       storageKey: uploaded.storageKey,
     });
-    await this.audit('VIDEO_UPLOADED', video.id, { storageKey: uploaded.storageKey });
+    await this.audit('VIDEO_UPLOADED', video.id, request.adminUserId, {
+      storageKey: uploaded.storageKey,
+    });
     return video;
   }
   @Get(':id/playback-url')
@@ -57,20 +66,13 @@ export class VideoController {
   async update(
     @Param('id') id: string,
     @Body() body: { title?: string; description?: string; published?: boolean },
+    @Req() request: { adminUserId: string },
   ) {
     const video = await this.videos.update(id, body);
-    await this.audit('VIDEO_UPDATED', id, body);
+    await this.audit('VIDEO_UPDATED', id, request.adminUserId, body);
     return video;
   }
-  private audit(action: string, entityId: string, metadata: unknown) {
-    return this.db.auditLog.create({
-      data: {
-        action,
-        entity: 'Video',
-        entityId,
-        actor: 'local-admin',
-        metadata: metadata as object,
-      },
-    });
+  private audit(action: string, entityId: string, actor: string, metadata: unknown) {
+    return this.auditService.record(action, 'Video', entityId, actor, metadata);
   }
 }
