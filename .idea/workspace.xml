@@ -4,28 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7d5690e5-729f-4f1e-9004-24b2e48bed4f" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/assessment/assessment.controller.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/assessment/assessment.dto.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/assessment/assessment.service.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/assessment/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/modules/assessment/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/athlete-profile/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/modules/athlete-profile/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/athlete-profile/profile.controller.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/athlete-profile/profile.dto.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/content/content.controller.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/content/content.service.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/content/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/modules/content/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/content/video-storage.service.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/identity/auth.controller.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/identity/auth.dto.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/identity/auth.guard.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/identity/auth.service.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/identity/email.service.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/identity/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/modules/identity/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/subscription/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/modules/subscription/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/subscription/subscription.controller.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/subscription/subscription.service.ts" beforeDir="false" />
-    </list>
+    <list default="true" id="7d5690e5-729f-4f1e-9004-24b2e48bed4f" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -78,7 +57,7 @@
       <updated>1784466993974</updated>
       <workItem from="1784466995011" duration="2848000" />
       <workItem from="1784531285483" duration="649000" />
-      <workItem from="1784634464758" duration="1393000" />
+      <workItem from="1784634464758" duration="1986000" />
     </task>
     <servers />
   </component>
