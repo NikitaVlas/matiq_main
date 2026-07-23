@@ -114,12 +114,13 @@ export class AssessmentService {
     });
     const profile = await this.db.athleteProfile.findUnique({
       where: { userId },
-      include: { roadmapItems: { where: { isHidden: false }, orderBy: { position: 'asc' } } },
+      include: { roadmapItems: { orderBy: { position: 'asc' } } },
     });
     return {
       completed: Boolean(assessment?.completedAt),
       scores: assessment?.scores ?? [],
-      roadmap: profile?.roadmapItems ?? [],
+      roadmap: profile?.roadmapItems.filter((item) => !item.isHidden) ?? [],
+      hiddenRoadmap: profile?.roadmapItems.filter((item) => item.isHidden) ?? [],
     };
   }
 
