@@ -11,6 +11,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { Database } from '../../../shared/infrastructure/database';
 import { EmailService } from '../infrastructure/email.service';
 import { RateLimitService } from '../../../shared/infrastructure/rate-limit.service';
+import { createTotpSecret, decryptTotpSecret, encryptTotpSecret, verifyTotp } from '../infrastructure/totp';
 
 const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
 const reauthenticationWindowMs = 15 * 60 * 1000;
@@ -74,14 +75,48 @@ export class AuthService {
     };
   }
 
-  async login(emailInput: string, password: string) {
+  async login(emailInput: string, password: string, mfaCode?: string) {
     const email = emailInput.trim().toLowerCase();
     this.rateLimit.check(`login:${email}`, 10, 15 * 60 * 1000);
     const user = await this.db.user.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash)))
       throw new UnauthorizedException('INVALID_CREDENTIALS');
     if (!user.emailVerifiedAt) throw new UnauthorizedException('EMAIL_NOT_VERIFIED');
+    if (user.role === 'ADMIN' || user.role === 'EDITOR') {
+      if (!user.mfaSecretEncrypted || !user.mfaEnabledAt)
+        throw new UnauthorizedException('MFA_SETUP_REQUIRED');
+      if (!(await this.verifyMfaCode(user.id, user.mfaSecretEncrypted, mfaCode)))
+        throw new UnauthorizedException('MFA_REQUIRED');
+    }
     return this.createSession(user.id);
+  }
+
+  async beginMfaSetup(userId: string) {
+    const secret = createTotpSecret();
+    await this.db.user.update({ where: { id: userId }, data: { mfaSecretEncrypted: encryptTotpSecret(secret) } });
+    return { secret, otpauthUrl: `otpauth://totp/MATIQ:${userId}?secret=${secret}&issuer=MATIQ` };
+  }
+
+  async confirmMfaSetup(userId: string, code: string) {
+    const user = await this.db.user.findUniqueOrThrow({ where: { id: userId } });
+    if (!user.mfaSecretEncrypted || !verifyTotp(decryptTotpSecret(user.mfaSecretEncrypted), code))
+      throw new UnauthorizedException('INVALID_MFA_CODE');
+    const recoveryCodes = Array.from({ length: 10 }, () => randomBytes(6).toString('base64url'));
+    await this.db.$transaction([
+      this.db.user.update({ where: { id: userId }, data: { mfaEnabledAt: new Date() } }),
+      this.db.mfaRecoveryCode.deleteMany({ where: { userId } }),
+      this.db.mfaRecoveryCode.createMany({ data: recoveryCodes.map((code) => ({ userId, codeHash: tokenHash(code) })) }),
+    ]);
+    return { recoveryCodes };
+  }
+
+  private async verifyMfaCode(userId: string, encryptedSecret: string, code?: string) {
+    if (!code) return false;
+    if (verifyTotp(decryptTotpSecret(encryptedSecret), code)) return true;
+    const recovery = await this.db.mfaRecoveryCode.findFirst({ where: { userId, codeHash: tokenHash(code), usedAt: null } });
+    if (!recovery) return false;
+    await this.db.mfaRecoveryCode.update({ where: { id: recovery.id }, data: { usedAt: new Date() } });
+    return true;
   }
 
   async requestPasswordReset(emailInput: string) {

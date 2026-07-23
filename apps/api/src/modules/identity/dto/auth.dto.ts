@@ -24,7 +24,11 @@ export class EmailDto {
   email!: string;
 }
 
-export class LoginDto extends RegisterDto {}
+export class LoginDto extends RegisterDto {
+  @IsString()
+  @Length(6, 16)
+  mfaCode?: string;
+}
 
 export class PasswordDto {
   @ApiProperty({ minLength: 12 })
@@ -44,6 +48,13 @@ export class ConfirmDeletionDto {
   @ApiProperty({ example: 'DELETE' })
   @Equals('DELETE')
   confirmation!: 'DELETE';
+}
+
+export class MfaCodeDto {
+  @ApiProperty({ example: '123456' })
+  @IsString()
+  @Length(6, 16)
+  code!: string;
 }
 
 export class ResetPasswordDto {

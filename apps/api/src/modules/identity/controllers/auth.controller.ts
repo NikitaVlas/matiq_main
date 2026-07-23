@@ -18,6 +18,7 @@ import {
   ConfirmDeletionDto,
   EmailDto,
   LoginDto,
+  MfaCodeDto,
   PasswordDto,
   RegisterDto,
   ResetPasswordDto,
@@ -54,7 +55,7 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
-    const result = await this.auth.login(dto.email, dto.password);
+    const result = await this.auth.login(dto.email, dto.password, dto.mfaCode);
     this.setSessionCookie(response, result.sessionToken);
     return { authenticated: true };
   }
@@ -155,6 +156,18 @@ export class AuthController {
     const result = await this.auth.requestAccountDeletion(request.userId, request.reauthenticatedAt);
     response.clearCookie(this.cookieName());
     return result;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('mfa/setup')
+  beginMfaSetup(@Req() request: AuthenticatedRequest) {
+    return this.auth.beginMfaSetup(request.userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('mfa/confirm')
+  confirmMfaSetup(@Body() dto: MfaCodeDto, @Req() request: AuthenticatedRequest) {
+    return this.auth.confirmMfaSetup(request.userId, dto.code);
   }
 
   private cookieName() {
