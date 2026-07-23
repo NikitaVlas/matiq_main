@@ -119,9 +119,14 @@ export class AssessmentService {
     return {
       completed: Boolean(assessment?.completedAt),
       scores: assessment?.scores ?? [],
-      roadmap: profile?.roadmapItems.filter((item) => !item.isHidden) ?? [],
+      roadmap: await Promise.all((profile?.roadmapItems.filter((item) => !item.isHidden) ?? []).map(async (item) => ({ ...item, videos: await this.recommendedVideos(item.skillKey) }))),
       hiddenRoadmap: profile?.roadmapItems.filter((item) => item.isHidden) ?? [],
     };
+  }
+
+  private async recommendedVideos(skillKey?: string | null) {
+    if (!skillKey) return [];
+    return this.db.video.findMany({ where: { published: true, OR: [{ position: { key: skillKey } }, { technique: { key: skillKey } }] }, select: { id: true, title: true }, take: 3 });
   }
 
   async addRoadmapItem(userId: string, title: string, skillKey?: string) {
