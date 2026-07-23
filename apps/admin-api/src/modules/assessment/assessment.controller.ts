@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
 import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
@@ -19,12 +19,19 @@ export class AssessmentController {
   async updateQuestion(
     @Param('id') id: string,
     @Body() body: { text?: string; options?: unknown; active?: boolean },
+    @Req() request: { adminUserId: string },
   ) {
     const question = await this.db.assessmentQuestion.update({
       where: { id },
       data: body as never,
     });
-    await this.audit.record('ASSESSMENT_QUESTION_UPDATED', 'AssessmentQuestion', question.id, body);
+    await this.audit.record(
+      'ASSESSMENT_QUESTION_UPDATED',
+      'AssessmentQuestion',
+      question.id,
+      request.adminUserId,
+      body,
+    );
     return question;
   }
 }

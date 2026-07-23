@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
 
 @Injectable()
 export class AuditService {
-  constructor(private readonly db: AdminDatabaseService) {}
-  record(action: string, entity: string, entityId: string, metadata: unknown) {
+  constructor(@Inject(AdminDatabaseService) private readonly db: AdminDatabaseService) {}
+  record(action: string, entity: string, entityId: string, actor: string, metadata: unknown) {
     return this.db.auditLog.create({
-      data: { action, entity, entityId, actor: 'local-admin', metadata: metadata as object },
+      data: { action, entity, entityId, actor, metadata: metadata as object },
     });
   }
 }

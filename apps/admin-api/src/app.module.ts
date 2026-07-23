@@ -8,6 +8,7 @@ import { VideoModule } from './modules/video/video.module';
 import { ContentModule } from './modules/content/content.module';
 import { AssessmentModule } from './modules/assessment/assessment.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { RoleModule } from './modules/roles/role.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AuditModule } from './modules/audit/audit.module';
     ContentModule,
     AssessmentModule,
     AuditModule,
+    RoleModule,
     AdminModule,
   ],
 })

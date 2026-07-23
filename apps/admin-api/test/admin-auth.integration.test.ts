@@ -2,7 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { createHash, randomBytes } from 'node:crypto';
 import request from 'supertest';
-import { afterAll, beforeAll, describe, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/bootstrap';
 import { DashboardController } from '../src/modules/dashboard/dashboard.controller';
 
@@ -21,9 +21,10 @@ describe('Admin API authentication', () => {
   let adminCookie: string;
   let athleteCookie: string;
   let userIds: string[];
+  let secondAdminId: string;
 
   beforeAll(async () => {
-    const [admin, athlete] = await Promise.all([
+    const [admin, athlete, secondAdmin] = await Promise.all([
       db.user.create({
         data: {
           email,
@@ -41,8 +42,19 @@ describe('Admin API authentication', () => {
           emailVerifiedAt: new Date(),
         },
       }),
+      db.user.create({
+        data: {
+          email: `second-${email}`,
+          passwordHash: 'test-password-hash',
+          emailVerifiedAt: new Date(),
+          role: 'ADMIN',
+          mfaSecretEncrypted: 'encrypted-secret',
+          mfaEnabledAt: new Date(),
+        },
+      }),
     ]);
-    userIds = [admin.id, athlete.id];
+    userIds = [admin.id, athlete.id, secondAdmin.id];
+    secondAdminId = secondAdmin.id;
     const createSession = async (userId: string) => {
       const token = randomBytes(32).toString('base64url');
       await db.session.create({
@@ -92,5 +104,18 @@ describe('Admin API authentication', () => {
       .get('/admin/stats')
       .set('Cookie', adminCookie)
       .expect(200, { users: 0, trainers: 0, videos: 0, activeAssessmentQuestions: 0 });
+  });
+
+  it('changes roles and writes an audit event with the authenticated actor', async () => {
+    await request(app.getHttpServer())
+      .patch(`/admin/users/${secondAdminId}/role`)
+      .set('Cookie', adminCookie)
+      .send({ role: 'EDITOR' })
+      .expect(200, { id: secondAdminId, role: 'EDITOR' });
+    await expect(
+      db.auditLog.findFirst({
+        where: { action: 'USER_ROLE_CHANGED', entityId: secondAdminId, actor: userIds[0] },
+      }),
+    ).resolves.toBeTruthy();
   });
 });

@@ -7,12 +7,13 @@
     "dev": "nest start --watch",
     "lint": "eslint src test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run test/password.test.ts test/totp.test.ts test/app-module.smoke.test.ts",
+    "test": "vitest run test/password.test.ts test/totp.test.ts test/bootstrap-admin.test.ts test/app-module.smoke.test.ts",
     "test:integration": "vitest run test/vertical.integration.test.ts test/account-session.integration.test.ts test/account-deletion.integration.test.ts test/mfa.integration.test.ts",
     "openapi:generate": "tsx src/openapi.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:deploy": "prisma migrate deploy"
+    "prisma:deploy": "prisma migrate deploy",
+    "admin:bootstrap": "tsx src/scripts/bootstrap-admin.ts"
   },
   "dependencies": {
     "@matiq/backend": "workspace:*",
