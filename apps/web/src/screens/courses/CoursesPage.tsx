@@ -1,0 +1,5 @@
+'use client';
+import { useEffect, useState } from 'react';
+const api=process.env.NEXT_PUBLIC_API_URL??'http://localhost:4000';
+type Course={id:string;title:string;description?:string;modules:{id:string;title:string;lessons:{id:string;title:string;goal?:string;videoId:string;outgoingRelations:{type:string;toLesson:{title:string}}[]}[]}[]} ;
+export default function CoursesPage(){const [courses,setCourses]=useState<Course[]>([]);useEffect(()=>{fetch(`${api}/content/courses`).then(r=>r.ok?r.json():[]).then(setCourses)},[]);return <main><p className="eyebrow">Lernpfade</p><h1>KURSE UND LESSONS</h1>{courses.map(c=><section className="shell" key={c.id}><h2>{c.title}</h2>{c.description&&<p>{c.description}</p>}{c.modules.map(m=><div key={m.id}><h3>{m.title}</h3><ol>{m.lessons.map(l=><li key={l.id}><a href={`/video/${l.videoId}`}>{l.title}</a>{l.goal&&<small> — {l.goal}</small>}{l.outgoingRelations.length>0&&<div>Reaktionen: {l.outgoingRelations.map(r=>r.toLesson.title).join(', ')}</div>}</li>)}</ol></div>)}</section>)}</main>}
