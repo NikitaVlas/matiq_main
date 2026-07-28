@@ -153,15 +153,25 @@ export default function CourseBuilderPage() {
   const createCourse = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const courseKey = slug(title) || `course-${Date.now()}`;
-    if (
-      await post('/admin/content/courses', {
+    setError('');
+    const response = await adminApi('/admin/content/courses', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
         key: courseKey,
-        title,
+        title: title.trim(),
         discipline: 'NO_GI_GRAPPLING',
-      })
-    ) {
-      setTitle('');
+      }),
+    });
+    if (!response.ok) {
+      const details = await response.text();
+      setError(`Course creation failed (HTTP ${response.status})${details ? `: ${details}` : '.'}`);
+      return;
     }
+    const course = (await response.json()) as Course;
+    setTitle('');
+    setSelected(course.id);
+    await load();
   };
 
   return (
@@ -185,14 +195,16 @@ export default function CourseBuilderPage() {
 
       {courses.map((course) => (
         <article key={course.id} style={{ border: '1px solid #ddd', padding: 16, marginTop: 16 }}>
-          <h2>
-            <button type="button" onClick={() => setSelected(course.id)}>
-              {course.title}
-            </button>
-          </h2>
+          <h2>{course.title}</h2>
           <small>
             {course.key} - {course.published ? 'published' : 'draft'}
           </small>{' '}
+          <button
+            type="button"
+            onClick={() => setSelected((current) => (current === course.id ? '' : course.id))}
+          >
+            {selected === course.id ? 'Close course editor' : 'Open course editor'}
+          </button>{' '}
           <button type="button" onClick={() => void publishCourse(course.id)}>
             {course.published ? 'Publish updates' : 'Publish course'}
           </button>{' '}
@@ -233,8 +245,8 @@ export default function CourseBuilderPage() {
                 event.preventDefault();
                 if (
                   await post(`/admin/content/courses/${course.id}/modules`, {
-                    key: slug(moduleTitle),
-                    title: moduleTitle,
+                    key: slug(moduleTitle) || `module-${Date.now()}`,
+                    title: moduleTitle.trim(),
                     position: course.modules.length,
                   })
                 )
@@ -381,10 +393,10 @@ export default function CourseBuilderPage() {
                         setRelationTarget('');
                       }}
                     >
-                      Add branch
+                      Add lesson path
                     </button>
                     {lesson.outgoingRelations?.length ? (
-                      <small> ({lesson.outgoingRelations.length} branches)</small>
+                      <small> ({lesson.outgoingRelations.length} lesson paths)</small>
                     ) : null}
                     {editingTitle?.kind === 'lesson' && editingTitle.id === lesson.id && (
                       <form
@@ -429,83 +441,100 @@ export default function CourseBuilderPage() {
                           }
                         }}
                       >
-                        <select
-                          required
-                          aria-label="Target lesson"
-                          value={relationTarget}
-                          onChange={(event) => setRelationTarget(event.target.value)}
-                        >
-                          <option value="">Select target lesson</option>
-                          {course.modules.flatMap((courseModule) =>
-                            courseModule.lessons
-                              .filter((target) => target.id !== lesson.id)
-                              .map((target) => (
-                                <option key={target.id} value={target.id}>
-                                  {courseModule.title} - {target.title}
-                                </option>
-                              )),
-                          )}
-                        </select>
-                        <select
-                          aria-label="Branch type"
-                          value={relationType}
-                          onChange={(event) =>
-                            setRelationType(event.target.value as 'PRIMARY' | 'BRANCH')
-                          }
-                        >
-                          <option value="PRIMARY">Main continuation</option>
-                          <option value="BRANCH">Conditional branch</option>
-                        </select>
-                        <small>
-                          Main continuation is the normal next lesson. Conditional branch is an
-                          optional path caused by a reaction or situation.
-                        </small>
-                        {relationType === 'BRANCH' && (
-                          <>
+                        <fieldset style={{ marginTop: 12 }}>
+                          <legend>Create a path from &quot;{lesson.title}&quot;</legend>
+                          <label>
+                            1. Target lesson — where should the athlete continue?
                             <select
                               required
-                              aria-label="Branch trigger"
-                              value={relationTriggerId}
-                              onChange={(event) => setRelationTriggerId(event.target.value)}
+                              aria-label="Target lesson"
+                              value={relationTarget}
+                              onChange={(event) => setRelationTarget(event.target.value)}
                             >
-                              {branchTriggers.map((trigger) => (
-                                <option key={trigger.id} value={trigger.id}>
-                                  {trigger.name}
-                                </option>
-                              ))}
+                              <option value="">Select target lesson</option>
+                              {course.modules.flatMap((courseModule) =>
+                                courseModule.lessons
+                                  .filter((target) => target.id !== lesson.id)
+                                  .map((target) => (
+                                    <option key={target.id} value={target.id}>
+                                      {courseModule.title} - {target.title}
+                                    </option>
+                                  )),
+                              )}
                             </select>
-                            <input
-                              placeholder="New branch trigger"
-                              value={newTriggerName}
-                              onChange={(event) => setNewTriggerName(event.target.value)}
-                            />
-                            <button
-                              type="button"
-                              disabled={!newTriggerName.trim()}
-                              onClick={async () => {
-                                const response = await adminApi('/admin/content/branch-triggers', {
-                                  method: 'POST',
-                                  headers: { 'content-type': 'application/json' },
-                                  body: JSON.stringify({
-                                    key: slug(newTriggerName) || `trigger-${Date.now()}`,
-                                    name: newTriggerName.trim(),
-                                  }),
-                                });
-                                if (!response.ok) {
-                                  setError(`Trigger creation failed (HTTP ${response.status}).`);
-                                  return;
-                                }
-                                const trigger = (await response.json()) as BranchTrigger;
-                                setNewTriggerName('');
-                                await load();
-                                setRelationTriggerId(trigger.id);
-                              }}
+                          </label>
+                          <label>
+                            2. Path type
+                            <select
+                              aria-label="Path type"
+                              value={relationType}
+                              onChange={(event) =>
+                                setRelationType(event.target.value as 'PRIMARY' | 'BRANCH')
+                              }
                             >
-                              Add new trigger
-                            </button>
-                          </>
-                        )}
-                        <button>Create branch</button>
+                              <option value="PRIMARY">Primary path — normal continuation</option>
+                              <option value="BRANCH">Conditional path — situation dependent</option>
+                            </select>
+                          </label>
+                          <p>
+                            Use one primary path for the normal next lesson. Use conditional paths
+                            when the next lesson depends on an opponent reaction or another
+                            situation.
+                          </p>
+                          {relationType === 'BRANCH' && (
+                            <>
+                              <label>
+                                3. Branch trigger — when should this path be shown?
+                                <select
+                                  required
+                                  aria-label="Branch trigger"
+                                  value={relationTriggerId}
+                                  onChange={(event) => setRelationTriggerId(event.target.value)}
+                                >
+                                  {branchTriggers.map((trigger) => (
+                                    <option key={trigger.id} value={trigger.id}>
+                                      {trigger.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <input
+                                aria-label="New branch trigger"
+                                placeholder="New trigger, for example Opponent sprawls"
+                                value={newTriggerName}
+                                onChange={(event) => setNewTriggerName(event.target.value)}
+                              />
+                              <button
+                                type="button"
+                                disabled={!newTriggerName.trim()}
+                                onClick={async () => {
+                                  const response = await adminApi(
+                                    '/admin/content/branch-triggers',
+                                    {
+                                      method: 'POST',
+                                      headers: { 'content-type': 'application/json' },
+                                      body: JSON.stringify({
+                                        key: slug(newTriggerName) || `trigger-${Date.now()}`,
+                                        name: newTriggerName.trim(),
+                                      }),
+                                    },
+                                  );
+                                  if (!response.ok) {
+                                    setError(`Trigger creation failed (HTTP ${response.status}).`);
+                                    return;
+                                  }
+                                  const trigger = (await response.json()) as BranchTrigger;
+                                  setNewTriggerName('');
+                                  await load();
+                                  setRelationTriggerId(trigger.id);
+                                }}
+                              >
+                                Add new trigger
+                              </button>
+                            </>
+                          )}
+                          <button>Create lesson path</button>
+                        </fieldset>
                       </form>
                     )}
                   </li>
