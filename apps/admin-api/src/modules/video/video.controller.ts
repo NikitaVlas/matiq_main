@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -33,7 +34,8 @@ export class VideoController {
     return this.videos.list();
   }
   @AdminRoles('ADMIN')
-  @Post() async create(
+  @Post()
+  async create(
     @Body() body: { title: string; storageKey: string; description?: string; published?: boolean },
     @Req() request: { adminUserId: string },
   ) {
@@ -49,6 +51,9 @@ export class VideoController {
     @Req() request: { adminUserId: string },
   ) {
     if (!file) throw new UnauthorizedException('VIDEO_FILE_REQUIRED');
+    if (!/^[\x20-\x7E]+$/.test(file.originalname)) {
+      throw new BadRequestException('VIDEO_FILENAME_MUST_USE_LATIN_CHARACTERS');
+    }
     const uploaded = await this.videos.upload(file);
     const video = await this.videos.create({
       title: file.originalname,
@@ -85,7 +90,11 @@ export class VideoController {
   }
   @AdminRoles('ADMIN')
   @Post(':id/unpublish')
-  async unpublish(@Param('id') id: string, @Body() body: { reason: string }, @Req() request: { adminUserId: string }) {
+  async unpublish(
+    @Param('id') id: string,
+    @Body() body: { reason: string },
+    @Req() request: { adminUserId: string },
+  ) {
     if (!body.reason?.trim()) throw new UnauthorizedException('UNPUBLISH_REASON_REQUIRED');
     const video = await this.videos.update(id, { published: false });
     await this.audit('VIDEO_UNPUBLISHED', id, request.adminUserId, { reason: body.reason.trim() });
@@ -98,10 +107,22 @@ export class VideoController {
     @Body() body: { startSec: number; endSec: number },
     @Req() request: { adminUserId: string },
   ) {
-    if (!Number.isInteger(body.startSec) || !Number.isInteger(body.endSec) || body.startSec < 0 || body.endSec <= body.startSec || body.endSec - body.startSec > 60)
+    if (
+      !Number.isInteger(body.startSec) ||
+      !Number.isInteger(body.endSec) ||
+      body.startSec < 0 ||
+      body.endSec <= body.startSec ||
+      body.endSec - body.startSec > 60
+    )
       throw new UnauthorizedException('INVALID_PREVIEW_RANGE');
-    const video = await this.db.video.update({ where: { id }, data: { previewStartSec: body.startSec, previewEndSec: body.endSec } });
-    await this.audit('VIDEO_PREVIEW_UPDATED', id, request.adminUserId, { startSec: body.startSec, endSec: body.endSec });
+    const video = await this.db.video.update({
+      where: { id },
+      data: { previewStartSec: body.startSec, previewEndSec: body.endSec },
+    });
+    await this.audit('VIDEO_PREVIEW_UPDATED', id, request.adminUserId, {
+      startSec: body.startSec,
+      endSec: body.endSec,
+    });
     return video;
   }
   @Patch(':id/draft')
@@ -112,8 +133,17 @@ export class VideoController {
   ) {
     const current = await this.db.video.findUniqueOrThrow({ where: { id } });
     if (current.published) {
-      const revision = await this.db.videoRevision.create({ data: { videoId: id, title: body.title ?? current.title, description: body.description ?? current.description, createdBy: request.adminUserId } });
-      await this.audit('VIDEO_REVISION_CREATED', id, request.adminUserId, { revisionId: revision.id });
+      const revision = await this.db.videoRevision.create({
+        data: {
+          videoId: id,
+          title: body.title ?? current.title,
+          description: body.description ?? current.description,
+          createdBy: request.adminUserId,
+        },
+      });
+      await this.audit('VIDEO_REVISION_CREATED', id, request.adminUserId, {
+        revisionId: revision.id,
+      });
       return revision;
     }
     const video = await this.videos.update(id, body);
@@ -122,10 +152,22 @@ export class VideoController {
   }
   @AdminRoles('ADMIN')
   @Post(':id/revisions/:revisionId/approve')
-  async approveRevision(@Param('id') id: string, @Param('revisionId') revisionId: string, @Req() request: { adminUserId: string }) {
-    const revision = await this.db.videoRevision.findFirstOrThrow({ where: { id: revisionId, videoId: id, approvedAt: null } });
-    const video = await this.db.video.update({ where: { id }, data: { title: revision.title, description: revision.description } });
-    await this.db.videoRevision.update({ where: { id: revisionId }, data: { approvedAt: new Date() } });
+  async approveRevision(
+    @Param('id') id: string,
+    @Param('revisionId') revisionId: string,
+    @Req() request: { adminUserId: string },
+  ) {
+    const revision = await this.db.videoRevision.findFirstOrThrow({
+      where: { id: revisionId, videoId: id, approvedAt: null },
+    });
+    const video = await this.db.video.update({
+      where: { id },
+      data: { title: revision.title, description: revision.description },
+    });
+    await this.db.videoRevision.update({
+      where: { id: revisionId },
+      data: { approvedAt: new Date() },
+    });
     await this.audit('VIDEO_REVISION_APPROVED', id, request.adminUserId, { revisionId });
     return video;
   }

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Equals, IsEmail, IsString, Length } from 'class-validator';
+import { Equals, IsEmail, IsOptional, IsString, Length } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'athlet@example.de' })
@@ -25,6 +25,7 @@ export class EmailDto {
 }
 
 export class LoginDto extends RegisterDto {
+  @IsOptional()
   @IsString()
   @Length(6, 16)
   mfaCode?: string;

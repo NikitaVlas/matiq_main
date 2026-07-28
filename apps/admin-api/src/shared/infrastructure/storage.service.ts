@@ -14,7 +14,7 @@ export class StorageService {
   private readonly bucket = process.env.S3_BUCKET ?? 'matiq-local';
   private readonly client = new S3Client({
     region: process.env.S3_REGION ?? 'eu-central-1',
-    endpoint: process.env.S3_ENDPOINT ?? 'http://localhost:9100',
+    endpoint: process.env.S3_ENDPOINT ?? 'http://127.0.0.1:9100',
     forcePathStyle: true,
     credentials: {
       accessKeyId: process.env.S3_ACCESS_KEY ?? 'matiq',

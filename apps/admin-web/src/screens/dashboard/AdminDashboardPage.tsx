@@ -4,6 +4,29 @@ import { FormEvent, useState } from 'react';
 import { adminApi, userApiUrl } from '../../shared/api/client';
 import { AdminStats } from '../../widgets/admin-stats/ui/AdminStats';
 
+async function request(url: string, init: RequestInit) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 10_000);
+
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+async function responseError(response: Response, fallback: string) {
+  let code = '';
+  try {
+    const payload = (await response.json()) as { code?: string; message?: string };
+    code = payload.code ?? payload.message ?? '';
+  } catch {
+    // The HTTP status below remains useful when the response body is not JSON.
+  }
+
+  return `${fallback} (HTTP ${response.status}${code ? `: ${code}` : ''})`;
+}
+
 export default function AdminHome() {
   const [mfaSetupSecret, setMfaSetupSecret] = useState('');
   const [stats, setStats] = useState<{
@@ -13,59 +36,102 @@ export default function AdminHome() {
     activeAssessmentQuestions: number;
   } | null>(null);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function load(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
+    setIsSubmitting(true);
     const data = new FormData(event.currentTarget);
-    const login = await fetch(`${userApiUrl}/auth/login`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        email: data.get('email'),
-        password: data.get('password'),
-        mfaCode: data.get('mfaCode') || undefined,
-      }),
-    });
-    if (!login.ok) {
-      setError('Anmeldung oder MFA-Code ist ungültig.');
-      return;
-    }
-    const loginResult = (await login.json()) as { mfaSetupRequired: boolean };
-    if (loginResult.mfaSetupRequired) {
-      const setup = await fetch(`${userApiUrl}/auth/mfa/setup`, {
+    const mfaCode = String(data.get('mfaCode') ?? '').trim();
+
+    try {
+      const login = await request(`${userApiUrl}/auth/login`, {
         method: 'POST',
         credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          email: data.get('email'),
+          password: data.get('password'),
+          ...(mfaCode ? { mfaCode } : {}),
+        }),
       });
-      if (!setup.ok) {
-        setError('MFA-Einrichtung konnte nicht gestartet werden.');
+      if (!login.ok) {
+        setError(await responseError(login, 'Anmeldung fehlgeschlagen'));
         return;
       }
-      setMfaSetupSecret((await setup.json()).secret);
-      return;
+
+      const loginResult = (await login.json()) as { mfaSetupRequired: boolean };
+      if (loginResult.mfaSetupRequired) {
+        const setup = await request(`${userApiUrl}/auth/mfa/setup`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        if (!setup.ok) {
+          setError(await responseError(setup, 'MFA-Einrichtung konnte nicht gestartet werden'));
+          return;
+        }
+        setMfaSetupSecret((await setup.json()).secret);
+        return;
+      }
+
+      let response: Response;
+      try {
+        response = await adminApi('/admin/stats');
+      } catch {
+        setError('Admin API ist nicht erreichbar. Bitte Port 4001 prüfen.');
+        return;
+      }
+      if (!response.ok) {
+        setError(await responseError(response, 'Administratorzugriff fehlgeschlagen'));
+        return;
+      }
+      setStats(await response.json());
+    } catch (caught) {
+      setError(
+        caught instanceof DOMException && caught.name === 'AbortError'
+          ? 'Die Anmeldung hat länger als 10 Sekunden gedauert. User API oder Datenbank prüfen.'
+          : 'User API ist nicht erreichbar.',
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-    const response = await adminApi('/admin/stats');
-    if (!response.ok) {
-      setError('Dieses Konto hat keinen Administratorzugriff.');
-      return;
-    }
-    setStats(await response.json());
   }
 
   async function confirmMfa(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError('');
     const data = new FormData(event.currentTarget);
-    const response = await fetch(`${userApiUrl}/auth/mfa/confirm`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ code: data.get('code') }),
-    });
-    if (!response.ok) setError('Der MFA-Code ist ungültig.');
-    else {
-      setMfaSetupSecret('');
-      setError('MFA ist aktiviert. Bitte erneut mit dem MFA-Code anmelden.');
+    const code = String(data.get('code') ?? '').trim();
+
+    if (!/^\d{6}$/.test(code)) {
+      setError('Bitte den sechsstelligen Code aus der Authenticator-App eingeben.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await request(`${userApiUrl}/auth/mfa/confirm`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      if (!response.ok) {
+        setError(await responseError(response, 'Der MFA-Code ist ungültig'));
+      } else {
+        setMfaSetupSecret('');
+        setError('MFA ist aktiviert. Bitte erneut mit dem MFA-Code anmelden.');
+      }
+    } catch (caught) {
+      setError(
+        caught instanceof DOMException && caught.name === 'AbortError'
+          ? 'Die MFA-Bestätigung hat länger als 10 Sekunden gedauert.'
+          : 'User API ist nicht erreichbar.',
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -87,7 +153,9 @@ export default function AdminHome() {
           MFA-Code
           <input name="mfaCode" inputMode="numeric" autoComplete="one-time-code" />
         </label>
-        <button>Dashboard laden</button>
+        <button disabled={isSubmitting}>
+          {isSubmitting ? 'Bitte warten…' : 'Dashboard laden'}
+        </button>
       </form>
       {mfaSetupSecret && (
         <form
@@ -100,9 +168,21 @@ export default function AdminHome() {
           </p>
           <label>
             Bestätigungscode
-            <input name="code" inputMode="numeric" autoComplete="one-time-code" required />
+            <input
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              minLength={6}
+              maxLength={6}
+              placeholder="123456"
+              title="Sechsstelliger Code aus der Authenticator-App"
+              required
+            />
           </label>
-          <button>MFA aktivieren</button>
+          <button disabled={isSubmitting}>
+            {isSubmitting ? 'Bitte warten…' : 'MFA aktivieren'}
+          </button>
         </form>
       )}
       {error && <p style={{ color: '#a5221a' }}>{error}</p>}
