@@ -14,6 +14,7 @@ type Lesson = {
     toLessonId: string;
     type: 'PRIMARY' | 'BRANCH';
     trigger?: { id: string; name: string };
+    toLesson: { id: string; title: string };
   }[];
 };
 
@@ -29,6 +30,25 @@ type Video = { id: string; title: string; published: boolean };
 type BranchTrigger = { id: string; key: string; name: string };
 type LessonDraft = { title: string; videoId: string };
 type EditingTitle = { kind: 'course' | 'module' | 'lesson'; id: string; title: string };
+type CourseValidation = {
+  valid: boolean;
+  issues: { code: string; message: string; lessonId?: string }[];
+};
+
+const ValidationReport = ({ title, report }: { title: string; report: CourseValidation }) => (
+  <section aria-label={`Validation report for ${title}`}>
+    <strong>
+      {report.valid ? 'Course is ready to publish.' : 'Course cannot be published yet:'}
+    </strong>
+    {!report.valid && (
+      <ul>
+        {report.issues.map((issue, index) => (
+          <li key={`${issue.code}-${issue.lessonId ?? index}`}>{issue.message}</li>
+        ))}
+      </ul>
+    )}
+  </section>
+);
 
 const slug = (value: string) =>
   value
@@ -48,11 +68,13 @@ export default function CourseBuilderPage() {
   const [submittingModuleId, setSubmittingModuleId] = useState('');
   const [editingTitle, setEditingTitle] = useState<EditingTitle>();
   const [relationFrom, setRelationFrom] = useState('');
+  const [editingRelationId, setEditingRelationId] = useState('');
   const [relationTarget, setRelationTarget] = useState('');
   const [relationType, setRelationType] = useState<'PRIMARY' | 'BRANCH'>('PRIMARY');
   const [relationTriggerId, setRelationTriggerId] = useState('');
   const [newTriggerName, setNewTriggerName] = useState('');
   const [error, setError] = useState('');
+  const [validationReports, setValidationReports] = useState<Record<string, CourseValidation>>({});
 
   const load = async () => {
     const [coursesResponse, videosResponse, triggersResponse] = await Promise.all([
@@ -145,9 +167,23 @@ export default function CourseBuilderPage() {
   };
 
   const publishCourse = async (id: string) => {
+    const validation = await validateCourse(id);
+    if (!validation?.valid) return;
     const response = await adminApi(`/admin/content/courses/${id}/publish`, { method: 'POST' });
     if (response.ok) await load();
     else setError(`Course publishing failed (HTTP ${response.status}).`);
+  };
+
+  const validateCourse = async (id: string) => {
+    setError('');
+    const response = await adminApi(`/admin/content/courses/${id}/validation`);
+    if (!response.ok) {
+      setError(`Course validation failed (HTTP ${response.status}).`);
+      return undefined;
+    }
+    const report = (await response.json()) as CourseValidation;
+    setValidationReports((current) => ({ ...current, [id]: report }));
+    return report;
   };
 
   const createCourse = async (event: FormEvent<HTMLFormElement>) => {
@@ -208,6 +244,9 @@ export default function CourseBuilderPage() {
           <button type="button" onClick={() => void publishCourse(course.id)}>
             {course.published ? 'Publish updates' : 'Publish course'}
           </button>{' '}
+          <button type="button" onClick={() => void validateCourse(course.id)}>
+            Validate course
+          </button>{' '}
           <button
             type="button"
             onClick={() => setEditingTitle({ kind: 'course', id: course.id, title: course.title })}
@@ -217,6 +256,9 @@ export default function CourseBuilderPage() {
           <button type="button" onClick={() => void remove('course', course.id, course.title)}>
             Delete course
           </button>
+          {validationReports[course.id] && (
+            <ValidationReport title={course.title} report={validationReports[course.id]!} />
+          )}
           {editingTitle?.kind === 'course' && editingTitle.id === course.id && (
             <form
               onSubmit={(event) => {
@@ -390,7 +432,10 @@ export default function CourseBuilderPage() {
                       type="button"
                       onClick={() => {
                         setRelationFrom(relationFrom === lesson.id ? '' : lesson.id);
+                        setEditingRelationId('');
                         setRelationTarget('');
+                        setRelationType('PRIMARY');
+                        setRelationTriggerId(branchTriggers[0]?.id ?? '');
                       }}
                     >
                       Add lesson path
@@ -398,6 +443,43 @@ export default function CourseBuilderPage() {
                     {lesson.outgoingRelations?.length ? (
                       <small> ({lesson.outgoingRelations.length} lesson paths)</small>
                     ) : null}
+                    {lesson.outgoingRelations?.map((relation) => (
+                      <div key={relation.id} style={{ marginTop: 8, paddingLeft: 12 }}>
+                        <strong>
+                          {relation.type === 'PRIMARY' ? 'Primary path' : 'Conditional path'}
+                        </strong>
+                        {' → '}
+                        {relation.toLesson.title}
+                        {relation.trigger ? ` — ${relation.trigger.name}` : ''}{' '}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRelationFrom(lesson.id);
+                            setEditingRelationId(relation.id);
+                            setRelationTarget(relation.toLessonId);
+                            setRelationType(relation.type);
+                            setRelationTriggerId(
+                              relation.trigger?.id ?? branchTriggers[0]?.id ?? '',
+                            );
+                          }}
+                        >
+                          Edit path
+                        </button>{' '}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!window.confirm(`Delete path to "${relation.toLesson.title}"?`))
+                              return;
+                            await request(
+                              `/admin/content/lesson-relations/${relation.id}`,
+                              'DELETE',
+                            );
+                          }}
+                        >
+                          Delete path
+                        </button>
+                      </div>
+                    ))}
                     {editingTitle?.kind === 'lesson' && editingTitle.id === lesson.id && (
                       <form
                         onSubmit={(event) => {
@@ -428,21 +510,31 @@ export default function CourseBuilderPage() {
                             setError('Select a target lesson.');
                             return;
                           }
-                          if (
-                            await post(`/admin/content/lessons/${lesson.id}/relations`, {
-                              toLessonId: relationTarget,
-                              type: relationType,
-                              triggerId: relationType === 'BRANCH' ? relationTriggerId : undefined,
-                              position: lesson.outgoingRelations?.length ?? 0,
-                            })
-                          ) {
+                          const body = {
+                            toLessonId: relationTarget,
+                            type: relationType,
+                            triggerId: relationType === 'BRANCH' ? relationTriggerId : undefined,
+                            position: lesson.outgoingRelations?.length ?? 0,
+                          };
+                          const saved = editingRelationId
+                            ? await request(
+                                `/admin/content/lesson-relations/${editingRelationId}`,
+                                'PATCH',
+                                body,
+                              )
+                            : await post(`/admin/content/lessons/${lesson.id}/relations`, body);
+                          if (saved) {
                             setRelationFrom('');
+                            setEditingRelationId('');
                             setRelationTarget('');
                           }
                         }}
                       >
                         <fieldset style={{ marginTop: 12 }}>
-                          <legend>Create a path from &quot;{lesson.title}&quot;</legend>
+                          <legend>
+                            {editingRelationId ? 'Edit' : 'Create'} a path from &quot;{lesson.title}
+                            &quot;
+                          </legend>
                           <label>
                             1. Target lesson — where should the athlete continue?
                             <select
@@ -477,9 +569,10 @@ export default function CourseBuilderPage() {
                             </select>
                           </label>
                           <p>
-                            Use one primary path for the normal next lesson. Use conditional paths
-                            when the next lesson depends on an opponent reaction or another
-                            situation.
+                            Paths are optional because every lesson can be opened independently. Use
+                            at most one primary path when you want to suggest a normal next lesson.
+                            Use conditional paths when the suggestion depends on an opponent
+                            reaction or another situation.
                           </p>
                           {relationType === 'BRANCH' && (
                             <>
@@ -533,7 +626,18 @@ export default function CourseBuilderPage() {
                               </button>
                             </>
                           )}
-                          <button>Create lesson path</button>
+                          <button>
+                            {editingRelationId ? 'Save lesson path' : 'Create lesson path'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRelationFrom('');
+                              setEditingRelationId('');
+                            }}
+                          >
+                            Cancel
+                          </button>
                         </fieldset>
                       </form>
                     )}

@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -13,6 +14,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
 import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 import { AdminRoles } from '../admin-auth/admin-roles.decorator';
+import { validateCourseStructure } from './course-validation';
 
 @ApiTags('admin-content')
 @Controller('admin/content')
@@ -47,7 +49,13 @@ export class ContentController {
           include: {
             lessons: {
               orderBy: { position: 'asc' },
-              include: { video: true, outgoingRelations: { include: { trigger: true } } },
+              include: {
+                video: true,
+                outgoingRelations: {
+                  include: { trigger: true, toLesson: { select: { id: true, title: true } } },
+                  orderBy: { position: 'asc' },
+                },
+              },
             },
           },
         },
@@ -55,7 +63,23 @@ export class ContentController {
       orderBy: { createdAt: 'desc' },
     });
   }
+  @Get('courses/:courseId/validation') async validateCourse(@Param('courseId') courseId: string) {
+    const course = await this.db.course.findUnique({
+      where: { id: courseId },
+      include: {
+        modules: {
+          include: { lessons: { include: { outgoingRelations: true } } },
+        },
+      },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+    return validateCourseStructure(course.modules);
+  }
   @Post('courses/:courseId/publish') async publishCourse(@Param('courseId') courseId: string) {
+    const validation = await this.validateCourse(courseId);
+    if (!validation.valid) {
+      throw new BadRequestException({ code: 'COURSE_INVALID', issues: validation.issues });
+    }
     const course = await this.db.course.update({
       where: { id: courseId },
       data: { published: true },
@@ -192,6 +216,29 @@ export class ContentController {
     return this.db.lessonRelation.create({
       data: { ...body, fromLessonId, position: body.position ?? 0 },
     });
+  }
+  @Patch('lesson-relations/:relationId') updateLessonRelation(
+    @Param('relationId') relationId: string,
+    @Body()
+    body: {
+      toLessonId: string;
+      type: 'PRIMARY' | 'BRANCH';
+      triggerId?: string;
+    },
+  ) {
+    return this.db.lessonRelation.update({
+      where: { id: relationId },
+      data: {
+        toLessonId: body.toLessonId,
+        type: body.type,
+        triggerId: body.type === 'BRANCH' ? body.triggerId : null,
+      },
+    });
+  }
+  @Delete('lesson-relations/:relationId') deleteLessonRelation(
+    @Param('relationId') relationId: string,
+  ) {
+    return this.db.lessonRelation.delete({ where: { id: relationId } });
   }
   @Get('branch-triggers') branchTriggers() {
     return this.db.branchTrigger.findMany({ orderBy: { name: 'asc' } });

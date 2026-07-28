@@ -221,6 +221,20 @@
         ]
       }
     },
+    "/admin/content/courses/{courseId}/validation": {
+      "get": {
+        "operationId": "ContentController_validateCourse",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
     "/admin/content/courses/{courseId}/publish": {
       "post": {
         "operationId": "ContentController_publishCourse",
@@ -389,6 +403,32 @@
         "parameters": [],
         "responses": {
           "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/lesson-relations/{relationId}": {
+      "patch": {
+        "operationId": "ContentController_updateLessonRelation",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      },
+      "delete": {
+        "operationId": "ContentController_deleteLessonRelation",
+        "parameters": [],
+        "responses": {
+          "200": {
             "description": ""
           }
         },

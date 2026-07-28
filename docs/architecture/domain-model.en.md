@@ -168,6 +168,22 @@ A video may explain an entire Flow or one step.
 
 ## Roadmap
 
+### Recommendation priority after viewing a lesson
+
+When an athlete finishes a lesson, MATIQ presents recommendations in this order:
+
+1. `Next in your Roadmap` is the primary recommendation when the athlete has an active,
+   unfinished Roadmap item.
+2. `Continue this technique sequence` uses the viewed lesson's primary or conditional lesson path
+   as a secondary recommendation.
+3. Metadata-based matching is the fallback when neither an active Roadmap item nor a suitable
+   lesson path exists.
+
+If no active Roadmap exists, a suitable lesson path becomes the primary recommendation. The
+interface keeps Roadmap and technique-sequence recommendations visually separate and explains the
+source of each recommendation. Recommendations require an explicit user action and do not
+automatically start playback.
+
 A `Roadmap` is an athlete's personal development plan. It differs from a Flow:
 
 - a Flow describes an expert-authored sequence of actions;
@@ -314,6 +330,8 @@ design.
   is German.
 - `DM-014`: A video's primary topic can only be a `GameArea`, `Position`,
   `SkillGroup`, `Technique`, `Movement`, or `Drill`.
+- `DM-015`: An active Roadmap item takes priority over a lesson-path recommendation after playback.
+- `DM-016`: A recommendation never starts playback without an explicit user action.
 
 ## Implemented content and roadmap integration
 
@@ -328,6 +346,11 @@ The first physical content slice is implemented in Prisma and the API:
 - Video metadata fields and options are DB-managed and may be extended from the admin interface.
 - Administrators can rename and delete courses, modules, and lessons, reorder modules and lessons,
   and publish an individual lesson without publishing the entire course.
+- Every published lesson is independently accessible from a Roadmap or direct recommendation;
+  completing earlier course lessons is not required.
+- Lesson paths provide optional guided navigation inside a course. Course publication validates
+  that paths stay inside the course, remain acyclic, and do not define multiple primary
+  continuations from one lesson. Lessons without paths remain valid standalone content.
 - `RoadmapItem.lessonId` optionally targets a published lesson; assessment generation
   attaches matching lessons by skill key when available.
 - Public course catalog and admin content-management endpoints are available locally.
