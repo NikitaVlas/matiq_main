@@ -315,6 +315,21 @@ design.
 - `DM-014`: A video's primary topic can only be a `GameArea`, `Position`,
   `SkillGroup`, `Technique`, `Movement`, or `Drill`.
 
+
+## Implemented content and roadmap integration
+
+The first physical content slice is implemented in Prisma and the API:
+
+- `Course` contains ordered `CourseModule` records.
+- `CourseModule` contains ordered atomic `Lesson` records.
+- Each `Lesson` references one primary `Video` and stores learning metadata.
+- `LessonRelation` models `NEXT`, `REACTION`, and `ALTERNATIVE` branches.
+- `RoadmapItem.lessonId` optionally targets a published lesson; assessment generation
+  attaches matching lessons by skill key when available.
+- Public course catalog and admin content-management endpoints are available locally.
+
+Unmatched legacy roadmap items remain valid and continue to use their existing skill
+and video recommendation behavior.
 ## Open questions
 
 - How do expert assessment rules map to skill evaluations?
@@ -325,5 +340,5 @@ design.
 
 - Status: Approved conceptual baseline
 - Owner: MATIQ team
-- Last reviewed: 2026-07-19
-- Related code: Methodology, content, Roadmap; implementation pending
+- Last reviewed: 2026-07-28
+- Related code: Methodology, content, Roadmap; Course/Lesson content slice implemented
