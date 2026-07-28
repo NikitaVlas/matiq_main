@@ -35,6 +35,14 @@ export class ContentController {
       orderBy: { createdAt: 'desc' },
     });
   }
+  @Post('courses/:courseId/publish') async publishCourse(@Param('courseId') courseId: string) {
+    const course = await this.db.course.update({ where: { id: courseId }, data: { published: true }, include: { modules: { include: { lessons: { select: { id: true, videoId: true } } } } } });
+    const lessonIds = course.modules.flatMap((module) => module.lessons.map((lesson) => lesson.id));
+    const videoIds = course.modules.flatMap((module) => module.lessons.map((lesson) => lesson.videoId));
+    await this.db.lesson.updateMany({ where: { id: { in: lessonIds } }, data: { published: true } });
+    await this.db.video.updateMany({ where: { id: { in: videoIds } }, data: { published: true } });
+    return course;
+  }
   @Post('courses') createCourse(@Body() body: { key: string; title: string; description?: string; discipline: 'BJJ_GI' | 'NO_GI_GRAPPLING' }) {
     return this.db.course.create({ data: body });
   }
