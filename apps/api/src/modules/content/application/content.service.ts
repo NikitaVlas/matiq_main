@@ -12,6 +12,24 @@ export class ContentService {
     @Inject(SubscriptionService) private readonly subscriptions: SubscriptionService,
   ) {}
 
+  async courses() {
+    return this.db.course.findMany({
+      where: { published: true },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        modules: {
+          orderBy: { position: 'asc' },
+          include: {
+            lessons: {
+              where: { published: true },
+              orderBy: { position: 'asc' },
+              include: { video: true, outgoingRelations: { include: { toLesson: true } } },
+            },
+          },
+        },
+      },
+    });
+  }
   async catalog() {
     await this.seed();
     return this.db.gameArea.findMany({

@@ -7,6 +7,10 @@ import { AuthGuard, AuthenticatedRequest } from '../../identity/infrastructure/a
 @Controller('content')
 export class ContentController {
   constructor(@Inject(ContentService) private readonly content: ContentService) {}
+  @Get('courses') courses() {
+    return this.content.courses();
+  }
+
   @Get('catalog') catalog() {
     return this.content.catalog();
   }

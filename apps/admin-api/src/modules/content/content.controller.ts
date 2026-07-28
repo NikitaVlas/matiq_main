@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
 import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
@@ -28,6 +28,24 @@ export class ContentController {
       drills,
       flows,
     }));
+  }
+  @Get('courses') courses() {
+    return this.db.course.findMany({
+      include: { modules: { orderBy: { position: 'asc' }, include: { lessons: { orderBy: { position: 'asc' }, include: { video: true, outgoingRelations: true } } } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+  @Post('courses') createCourse(@Body() body: { key: string; title: string; description?: string; discipline: 'BJJ_GI' | 'NO_GI_GRAPPLING' }) {
+    return this.db.course.create({ data: body });
+  }
+  @Post('courses/:courseId/modules') createModule(@Param('courseId') courseId: string, @Body() body: { key: string; title: string; position: number }) {
+    return this.db.courseModule.create({ data: { ...body, courseId } });
+  }
+  @Post('modules/:moduleId/lessons') createLesson(@Param('moduleId') moduleId: string, @Body() body: { videoId: string; key: string; title: string; goal?: string; startingPosition?: string; endingPosition?: string; level?: string; giNoGi?: string; reactions?: string[]; position: number; published?: boolean }) {
+    return this.db.lesson.create({ data: { ...body, moduleId, reactions: body.reactions ?? [] } });
+  }
+  @Post('lessons/:lessonId/relations') createLessonRelation(@Param('lessonId') fromLessonId: string, @Body() body: { toLessonId: string; type: 'NEXT' | 'REACTION' | 'ALTERNATIVE'; condition?: string; position?: number }) {
+    return this.db.lessonRelation.create({ data: { ...body, fromLessonId, position: body.position ?? 0 } });
   }
   @Post('game-areas') createGameArea(
     @Body() body: { key: string; name: string; discipline: 'BJJ_GI' | 'NO_GI_GRAPPLING' },
