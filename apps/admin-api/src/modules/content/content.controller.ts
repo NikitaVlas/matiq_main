@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
 import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
@@ -73,11 +83,49 @@ export class ContentController {
   ) {
     return this.db.course.create({ data: body });
   }
+  @Patch('courses/:courseId') updateCourse(
+    @Param('courseId') courseId: string,
+    @Body() body: { title: string },
+  ) {
+    return this.db.course.update({ where: { id: courseId }, data: { title: body.title } });
+  }
+  @Delete('courses/:courseId') deleteCourse(@Param('courseId') courseId: string) {
+    return this.db.course.delete({ where: { id: courseId } });
+  }
   @Post('courses/:courseId/modules') createModule(
     @Param('courseId') courseId: string,
     @Body() body: { key: string; title: string; position: number },
   ) {
     return this.db.courseModule.create({ data: { ...body, courseId } });
+  }
+  @Patch('modules/:moduleId') updateModule(
+    @Param('moduleId') moduleId: string,
+    @Body() body: { title: string },
+  ) {
+    return this.db.courseModule.update({ where: { id: moduleId }, data: { title: body.title } });
+  }
+  @Delete('modules/:moduleId') deleteModule(@Param('moduleId') moduleId: string) {
+    return this.db.courseModule.delete({ where: { id: moduleId } });
+  }
+  @Post('courses/:courseId/modules/reorder') async reorderModules(
+    @Param('courseId') courseId: string,
+    @Body() body: { moduleIds: string[] },
+  ) {
+    const modules = await this.db.courseModule.findMany({
+      where: { courseId },
+      select: { id: true },
+    });
+    this.assertExactIds(
+      modules.map((module) => module.id),
+      body.moduleIds,
+      'moduleIds',
+    );
+    await this.db.$transaction(
+      body.moduleIds.map((id, position) =>
+        this.db.courseModule.update({ where: { id }, data: { position } }),
+      ),
+    );
+    return { ok: true };
   }
   @Post('modules/:moduleId/lessons') createLesson(
     @Param('moduleId') moduleId: string,
@@ -97,6 +145,38 @@ export class ContentController {
     },
   ) {
     return this.db.lesson.create({ data: { ...body, moduleId, reactions: body.reactions ?? [] } });
+  }
+  @Patch('lessons/:lessonId') updateLesson(
+    @Param('lessonId') lessonId: string,
+    @Body() body: { title: string },
+  ) {
+    return this.db.lesson.update({ where: { id: lessonId }, data: { title: body.title } });
+  }
+  @Post('lessons/:lessonId/publish') publishLesson(@Param('lessonId') lessonId: string) {
+    return this.db.lesson.update({ where: { id: lessonId }, data: { published: true } });
+  }
+  @Delete('lessons/:lessonId') deleteLesson(@Param('lessonId') lessonId: string) {
+    return this.db.lesson.delete({ where: { id: lessonId } });
+  }
+  @Post('modules/:moduleId/lessons/reorder') async reorderLessons(
+    @Param('moduleId') moduleId: string,
+    @Body() body: { lessonIds: string[] },
+  ) {
+    const lessons = await this.db.lesson.findMany({
+      where: { moduleId },
+      select: { id: true },
+    });
+    this.assertExactIds(
+      lessons.map((lesson) => lesson.id),
+      body.lessonIds,
+      'lessonIds',
+    );
+    await this.db.$transaction(
+      body.lessonIds.map((id, position) =>
+        this.db.lesson.update({ where: { id }, data: { position } }),
+      ),
+    );
+    return { ok: true };
   }
   @Post('lessons/:lessonId/relations') createLessonRelation(
     @Param('lessonId') fromLessonId: string,
@@ -176,5 +256,15 @@ export class ContentController {
     },
   ) {
     return this.db.drill.create({ data: body });
+  }
+
+  private assertExactIds(existingIds: string[], requestedIds: string[], field: string) {
+    if (
+      existingIds.length !== requestedIds.length ||
+      new Set(requestedIds).size !== requestedIds.length ||
+      existingIds.some((id) => !requestedIds.includes(id))
+    ) {
+      throw new BadRequestException(`${field} must contain every item exactly once`);
+    }
   }
 }

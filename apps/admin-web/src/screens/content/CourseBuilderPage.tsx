@@ -28,6 +28,7 @@ type Course = {
 type Video = { id: string; title: string; published: boolean };
 type BranchTrigger = { id: string; key: string; name: string };
 type LessonDraft = { title: string; videoId: string };
+type EditingTitle = { kind: 'course' | 'module' | 'lesson'; id: string; title: string };
 
 const slug = (value: string) =>
   value
@@ -45,6 +46,7 @@ export default function CourseBuilderPage() {
   const [moduleTitle, setModuleTitle] = useState('');
   const [lessonDrafts, setLessonDrafts] = useState<Record<string, LessonDraft>>({});
   const [submittingModuleId, setSubmittingModuleId] = useState('');
+  const [editingTitle, setEditingTitle] = useState<EditingTitle>();
   const [relationFrom, setRelationFrom] = useState('');
   const [relationTarget, setRelationTarget] = useState('');
   const [relationType, setRelationType] = useState<'PRIMARY' | 'BRANCH'>('PRIMARY');
@@ -78,12 +80,13 @@ export default function CourseBuilderPage() {
     void load();
   }, []);
 
-  const post = async (path: string, body: unknown) => {
+  const request = async (path: string, method: 'POST' | 'PATCH' | 'DELETE', body?: unknown) => {
     setError('');
     const response = await adminApi(path, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
+      method,
+      ...(body === undefined
+        ? {}
+        : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
     });
     if (!response.ok) {
       const details = await response.text();
@@ -92,6 +95,46 @@ export default function CourseBuilderPage() {
     }
     await load();
     return true;
+  };
+
+  const post = (path: string, body: unknown) => request(path, 'POST', body);
+
+  const saveTitle = async () => {
+    if (!editingTitle?.title.trim()) return;
+    const paths = {
+      course: `/admin/content/courses/${editingTitle.id}`,
+      module: `/admin/content/modules/${editingTitle.id}`,
+      lesson: `/admin/content/lessons/${editingTitle.id}`,
+    };
+    if (await request(paths[editingTitle.kind], 'PATCH', { title: editingTitle.title.trim() })) {
+      setEditingTitle(undefined);
+    }
+  };
+
+  const remove = async (kind: 'course' | 'module' | 'lesson', id: string, label: string) => {
+    const consequences = {
+      course: 'This also deletes every module, lesson, and lesson path in the course.',
+      module: 'This also deletes every lesson and lesson path in the module.',
+      lesson: 'Its video is kept and becomes available for another lesson.',
+    };
+    if (!window.confirm(`Delete ${kind} "${label}"? ${consequences[kind]}`)) return;
+    const paths = {
+      course: `/admin/content/courses/${id}`,
+      module: `/admin/content/modules/${id}`,
+      lesson: `/admin/content/lessons/${id}`,
+    };
+    if ((await request(paths[kind], 'DELETE')) && selected === id) setSelected('');
+  };
+
+  const move = async (path: string, ids: string[], index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= ids.length) return;
+    const reordered = [...ids];
+    [reordered[index], reordered[target]] = [reordered[target]!, reordered[index]!];
+    await post(
+      path,
+      path.includes('/modules/reorder') ? { moduleIds: reordered } : { lessonIds: reordered },
+    );
   };
 
   const updateLessonDraft = (moduleId: string, patch: Partial<LessonDraft>) => {
@@ -152,7 +195,38 @@ export default function CourseBuilderPage() {
           </small>{' '}
           <button type="button" onClick={() => void publishCourse(course.id)}>
             {course.published ? 'Publish updates' : 'Publish course'}
+          </button>{' '}
+          <button
+            type="button"
+            onClick={() => setEditingTitle({ kind: 'course', id: course.id, title: course.title })}
+          >
+            Edit course
+          </button>{' '}
+          <button type="button" onClick={() => void remove('course', course.id, course.title)}>
+            Delete course
           </button>
+          {editingTitle?.kind === 'course' && editingTitle.id === course.id && (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void saveTitle();
+              }}
+            >
+              <input
+                aria-label="Course title to edit"
+                value={editingTitle.title}
+                onChange={(event) =>
+                  setEditingTitle((current) =>
+                    current ? { ...current, title: event.target.value } : current,
+                  )
+                }
+              />
+              <button disabled={!editingTitle.title.trim()}>Save course</button>
+              <button type="button" onClick={() => setEditingTitle(undefined)}>
+                Cancel
+              </button>
+            </form>
+          )}
           {selected === course.id && (
             <form
               onSubmit={async (event) => {
@@ -176,17 +250,130 @@ export default function CourseBuilderPage() {
               <button>Add module</button>
             </form>
           )}
-          {course.modules.map((module) => (
+          {course.modules.map((module, moduleIndex) => (
             <section key={module.id}>
               <h3>
                 {module.position + 1}. {module.title}
               </h3>
+              <button
+                type="button"
+                disabled={moduleIndex === 0}
+                onClick={() =>
+                  void move(
+                    `/admin/content/courses/${course.id}/modules/reorder`,
+                    course.modules.map((item) => item.id),
+                    moduleIndex,
+                    -1,
+                  )
+                }
+              >
+                Move module up
+              </button>{' '}
+              <button
+                type="button"
+                disabled={moduleIndex === course.modules.length - 1}
+                onClick={() =>
+                  void move(
+                    `/admin/content/courses/${course.id}/modules/reorder`,
+                    course.modules.map((item) => item.id),
+                    moduleIndex,
+                    1,
+                  )
+                }
+              >
+                Move module down
+              </button>{' '}
+              <button
+                type="button"
+                onClick={() =>
+                  setEditingTitle({ kind: 'module', id: module.id, title: module.title })
+                }
+              >
+                Edit module
+              </button>{' '}
+              <button type="button" onClick={() => void remove('module', module.id, module.title)}>
+                Delete module
+              </button>
+              {editingTitle?.kind === 'module' && editingTitle.id === module.id && (
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void saveTitle();
+                  }}
+                >
+                  <input
+                    aria-label="Module title to edit"
+                    value={editingTitle.title}
+                    onChange={(event) =>
+                      setEditingTitle((current) =>
+                        current ? { ...current, title: event.target.value } : current,
+                      )
+                    }
+                  />
+                  <button disabled={!editingTitle.title.trim()}>Save module</button>
+                  <button type="button" onClick={() => setEditingTitle(undefined)}>
+                    Cancel
+                  </button>
+                </form>
+              )}
               <ul>
-                {module.lessons.map((lesson) => (
+                {module.lessons.map((lesson, lessonIndex) => (
                   <li key={lesson.id}>
                     {lesson.position + 1}. {lesson.title}
                     {lesson.video ? ` - ${lesson.video.title}` : ''}{' '}
                     {lesson.published ? 'published' : '(draft)'}{' '}
+                    {!lesson.published && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void request(`/admin/content/lessons/${lesson.id}/publish`, 'POST')
+                        }
+                      >
+                        Publish lesson
+                      </button>
+                    )}{' '}
+                    <button
+                      type="button"
+                      disabled={lessonIndex === 0}
+                      onClick={() =>
+                        void move(
+                          `/admin/content/modules/${module.id}/lessons/reorder`,
+                          module.lessons.map((item) => item.id),
+                          lessonIndex,
+                          -1,
+                        )
+                      }
+                    >
+                      Move lesson up
+                    </button>{' '}
+                    <button
+                      type="button"
+                      disabled={lessonIndex === module.lessons.length - 1}
+                      onClick={() =>
+                        void move(
+                          `/admin/content/modules/${module.id}/lessons/reorder`,
+                          module.lessons.map((item) => item.id),
+                          lessonIndex,
+                          1,
+                        )
+                      }
+                    >
+                      Move lesson down
+                    </button>{' '}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditingTitle({ kind: 'lesson', id: lesson.id, title: lesson.title })
+                      }
+                    >
+                      Edit lesson
+                    </button>{' '}
+                    <button
+                      type="button"
+                      onClick={() => void remove('lesson', lesson.id, lesson.title)}
+                    >
+                      Delete lesson
+                    </button>{' '}
                     <button
                       type="button"
                       onClick={() => {
@@ -199,6 +386,28 @@ export default function CourseBuilderPage() {
                     {lesson.outgoingRelations?.length ? (
                       <small> ({lesson.outgoingRelations.length} branches)</small>
                     ) : null}
+                    {editingTitle?.kind === 'lesson' && editingTitle.id === lesson.id && (
+                      <form
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void saveTitle();
+                        }}
+                      >
+                        <input
+                          aria-label="Lesson title to edit"
+                          value={editingTitle.title}
+                          onChange={(event) =>
+                            setEditingTitle((current) =>
+                              current ? { ...current, title: event.target.value } : current,
+                            )
+                          }
+                        />
+                        <button disabled={!editingTitle.title.trim()}>Save lesson</button>
+                        <button type="button" onClick={() => setEditingTitle(undefined)}>
+                          Cancel
+                        </button>
+                      </form>
+                    )}
                     {relationFrom === lesson.id && (
                       <form
                         onSubmit={async (event) => {
@@ -302,7 +511,6 @@ export default function CourseBuilderPage() {
                   </li>
                 ))}
               </ul>
-
               {selected === course.id && (
                 <form
                   onSubmit={async (event) => {
@@ -338,7 +546,9 @@ export default function CourseBuilderPage() {
                     required
                     placeholder="Lesson title"
                     value={lessonDrafts[module.id]?.title ?? ''}
-                    onChange={(event) => updateLessonDraft(module.id, { title: event.target.value })}
+                    onChange={(event) =>
+                      updateLessonDraft(module.id, { title: event.target.value })
+                    }
                   />
                   <select
                     required

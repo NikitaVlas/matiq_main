@@ -326,6 +326,8 @@ The first physical content slice is implemented in Prisma and the API:
 - A conditional branch may reference a DB-managed `BranchTrigger`; administrators can extend
   trigger values without a code change.
 - Video metadata fields and options are DB-managed and may be extended from the admin interface.
+- Administrators can rename and delete courses, modules, and lessons, reorder modules and lessons,
+  and publish an individual lesson without publishing the entire course.
 - `RoadmapItem.lessonId` optionally targets a published lesson; assessment generation
   attaches matching lessons by skill key when available.
 - Public course catalog and admin content-management endpoints are available locally.

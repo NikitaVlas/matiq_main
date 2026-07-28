@@ -1,6 +1,608 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/admin/stats": {
+      "get": {
+        "operationId": "DashboardController_stats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-dashboard"
+        ]
+      }
+    },
+    "/admin/trainers": {
+      "get": {
+        "operationId": "TrainerController_trainers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-trainers"
+        ]
+      }
+    },
+    "/admin/videos": {
+      "get": {
+        "operationId": "VideoController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-videos"
+        ]
+      },
+      "post": {
+        "operationId": "VideoController_create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-videos"
+        ]
+      }
+    },
+    "/admin/videos/upload": {
+      "post": {
+        "operationId": "VideoController_upload",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-videos"
+        ]
+      }
+    },
+    "/admin/videos/{id}/playback-url": {
+      "get": {
+        "operationId": "VideoController_playback",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-videos"
+        ]
+      }
+    },
+    "/admin/videos/{id}/metadata": {
+      "post": {
+        "operationId": "VideoController_setMetadata",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-videos"
+        ]
+      }
+    },
+    "/admin/videos/{id}": {
+      "patch": {
+        "operationId": "VideoController_update",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-videos"
+        ]
+      }
+    },
+    "/admin/videos/{id}/publish": {
+      "post": {
+        "operationId": "VideoController_publish",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-videos"
+        ]
+      }
+    },
+    "/admin/videos/{id}/unpublish": {
+      "post": {
+        "operationId": "VideoController_unpublish",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-videos"
+        ]
+      }
+    },
+    "/admin/videos/{id}/preview": {
+      "patch": {
+        "operationId": "VideoController_preview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-videos"
+        ]
+      }
+    },
+    "/admin/videos/{id}/draft": {
+      "patch": {
+        "operationId": "VideoController_updateDraft",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-videos"
+        ]
+      }
+    },
+    "/admin/videos/{id}/revisions/{revisionId}/approve": {
+      "post": {
+        "operationId": "VideoController_approveRevision",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-videos"
+        ]
+      }
+    },
+    "/admin/content": {
+      "get": {
+        "operationId": "ContentController_catalog",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/courses": {
+      "get": {
+        "operationId": "ContentController_courses",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      },
+      "post": {
+        "operationId": "ContentController_createCourse",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/courses/{courseId}/publish": {
+      "post": {
+        "operationId": "ContentController_publishCourse",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/courses/{courseId}": {
+      "patch": {
+        "operationId": "ContentController_updateCourse",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      },
+      "delete": {
+        "operationId": "ContentController_deleteCourse",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/courses/{courseId}/modules": {
+      "post": {
+        "operationId": "ContentController_createModule",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/modules/{moduleId}": {
+      "patch": {
+        "operationId": "ContentController_updateModule",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      },
+      "delete": {
+        "operationId": "ContentController_deleteModule",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/courses/{courseId}/modules/reorder": {
+      "post": {
+        "operationId": "ContentController_reorderModules",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/modules/{moduleId}/lessons": {
+      "post": {
+        "operationId": "ContentController_createLesson",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/lessons/{lessonId}": {
+      "patch": {
+        "operationId": "ContentController_updateLesson",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      },
+      "delete": {
+        "operationId": "ContentController_deleteLesson",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/lessons/{lessonId}/publish": {
+      "post": {
+        "operationId": "ContentController_publishLesson",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/modules/{moduleId}/lessons/reorder": {
+      "post": {
+        "operationId": "ContentController_reorderLessons",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/lessons/{lessonId}/relations": {
+      "post": {
+        "operationId": "ContentController_createLessonRelation",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/branch-triggers": {
+      "get": {
+        "operationId": "ContentController_branchTriggers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      },
+      "post": {
+        "operationId": "ContentController_createBranchTrigger",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/metadata-fields": {
+      "get": {
+        "operationId": "ContentController_metadataFields",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      },
+      "post": {
+        "operationId": "ContentController_createMetadataField",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/metadata-fields/{fieldId}/options": {
+      "post": {
+        "operationId": "ContentController_createMetadataOption",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/game-areas": {
+      "post": {
+        "operationId": "ContentController_createGameArea",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/positions": {
+      "post": {
+        "operationId": "ContentController_createPosition",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/skill-groups": {
+      "post": {
+        "operationId": "ContentController_createSkillGroup",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/techniques": {
+      "post": {
+        "operationId": "ContentController_createTechnique",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/movements": {
+      "post": {
+        "operationId": "ContentController_createMovement",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/drills": {
+      "post": {
+        "operationId": "ContentController_createDrill",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/assessment/questions": {
+      "get": {
+        "operationId": "AssessmentController_questions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-assessment"
+        ]
+      }
+    },
+    "/admin/assessment/questions/{id}": {
+      "patch": {
+        "operationId": "AssessmentController_updateQuestion",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-assessment"
+        ]
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "operationId": "RoleController_users",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-roles"
+        ]
+      }
+    },
+    "/admin/users/{id}/role": {
+      "patch": {
+        "operationId": "RoleController_changeRole",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-roles"
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "HealthController_get",
@@ -12,228 +614,6 @@
         },
         "tags": [
           "health"
-        ]
-      }
-    },
-    "/admin/stats": {
-      "get": {
-        "operationId": "AdminController_stats",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/trainers": {
-      "get": {
-        "operationId": "AdminController_trainers",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/videos": {
-      "get": {
-        "operationId": "AdminController_videos",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      },
-      "post": {
-        "operationId": "AdminController_createVideo",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/videos/upload": {
-      "post": {
-        "operationId": "AdminController_uploadVideo",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/videos/{id}/playback-url": {
-      "get": {
-        "operationId": "AdminController_playbackUrl",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/videos/{id}": {
-      "patch": {
-        "operationId": "AdminController_updateVideo",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/content": {
-      "get": {
-        "operationId": "AdminController_content",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/content/game-areas": {
-      "post": {
-        "operationId": "AdminController_createGameArea",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/content/positions": {
-      "post": {
-        "operationId": "AdminController_createPosition",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/content/skill-groups": {
-      "post": {
-        "operationId": "AdminController_createSkillGroup",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/content/techniques": {
-      "post": {
-        "operationId": "AdminController_createTechnique",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/content/movements": {
-      "post": {
-        "operationId": "AdminController_createMovement",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/content/drills": {
-      "post": {
-        "operationId": "AdminController_createDrill",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/assessment/questions": {
-      "get": {
-        "operationId": "AdminController_questions",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/assessment/questions/{id}": {
-      "patch": {
-        "operationId": "AdminController_updateQuestion",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin"
         ]
       }
     }
