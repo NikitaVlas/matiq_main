@@ -156,8 +156,15 @@ export default function VideoUploadPage() {
 
       <section>
         <h2>Metadata fields</h2>
+        <p>
+          Metadata fields describe videos and make them easier to filter and recommend. Examples:
+          Discipline, Skill level, Position, Technique, or Content focus. Add a field only when the
+          required category does not already exist; its selectable values are added while editing a
+          video.
+        </p>
         <input
-          placeholder="New metadata field"
+          aria-label="New metadata category"
+          placeholder="New category, for example Coach"
           value={newFieldName}
           onChange={(event) => setNewFieldName(event.target.value)}
         />

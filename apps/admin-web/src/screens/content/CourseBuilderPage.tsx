@@ -27,6 +27,7 @@ type Course = {
 
 type Video = { id: string; title: string; published: boolean };
 type BranchTrigger = { id: string; key: string; name: string };
+type LessonDraft = { title: string; videoId: string };
 
 const slug = (value: string) =>
   value
@@ -42,8 +43,8 @@ export default function CourseBuilderPage() {
   const [selected, setSelected] = useState('');
   const [title, setTitle] = useState('');
   const [moduleTitle, setModuleTitle] = useState('');
-  const [lessonTitle, setLessonTitle] = useState('');
-  const [videoId, setVideoId] = useState('');
+  const [lessonDrafts, setLessonDrafts] = useState<Record<string, LessonDraft>>({});
+  const [submittingModuleId, setSubmittingModuleId] = useState('');
   const [relationFrom, setRelationFrom] = useState('');
   const [relationTarget, setRelationTarget] = useState('');
   const [relationType, setRelationType] = useState<'PRIMARY' | 'BRANCH'>('PRIMARY');
@@ -71,7 +72,6 @@ export default function CourseBuilderPage() {
     const availableTriggers = (await triggersResponse.json()) as BranchTrigger[];
     setBranchTriggers(availableTriggers);
     setRelationTriggerId((current) => current || availableTriggers[0]?.id || '');
-    setVideoId((current) => current || availableVideos[0]?.id || '');
   };
 
   useEffect(() => {
@@ -86,11 +86,19 @@ export default function CourseBuilderPage() {
       body: JSON.stringify(body),
     });
     if (!response.ok) {
-      setError(`Operation failed (HTTP ${response.status}).`);
+      const details = await response.text();
+      setError(`Operation failed (HTTP ${response.status})${details ? `: ${details}` : '.'}`);
       return false;
     }
     await load();
     return true;
+  };
+
+  const updateLessonDraft = (moduleId: string, patch: Partial<LessonDraft>) => {
+    setLessonDrafts((current) => ({
+      ...current,
+      [moduleId]: { title: '', videoId: '', ...current[moduleId], ...patch },
+    }));
   };
 
   const publishCourse = async (id: string) => {
@@ -299,44 +307,83 @@ export default function CourseBuilderPage() {
                 <form
                   onSubmit={async (event) => {
                     event.preventDefault();
-                    if (!videoId) {
-                      setError('Publish a video before creating a lesson.');
+                    const draft = lessonDrafts[module.id] ?? { title: '', videoId: '' };
+                    if (!draft.videoId) {
+                      setError('Select an unused published video for this lesson.');
                       return;
                     }
-                    if (
-                      await post(`/admin/content/modules/${module.id}/lessons`, {
-                        key: slug(lessonTitle),
-                        title: lessonTitle,
-                        videoId,
-                        position: module.lessons.length,
-                        reactions: [],
-                        published: false,
-                      })
-                    ) {
-                      setLessonTitle('');
+                    setSubmittingModuleId(module.id);
+                    try {
+                      if (
+                        await post(`/admin/content/modules/${module.id}/lessons`, {
+                          key: slug(draft.title) || `lesson-${Date.now()}`,
+                          title: draft.title.trim(),
+                          videoId: draft.videoId,
+                          position: module.lessons.length,
+                          reactions: [],
+                          published: false,
+                        })
+                      ) {
+                        setLessonDrafts((current) => ({
+                          ...current,
+                          [module.id]: { title: '', videoId: '' },
+                        }));
+                      }
+                    } finally {
+                      setSubmittingModuleId('');
                     }
                   }}
                 >
                   <input
                     required
                     placeholder="Lesson title"
-                    value={lessonTitle}
-                    onChange={(event) => setLessonTitle(event.target.value)}
+                    value={lessonDrafts[module.id]?.title ?? ''}
+                    onChange={(event) => updateLessonDraft(module.id, { title: event.target.value })}
                   />
                   <select
                     required
                     aria-label="Published video"
-                    value={videoId}
-                    onChange={(event) => setVideoId(event.target.value)}
+                    value={lessonDrafts[module.id]?.videoId ?? ''}
+                    onChange={(event) =>
+                      updateLessonDraft(module.id, { videoId: event.target.value })
+                    }
                   >
-                    {videos.length === 0 && <option value="">No published videos</option>}
-                    {videos.map((video) => (
-                      <option key={video.id} value={video.id}>
-                        {video.title} - {video.id}
-                      </option>
-                    ))}
+                    <option value="">Select an unused published video</option>
+                    {videos
+                      .filter(
+                        (video) =>
+                          !courses.some((existingCourse) =>
+                            existingCourse.modules.some((existingModule) =>
+                              existingModule.lessons.some(
+                                (existingLesson) => existingLesson.video?.id === video.id,
+                              ),
+                            ),
+                          ),
+                      )
+                      .map((video) => (
+                        <option key={video.id} value={video.id}>
+                          {video.title} - {video.id}
+                        </option>
+                      ))}
                   </select>
-                  <button disabled={videos.length === 0}>Add lesson</button>
+                  <button disabled={submittingModuleId === module.id}>
+                    {submittingModuleId === module.id ? 'Adding lesson...' : 'Add lesson'}
+                  </button>
+                  {videos.length > 0 &&
+                    videos.every((video) =>
+                      courses.some((existingCourse) =>
+                        existingCourse.modules.some((existingModule) =>
+                          existingModule.lessons.some(
+                            (existingLesson) => existingLesson.video?.id === video.id,
+                          ),
+                        ),
+                      ),
+                    ) && (
+                      <small>
+                        All published videos are already assigned. Upload and publish another video
+                        before adding a lesson.
+                      </small>
+                    )}
                 </form>
               )}
             </section>
