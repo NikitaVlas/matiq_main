@@ -53,7 +53,7 @@ export default function VideosPage() {
               <div>
                 <strong>{video.title}</strong>
                 <p>{video.description ?? 'Kuratierte Lernlektion'}</p>
-                <p>{progress[video.id]?.completed ? 'Angesehen' : progress[video.id] ? `Weiter ab ${Math.floor(progress[video.id].watchedSeconds / 60)}:${String(progress[video.id].watchedSeconds % 60).padStart(2, '0')}` : 'Neu'}</p>
+                <p>{progress[video.id]?.completed ? 'Angesehen' : progress[video.id] ? `Weiter ab ${Math.floor((progress[video.id]?.watchedSeconds ?? 0) / 60)}:${String((progress[video.id]?.watchedSeconds ?? 0) % 60).padStart(2, '0')}` : 'Neu'}</p>
               </div>
               <a href={hasAccess ? `/video/${video.id}` : '/subscription'}>
                 {hasAccess ? 'Ansehen' : 'Mitgliedschaft erforderlich'}
