@@ -10,7 +10,10 @@ export class VideoService {
   ) {}
 
   list() {
-    return this.db.video.findMany({ orderBy: { createdAt: 'desc' } });
+    return this.db.video.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { metadataValues: { include: { option: { include: { field: true } } } } },
+    });
   }
 
   create(data: { title: string; storageKey: string; description?: string; published?: boolean }) {

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AssessmentContext, Discipline } from '@prisma/client';
+import { AssessmentContext, Discipline, UserRole } from '@prisma/client';
 import { Database } from '../../../shared/infrastructure/database';
 import { VideoStorageService } from '../infrastructure/video-storage.service';
 import { SubscriptionService } from '../../subscription/application/subscription.service';
@@ -23,7 +23,10 @@ export class ContentService {
             lessons: {
               where: { published: true },
               orderBy: { position: 'asc' },
-              include: { video: true, outgoingRelations: { include: { toLesson: true } } },
+              include: {
+                video: true,
+                outgoingRelations: { include: { toLesson: true, trigger: true } },
+              },
             },
           },
         },
@@ -48,11 +51,19 @@ export class ContentService {
     });
   }
 
-  async playback(userId: string, videoId: string) {
-    await this.subscriptions.requireAccess(userId);
+  async playback(userId: string, role: UserRole | undefined, videoId: string) {
+    if (role !== UserRole.ADMIN && role !== UserRole.EDITOR)
+      await this.subscriptions.requireAccess(userId);
     const video = await this.db.video.findUnique({
       where: { id: videoId },
-      include: { position: true, technique: true, variant: true, movement: true, drill: true, watchEvents: { where: { userId }, take: 1 } },
+      include: {
+        position: true,
+        technique: true,
+        variant: true,
+        movement: true,
+        drill: true,
+        watchEvents: { where: { userId }, take: 1 },
+      },
     });
     if (!video || !video.published) throw new Error('VIDEO_NOT_AVAILABLE');
     return {
@@ -64,13 +75,21 @@ export class ContentService {
     };
   }
 
-  async recordWatch(userId: string, videoId: string, watchedSeconds: number, _completed: boolean) {
-    await this.subscriptions.requireAccess(userId);
+  async recordWatch(
+    userId: string,
+    role: UserRole | undefined,
+    videoId: string,
+    watchedSeconds: number,
+  ) {
+    if (role !== UserRole.ADMIN && role !== UserRole.EDITOR)
+      await this.subscriptions.requireAccess(userId);
     const video = await this.db.video.findUnique({ where: { id: videoId } });
     if (!video || !video.published) throw new Error('VIDEO_NOT_AVAILABLE');
     const seconds = Math.max(0, watchedSeconds);
     const watched = Boolean(video.durationSec && seconds >= video.durationSec * 0.8);
-    const existing = await this.db.videoWatch.findUnique({ where: { videoId_userId: { videoId, userId } } });
+    const existing = await this.db.videoWatch.findUnique({
+      where: { videoId_userId: { videoId, userId } },
+    });
     const progress = Math.max(existing?.watchedSeconds ?? 0, seconds);
     return this.db.videoWatch.upsert({
       where: { videoId_userId: { videoId, userId } },

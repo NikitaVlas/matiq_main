@@ -176,6 +176,10 @@ requirements before production.
 
 - MFA is mandatory for `Admin` and `Editor`.
 - A critical action requires recent re-authentication.
+- Local user and admin applications use separate HTTP-only session cookies. Signing in to the
+  admin application must not replace an Athlete session in the user application.
+- `Admin` and `Editor` may play published content without a commercial subscription after their
+  role and MFA-enabled admin session have been verified server-side.
 - Re-authentication does not replace permission checks or MFA.
 
 Critical actions are:

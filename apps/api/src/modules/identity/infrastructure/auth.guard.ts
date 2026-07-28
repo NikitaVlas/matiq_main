@@ -1,11 +1,13 @@
 import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthService } from '../application/auth.service';
+import { UserRole } from '@prisma/client';
 
 export interface AuthenticatedRequest extends Request {
   userId: string;
   sessionId: string;
   reauthenticatedAt: Date | null;
+  userRole?: UserRole;
 }
 
 @Injectable()
@@ -20,6 +22,7 @@ export class AuthGuard implements CanActivate {
     request.userId = session.user.id;
     request.sessionId = session.id;
     request.reauthenticatedAt = session.reauthenticatedAt;
+    request.userRole = session.user.role;
     return true;
   }
 }

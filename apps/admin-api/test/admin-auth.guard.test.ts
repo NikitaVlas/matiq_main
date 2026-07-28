@@ -43,7 +43,7 @@ describe('AdminAuthGuard', () => {
     };
     await expect(
       new AdminAuthGuard(db as never, reflector as never).canActivate(
-        context('matiq_session=session-token'),
+        context('matiq_admin_session=session-token'),
       ),
     ).rejects.toThrow();
   });
@@ -52,8 +52,18 @@ describe('AdminAuthGuard', () => {
     const db = { session: { findUnique: vi.fn().mockResolvedValue(session) } };
     await expect(
       new AdminAuthGuard(db as never, reflector as never).canActivate(
-        context('matiq_session=session-token'),
+        context('matiq_admin_session=session-token'),
       ),
     ).resolves.toBe(true);
+  });
+
+  it('does not accept an athlete session cookie', async () => {
+    const db = { session: { findUnique: vi.fn() } };
+    await expect(
+      new AdminAuthGuard(db as never, reflector as never).canActivate(
+        context('matiq_session=session-token'),
+      ),
+    ).rejects.toThrow();
+    expect(db.session.findUnique).not.toHaveBeenCalled();
   });
 });

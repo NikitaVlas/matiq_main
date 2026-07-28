@@ -9,7 +9,12 @@ type Lesson = {
   position: number;
   published: boolean;
   video?: { id: string; title: string };
-  outgoingRelations?: { id: string; toLessonId: string; type: string }[];
+  outgoingRelations?: {
+    id: string;
+    toLessonId: string;
+    type: 'PRIMARY' | 'BRANCH';
+    trigger?: { id: string; name: string };
+  }[];
 };
 
 type Course = {
@@ -21,6 +26,7 @@ type Course = {
 };
 
 type Video = { id: string; title: string; published: boolean };
+type BranchTrigger = { id: string; key: string; name: string };
 
 const slug = (value: string) =>
   value
@@ -32,6 +38,7 @@ const slug = (value: string) =>
 export default function CourseBuilderPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [branchTriggers, setBranchTriggers] = useState<BranchTrigger[]>([]);
   const [selected, setSelected] = useState('');
   const [title, setTitle] = useState('');
   const [moduleTitle, setModuleTitle] = useState('');
@@ -39,16 +46,19 @@ export default function CourseBuilderPage() {
   const [videoId, setVideoId] = useState('');
   const [relationFrom, setRelationFrom] = useState('');
   const [relationTarget, setRelationTarget] = useState('');
-  const [relationType, setRelationType] = useState<'NEXT' | 'REACTION' | 'ALTERNATIVE'>('NEXT');
+  const [relationType, setRelationType] = useState<'PRIMARY' | 'BRANCH'>('PRIMARY');
+  const [relationTriggerId, setRelationTriggerId] = useState('');
+  const [newTriggerName, setNewTriggerName] = useState('');
   const [error, setError] = useState('');
 
   const load = async () => {
-    const [coursesResponse, videosResponse] = await Promise.all([
+    const [coursesResponse, videosResponse, triggersResponse] = await Promise.all([
       adminApi('/admin/content/courses'),
       adminApi('/admin/videos'),
+      adminApi('/admin/content/branch-triggers'),
     ]);
 
-    if (!coursesResponse.ok || !videosResponse.ok) {
+    if (!coursesResponse.ok || !videosResponse.ok || !triggersResponse.ok) {
       setError('Content data could not be loaded.');
       return;
     }
@@ -58,6 +68,9 @@ export default function CourseBuilderPage() {
       (video) => video.published,
     );
     setVideos(availableVideos);
+    const availableTriggers = (await triggersResponse.json()) as BranchTrigger[];
+    setBranchTriggers(availableTriggers);
+    setRelationTriggerId((current) => current || availableTriggers[0]?.id || '');
     setVideoId((current) => current || availableVideos[0]?.id || '');
   };
 
@@ -190,6 +203,7 @@ export default function CourseBuilderPage() {
                             await post(`/admin/content/lessons/${lesson.id}/relations`, {
                               toLessonId: relationTarget,
                               type: relationType,
+                              triggerId: relationType === 'BRANCH' ? relationTriggerId : undefined,
                               position: lesson.outgoingRelations?.length ?? 0,
                             })
                           ) {
@@ -219,15 +233,61 @@ export default function CourseBuilderPage() {
                           aria-label="Branch type"
                           value={relationType}
                           onChange={(event) =>
-                            setRelationType(
-                              event.target.value as 'NEXT' | 'REACTION' | 'ALTERNATIVE',
-                            )
+                            setRelationType(event.target.value as 'PRIMARY' | 'BRANCH')
                           }
                         >
-                          <option value="NEXT">Next</option>
-                          <option value="REACTION">Reaction</option>
-                          <option value="ALTERNATIVE">Alternative</option>
+                          <option value="PRIMARY">Main continuation</option>
+                          <option value="BRANCH">Conditional branch</option>
                         </select>
+                        <small>
+                          Main continuation is the normal next lesson. Conditional branch is an
+                          optional path caused by a reaction or situation.
+                        </small>
+                        {relationType === 'BRANCH' && (
+                          <>
+                            <select
+                              required
+                              aria-label="Branch trigger"
+                              value={relationTriggerId}
+                              onChange={(event) => setRelationTriggerId(event.target.value)}
+                            >
+                              {branchTriggers.map((trigger) => (
+                                <option key={trigger.id} value={trigger.id}>
+                                  {trigger.name}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              placeholder="New branch trigger"
+                              value={newTriggerName}
+                              onChange={(event) => setNewTriggerName(event.target.value)}
+                            />
+                            <button
+                              type="button"
+                              disabled={!newTriggerName.trim()}
+                              onClick={async () => {
+                                const response = await adminApi('/admin/content/branch-triggers', {
+                                  method: 'POST',
+                                  headers: { 'content-type': 'application/json' },
+                                  body: JSON.stringify({
+                                    key: slug(newTriggerName) || `trigger-${Date.now()}`,
+                                    name: newTriggerName.trim(),
+                                  }),
+                                });
+                                if (!response.ok) {
+                                  setError(`Trigger creation failed (HTTP ${response.status}).`);
+                                  return;
+                                }
+                                const trigger = (await response.json()) as BranchTrigger;
+                                setNewTriggerName('');
+                                await load();
+                                setRelationTriggerId(trigger.id);
+                              }}
+                            >
+                              Add new trigger
+                            </button>
+                          </>
+                        )}
                         <button>Create branch</button>
                       </form>
                     )}

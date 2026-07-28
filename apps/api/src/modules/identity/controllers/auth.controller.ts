@@ -8,6 +8,7 @@ import {
   Post,
   Req,
   Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -25,6 +26,7 @@ import {
   VerifyEmailDto,
 } from '../dto/auth.dto';
 import { AuthService } from '../application/auth.service';
+import { AdminSessionGuard, adminCookieName } from '../infrastructure/admin-session.guard';
 
 @ApiTags('authentication')
 @Controller('auth')
@@ -57,6 +59,21 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
     const result = await this.auth.login(dto.email, dto.password, dto.mfaCode);
     this.setSessionCookie(response, result.sessionToken);
+    return {
+      authenticated: true,
+      mfaSetupRequired: 'mfaSetupRequired' in result && result.mfaSetupRequired,
+    };
+  }
+
+  @Post('admin-login')
+  async adminLogin(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
+    const result = await this.auth.login(dto.email, dto.password, dto.mfaCode);
+    const session = await this.auth.sessionForToken(result.sessionToken);
+    if (session.user.role !== 'ADMIN' && session.user.role !== 'EDITOR') {
+      await this.auth.logout(result.sessionToken);
+      throw new UnauthorizedException('ADMIN_ACCESS_REQUIRED');
+    }
+    this.setCookie(response, adminCookieName(), result.sessionToken);
     return {
       authenticated: true,
       mfaSetupRequired: 'mfaSetupRequired' in result && result.mfaSetupRequired,
@@ -176,12 +193,28 @@ export class AuthController {
     return this.auth.confirmMfaSetup(request.userId, dto.code);
   }
 
+  @UseGuards(AdminSessionGuard)
+  @Post('admin-mfa/setup')
+  beginAdminMfaSetup(@Req() request: AuthenticatedRequest) {
+    return this.auth.beginMfaSetup(request.userId);
+  }
+
+  @UseGuards(AdminSessionGuard)
+  @Post('admin-mfa/confirm')
+  confirmAdminMfaSetup(@Body() dto: MfaCodeDto, @Req() request: AuthenticatedRequest) {
+    return this.auth.confirmMfaSetup(request.userId, dto.code);
+  }
+
   private cookieName() {
     return process.env.SESSION_COOKIE_NAME ?? 'matiq_session';
   }
 
   private setSessionCookie(response: Response, token: string) {
-    response.cookie(this.cookieName(), token, {
+    this.setCookie(response, this.cookieName(), token);
+  }
+
+  private setCookie(response: Response, name: string, token: string) {
+    response.cookie(name, token, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',

@@ -75,7 +75,7 @@ describe('Admin API authentication', () => {
           expiresAt: new Date(Date.now() + 60_000),
         },
       });
-      return `matiq_session=${token}`;
+      return `matiq_admin_session=${token}`;
     };
     [adminCookie, athleteCookie, editorCookie] = await Promise.all([
       createSession(admin.id),

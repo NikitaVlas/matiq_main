@@ -315,7 +315,6 @@ design.
 - `DM-014`: A video's primary topic can only be a `GameArea`, `Position`,
   `SkillGroup`, `Technique`, `Movement`, or `Drill`.
 
-
 ## Implemented content and roadmap integration
 
 The first physical content slice is implemented in Prisma and the API:
@@ -323,13 +322,17 @@ The first physical content slice is implemented in Prisma and the API:
 - `Course` contains ordered `CourseModule` records.
 - `CourseModule` contains ordered atomic `Lesson` records.
 - Each `Lesson` references one primary `Video` and stores learning metadata.
-- `LessonRelation` models `NEXT`, `REACTION`, and `ALTERNATIVE` branches.
+- `LessonRelation` distinguishes the ordered `PRIMARY` continuation from a conditional `BRANCH`.
+- A conditional branch may reference a DB-managed `BranchTrigger`; administrators can extend
+  trigger values without a code change.
+- Video metadata fields and options are DB-managed and may be extended from the admin interface.
 - `RoadmapItem.lessonId` optionally targets a published lesson; assessment generation
   attaches matching lessons by skill key when available.
 - Public course catalog and admin content-management endpoints are available locally.
 
 Unmatched legacy roadmap items remain valid and continue to use their existing skill
 and video recommendation behavior.
+
 ## Open questions
 
 - How do expert assessment rules map to skill evaluations?

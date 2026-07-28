@@ -31,29 +31,108 @@ export class ContentController {
   }
   @Get('courses') courses() {
     return this.db.course.findMany({
-      include: { modules: { orderBy: { position: 'asc' }, include: { lessons: { orderBy: { position: 'asc' }, include: { video: true, outgoingRelations: true } } } } },
+      include: {
+        modules: {
+          orderBy: { position: 'asc' },
+          include: {
+            lessons: {
+              orderBy: { position: 'asc' },
+              include: { video: true, outgoingRelations: { include: { trigger: true } } },
+            },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
   @Post('courses/:courseId/publish') async publishCourse(@Param('courseId') courseId: string) {
-    const course = await this.db.course.update({ where: { id: courseId }, data: { published: true }, include: { modules: { include: { lessons: { select: { id: true, videoId: true } } } } } });
+    const course = await this.db.course.update({
+      where: { id: courseId },
+      data: { published: true },
+      include: { modules: { include: { lessons: { select: { id: true, videoId: true } } } } },
+    });
     const lessonIds = course.modules.flatMap((module) => module.lessons.map((lesson) => lesson.id));
-    const videoIds = course.modules.flatMap((module) => module.lessons.map((lesson) => lesson.videoId));
-    await this.db.lesson.updateMany({ where: { id: { in: lessonIds } }, data: { published: true } });
+    const videoIds = course.modules.flatMap((module) =>
+      module.lessons.map((lesson) => lesson.videoId),
+    );
+    await this.db.lesson.updateMany({
+      where: { id: { in: lessonIds } },
+      data: { published: true },
+    });
     await this.db.video.updateMany({ where: { id: { in: videoIds } }, data: { published: true } });
     return course;
   }
-  @Post('courses') createCourse(@Body() body: { key: string; title: string; description?: string; discipline: 'BJJ_GI' | 'NO_GI_GRAPPLING' }) {
+  @Post('courses') createCourse(
+    @Body()
+    body: {
+      key: string;
+      title: string;
+      description?: string;
+      discipline: 'BJJ_GI' | 'NO_GI_GRAPPLING';
+    },
+  ) {
     return this.db.course.create({ data: body });
   }
-  @Post('courses/:courseId/modules') createModule(@Param('courseId') courseId: string, @Body() body: { key: string; title: string; position: number }) {
+  @Post('courses/:courseId/modules') createModule(
+    @Param('courseId') courseId: string,
+    @Body() body: { key: string; title: string; position: number },
+  ) {
     return this.db.courseModule.create({ data: { ...body, courseId } });
   }
-  @Post('modules/:moduleId/lessons') createLesson(@Param('moduleId') moduleId: string, @Body() body: { videoId: string; key: string; title: string; goal?: string; startingPosition?: string; endingPosition?: string; level?: string; giNoGi?: string; reactions?: string[]; position: number; published?: boolean }) {
+  @Post('modules/:moduleId/lessons') createLesson(
+    @Param('moduleId') moduleId: string,
+    @Body()
+    body: {
+      videoId: string;
+      key: string;
+      title: string;
+      goal?: string;
+      startingPosition?: string;
+      endingPosition?: string;
+      level?: string;
+      giNoGi?: string;
+      reactions?: string[];
+      position: number;
+      published?: boolean;
+    },
+  ) {
     return this.db.lesson.create({ data: { ...body, moduleId, reactions: body.reactions ?? [] } });
   }
-  @Post('lessons/:lessonId/relations') createLessonRelation(@Param('lessonId') fromLessonId: string, @Body() body: { toLessonId: string; type: 'NEXT' | 'REACTION' | 'ALTERNATIVE'; condition?: string; position?: number }) {
-    return this.db.lessonRelation.create({ data: { ...body, fromLessonId, position: body.position ?? 0 } });
+  @Post('lessons/:lessonId/relations') createLessonRelation(
+    @Param('lessonId') fromLessonId: string,
+    @Body()
+    body: {
+      toLessonId: string;
+      type: 'PRIMARY' | 'BRANCH';
+      triggerId?: string;
+      condition?: string;
+      position?: number;
+    },
+  ) {
+    return this.db.lessonRelation.create({
+      data: { ...body, fromLessonId, position: body.position ?? 0 },
+    });
+  }
+  @Get('branch-triggers') branchTriggers() {
+    return this.db.branchTrigger.findMany({ orderBy: { name: 'asc' } });
+  }
+  @Post('branch-triggers') createBranchTrigger(@Body() body: { key: string; name: string }) {
+    return this.db.branchTrigger.create({ data: body });
+  }
+  @Get('metadata-fields') metadataFields() {
+    return this.db.metadataField.findMany({
+      include: { options: { orderBy: { name: 'asc' } } },
+      orderBy: { name: 'asc' },
+    });
+  }
+  @Post('metadata-fields') createMetadataField(@Body() body: { key: string; name: string }) {
+    return this.db.metadataField.create({ data: body, include: { options: true } });
+  }
+  @Post('metadata-fields/:fieldId/options') createMetadataOption(
+    @Param('fieldId') fieldId: string,
+    @Body() body: { key: string; name: string },
+  ) {
+    return this.db.metadataOption.create({ data: { ...body, fieldId } });
   }
   @Post('game-areas') createGameArea(
     @Body() body: { key: string; name: string; discipline: 'BJJ_GI' | 'NO_GI_GRAPPLING' },

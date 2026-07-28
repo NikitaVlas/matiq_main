@@ -33,7 +33,7 @@ export class AdminAuthGuard implements CanActivate {
       .getRequest<{ headers: Record<string, string | undefined>; adminUserId?: string }>();
     const token = cookieValue(
       request.headers.cookie,
-      process.env.SESSION_COOKIE_NAME ?? 'matiq_session',
+      process.env.ADMIN_SESSION_COOKIE_NAME ?? 'matiq_admin_session',
     );
     if (!token) throw new UnauthorizedException();
     const session = await this.db.session.findUnique({

@@ -21,7 +21,11 @@ export class AssessmentController {
   @Post('roadmap-items') add(@Req() req: AuthenticatedRequest, @Body() dto: RoadmapItemDto) {
     return this.assessment.addRoadmapItem(req.userId, dto.title, dto.skillKey, dto.lessonId);
   }
-  @Patch('roadmap-items/:id') update(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() body: { isHidden?: boolean; direction?: 'up' | 'down' }) {
+  @Patch('roadmap-items/:id') update(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() body: { isHidden?: boolean; direction?: 'up' | 'down' },
+  ) {
     return this.assessment.updateRoadmapItem(req.userId, id, body);
   }
 }

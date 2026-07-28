@@ -33,7 +33,7 @@ The seed is idempotent and creates draft content only:
 
 - `Top Game — Takedown to Submission`;
 - one module and three atomic lessons;
-- `NEXT` and `REACTION` lesson branches;
+- primary lesson continuations and conditional branches with DB-managed triggers;
 - local draft video assets without external storage.
 
 ## Verify

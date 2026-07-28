@@ -114,26 +114,50 @@ export class AssessmentService {
     });
     const profile = await this.db.athleteProfile.findUnique({
       where: { userId },
-      include: { roadmapItems: { orderBy: { position: 'asc' }, include: { lesson: { include: { video: true, outgoingRelations: { include: { toLesson: true } } } } } } },
+      include: {
+        roadmapItems: {
+          orderBy: { position: 'asc' },
+          include: {
+            lesson: {
+              include: { video: true, outgoingRelations: { include: { toLesson: true } } },
+            },
+          },
+        },
+      },
     });
     return {
       completed: Boolean(assessment?.completedAt),
       scores: assessment?.scores ?? [],
-      roadmap: await Promise.all((profile?.roadmapItems.filter((item) => !item.isHidden) ?? []).map(async (item) => ({ ...item, videos: await this.recommendedVideos(item.skillKey) }))),
+      roadmap: await Promise.all(
+        (profile?.roadmapItems.filter((item) => !item.isHidden) ?? []).map(async (item) => ({
+          ...item,
+          videos: await this.recommendedVideos(item.skillKey),
+        })),
+      ),
       hiddenRoadmap: profile?.roadmapItems.filter((item) => item.isHidden) ?? [],
     };
   }
 
   private async recommendedVideos(skillKey?: string | null) {
     if (!skillKey) return [];
-    return this.db.video.findMany({ where: { published: true, OR: [{ position: { key: skillKey } }, { technique: { key: skillKey } }] }, select: { id: true, title: true }, take: 3 });
+    return this.db.video.findMany({
+      where: {
+        published: true,
+        OR: [{ position: { key: skillKey } }, { technique: { key: skillKey } }],
+      },
+      select: { id: true, title: true },
+      take: 3,
+    });
   }
 
   async addRoadmapItem(userId: string, title: string, skillKey?: string, lessonId?: string) {
     const profile = await this.db.athleteProfile.findUnique({ where: { userId } });
     if (!profile) throw new NotFoundException('ATHLETE_PROFILE_REQUIRED');
     if (lessonId) {
-      const lesson = await this.db.lesson.findFirst({ where: { id: lessonId, published: true }, select: { id: true } });
+      const lesson = await this.db.lesson.findFirst({
+        where: { id: lessonId, published: true },
+        select: { id: true },
+      });
       if (!lesson) throw new BadRequestException('LESSON_NOT_AVAILABLE');
     }
     const last = await this.db.roadmapItem.findFirst({
@@ -153,13 +177,30 @@ export class AssessmentService {
     });
   }
 
-  async updateRoadmapItem(userId: string, itemId: string, change: { isHidden?: boolean; direction?: 'up' | 'down' }) {
+  async updateRoadmapItem(
+    userId: string,
+    itemId: string,
+    change: { isHidden?: boolean; direction?: 'up' | 'down' },
+  ) {
     const profile = await this.db.athleteProfile.findUniqueOrThrow({ where: { userId } });
-    const item = await this.db.roadmapItem.findFirst({ where: { id: itemId, athleteProfileId: profile.id } });
+    const item = await this.db.roadmapItem.findFirst({
+      where: { id: itemId, athleteProfileId: profile.id },
+    });
     if (!item) throw new NotFoundException('ROADMAP_ITEM_NOT_FOUND');
-    if (typeof change.isHidden === 'boolean') return this.db.roadmapItem.update({ where: { id: item.id }, data: { isHidden: change.isHidden } });
+    if (typeof change.isHidden === 'boolean')
+      return this.db.roadmapItem.update({
+        where: { id: item.id },
+        data: { isHidden: change.isHidden },
+      });
     if (!change.direction) return item;
-    const neighbor = await this.db.roadmapItem.findFirst({ where: { athleteProfileId: profile.id, isHidden: false, position: change.direction === 'up' ? { lt: item.position } : { gt: item.position } }, orderBy: { position: change.direction === 'up' ? 'desc' : 'asc' } });
+    const neighbor = await this.db.roadmapItem.findFirst({
+      where: {
+        athleteProfileId: profile.id,
+        isHidden: false,
+        position: change.direction === 'up' ? { lt: item.position } : { gt: item.position },
+      },
+      orderBy: { position: change.direction === 'up' ? 'desc' : 'asc' },
+    });
     if (!neighbor) return item;
     await this.db.$transaction([
       this.db.roadmapItem.update({ where: { id: item.id }, data: { position: neighbor.position } }),
@@ -178,23 +219,25 @@ export class AssessmentService {
       'bottom-escape': 'Escapes von unten',
     };
     const ranked = [...scores.entries()].sort((a, b) => a[1] - b[1]);
-    const items = await Promise.all(ranked.map(async ([skillKey], index) => {
-      const lesson = await this.db.lesson.findFirst({
-        where: {
-          published: true,
-          video: { OR: [{ position: { key: skillKey } }, { technique: { key: skillKey } }] },
-        },
-        select: { id: true },
-      });
-      return {
-        athleteProfileId: profileId,
-        type: 'SKILL_GROUP' as const,
-        title: labels[skillKey] ?? skillKey,
-        skillKey,
-        lessonId: lesson?.id,
-        position: index,
-      };
-    }));
+    const items = await Promise.all(
+      ranked.map(async ([skillKey], index) => {
+        const lesson = await this.db.lesson.findFirst({
+          where: {
+            published: true,
+            video: { OR: [{ position: { key: skillKey } }, { technique: { key: skillKey } }] },
+          },
+          select: { id: true },
+        });
+        return {
+          athleteProfileId: profileId,
+          type: 'SKILL_GROUP' as const,
+          title: labels[skillKey] ?? skillKey,
+          skillKey,
+          lessonId: lesson?.id,
+          position: index,
+        };
+      }),
+    );
     if (items.length) await this.db.roadmapItem.createMany({ data: items });
   }
 }

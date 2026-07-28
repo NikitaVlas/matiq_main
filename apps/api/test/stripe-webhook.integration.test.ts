@@ -78,9 +78,7 @@ describe('Stripe webhook', () => {
     await expect(
       db.subscription.findUnique({ where: { providerSubscriptionId } }),
     ).resolves.toBeTruthy();
-    expect(await db.paymentWebhookEvent.count({ where: { providerEventId: eventId } })).toBe(
-      1,
-    );
+    expect(await db.paymentWebhookEvent.count({ where: { providerEventId: eventId } })).toBe(1);
   });
 
   it('rejects an invalid signature', async () => {

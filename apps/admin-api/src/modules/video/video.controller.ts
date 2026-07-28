@@ -71,6 +71,26 @@ export class VideoController {
     return { url: await this.videos.playback(video.storageKey), expiresIn: 300 };
   }
   @AdminRoles('ADMIN')
+  @Post(':id/metadata')
+  async setMetadata(
+    @Param('id') id: string,
+    @Body() body: { optionIds: string[] },
+    @Req() request: { adminUserId: string },
+  ) {
+    const optionIds = [...new Set(body.optionIds ?? [])];
+    await this.db.$transaction([
+      this.db.videoMetadataOption.deleteMany({ where: { videoId: id } }),
+      this.db.videoMetadataOption.createMany({
+        data: optionIds.map((optionId) => ({ videoId: id, optionId })),
+      }),
+    ]);
+    await this.audit('VIDEO_METADATA_UPDATED', id, request.adminUserId, { optionIds });
+    return this.db.video.findUniqueOrThrow({
+      where: { id },
+      include: { metadataValues: { include: { option: { include: { field: true } } } } },
+    });
+  }
+  @AdminRoles('ADMIN')
   @Patch(':id')
   async update(
     @Param('id') id: string,

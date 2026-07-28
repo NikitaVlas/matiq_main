@@ -1,7 +1,8 @@
 import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ContentService } from '../application/content.service';
-import { AuthGuard, AuthenticatedRequest } from '../../identity/infrastructure/auth.guard';
+import { AuthenticatedRequest } from '../../identity/infrastructure/auth.guard';
+import { ContentSessionGuard } from '../../identity/infrastructure/admin-session.guard';
 
 @ApiTags('content')
 @Controller('content')
@@ -15,23 +16,28 @@ export class ContentController {
     return this.content.catalog();
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(ContentSessionGuard)
   @Get('videos/:id/playback')
   playback(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.content.playback(req.userId, id);
+    return this.content.playback(req.userId, req.userRole, id);
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(ContentSessionGuard)
   @Post('videos/:id/watch')
   watch(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() body: { watchedSeconds: number; completed?: boolean },
   ) {
-    return this.content.recordWatch(req.userId, id, body.watchedSeconds, Boolean(body.completed));
+    return this.content.recordWatch(
+      req.userId,
+      req.userRole,
+      id,
+      body.watchedSeconds,
+    );
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(ContentSessionGuard)
   @Get('history')
   history(@Req() req: AuthenticatedRequest) {
     return this.content.history(req.userId);

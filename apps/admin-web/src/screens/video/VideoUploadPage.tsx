@@ -3,19 +3,41 @@
 import { useEffect, useState } from 'react';
 import { adminApi } from '../../shared/api/client';
 
-type Video = { id: string; title: string; published: boolean };
+type MetadataOption = { id: string; key: string; name: string };
+type MetadataField = { id: string; key: string; name: string; options: MetadataOption[] };
+type Video = {
+  id: string;
+  title: string;
+  published: boolean;
+  metadataValues: { option: MetadataOption & { field: { id: string; name: string } } }[];
+};
 
 const hasLatinFilename = (name: string) => /^[\x20-\x7E]+$/.test(name);
+const slug = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 
 export default function VideoUploadPage() {
   const [file, setFile] = useState<File>();
   const [result, setResult] = useState('');
   const [uploading, setUploading] = useState(false);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [fields, setFields] = useState<MetadataField[]>([]);
+  const [editingVideoId, setEditingVideoId] = useState('');
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [newOptions, setNewOptions] = useState<Record<string, string>>({});
+  const [newFieldName, setNewFieldName] = useState('');
 
   const load = async () => {
-    const response = await adminApi('/admin/videos');
-    if (response.ok) setVideos(await response.json());
+    const [videosResponse, fieldsResponse] = await Promise.all([
+      adminApi('/admin/videos'),
+      adminApi('/admin/content/metadata-fields'),
+    ]);
+    if (videosResponse.ok) setVideos(await videosResponse.json());
+    if (fieldsResponse.ok) setFields(await fieldsResponse.json());
   };
 
   useEffect(() => {
@@ -41,9 +63,7 @@ export default function VideoUploadPage() {
         const video = await response.json();
         setResult(`Video created: ${video.id}`);
         await load();
-      } else {
-        setResult(`Upload failed (${response.status})`);
-      }
+      } else setResult(`Upload failed (${response.status})`);
     } catch {
       setResult('Upload request failed');
     } finally {
@@ -56,13 +76,71 @@ export default function VideoUploadPage() {
     if (response.ok) await load();
   };
 
+  const beginMetadataEdit = (video: Video) => {
+    setEditingVideoId(video.id);
+    setSelectedOptions(
+      Object.fromEntries(
+        video.metadataValues.map((value) => [value.option.field.id, value.option.id]),
+      ),
+    );
+  };
+
+  const addOption = async (field: MetadataField) => {
+    const name = newOptions[field.id]?.trim();
+    if (!name) return;
+    const response = await adminApi(`/admin/content/metadata-fields/${field.id}/options`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ key: slug(name) || `option-${Date.now()}`, name }),
+    });
+    if (!response.ok) {
+      setResult(`Metadata option creation failed (${response.status})`);
+      return;
+    }
+    const option = (await response.json()) as MetadataOption;
+    setNewOptions((current) => ({ ...current, [field.id]: '' }));
+    await load();
+    setSelectedOptions((current) => ({ ...current, [field.id]: option.id }));
+  };
+
+  const addField = async () => {
+    const name = newFieldName.trim();
+    if (!name) return;
+    const response = await adminApi('/admin/content/metadata-fields', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ key: slug(name) || `field-${Date.now()}`, name }),
+    });
+    if (!response.ok) {
+      setResult(`Metadata field creation failed (${response.status})`);
+      return;
+    }
+    setNewFieldName('');
+    await load();
+  };
+
+  const saveMetadata = async () => {
+    const response = await adminApi(`/admin/videos/${editingVideoId}/metadata`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ optionIds: Object.values(selectedOptions).filter(Boolean) }),
+    });
+    if (!response.ok) {
+      setResult(`Metadata save failed (${response.status})`);
+      return;
+    }
+    setEditingVideoId('');
+    setResult('Metadata saved.');
+    await load();
+  };
+
   return (
-    <main style={{ maxWidth: 720, margin: '40px auto', padding: 24 }}>
+    <main style={{ maxWidth: 860, margin: '40px auto', padding: 24 }}>
       <nav>
-        <a href="/">Courses</a> · <a href="/videos">Upload video</a>
+        <a href="/">Courses</a> - <a href="/videos">Upload video</a>
       </nav>
       <h1>Upload local video</h1>
-      <p>Use a Latin filename. Upload to local MinIO, then assign the video ID to a lesson.</p>
+      <p>Use a Latin filename. Metadata fields and values can be expanded at any time.</p>
       <form onSubmit={upload}>
         <input
           type="file"
@@ -75,26 +153,86 @@ export default function VideoUploadPage() {
         </button>
       </form>
       {result && <p role="status">{result}</p>}
+
+      <section>
+        <h2>Metadata fields</h2>
+        <input
+          placeholder="New metadata field"
+          value={newFieldName}
+          onChange={(event) => setNewFieldName(event.target.value)}
+        />
+        <button type="button" disabled={!newFieldName.trim()} onClick={() => void addField()}>
+          Add field
+        </button>
+      </section>
+
       <h2>Videos</h2>
       <ul>
         {videos.map((video) => (
-          <li key={video.id}>
+          <li key={video.id} style={{ marginBottom: 20 }}>
             <code>{video.id}</code>{' '}
             <button type="button" onClick={() => void navigator.clipboard.writeText(video.id)}>
               Copy ID
             </button>{' '}
-            — {video.title} (
-            {video.published ? (
-              'published'
-            ) : (
-              <>
-                <span>draft</span>{' '}
-                <button type="button" onClick={() => void publish(video.id)}>
-                  Publish
+            - {video.title} ({video.published ? 'published' : 'draft'}){' '}
+            {!video.published && (
+              <button type="button" onClick={() => void publish(video.id)}>
+                Publish
+              </button>
+            )}{' '}
+            <button type="button" onClick={() => beginMetadataEdit(video)}>
+              Edit metadata
+            </button>
+            {editingVideoId === video.id && (
+              <section style={{ border: '1px solid #ddd', padding: 16, marginTop: 12 }}>
+                {fields.map((field) => (
+                  <div key={field.id} style={{ marginBottom: 16 }}>
+                    <label>
+                      {field.name}
+                      <select
+                        value={selectedOptions[field.id] ?? ''}
+                        onChange={(event) =>
+                          setSelectedOptions((current) => ({
+                            ...current,
+                            [field.id]: event.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Not selected</option>
+                        {field.options.map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <input
+                      placeholder={`Add value to ${field.name}`}
+                      value={newOptions[field.id] ?? ''}
+                      onChange={(event) =>
+                        setNewOptions((current) => ({
+                          ...current,
+                          [field.id]: event.target.value,
+                        }))
+                      }
+                    />
+                    <button
+                      type="button"
+                      disabled={!newOptions[field.id]?.trim()}
+                      onClick={() => void addOption(field)}
+                    >
+                      Add new option
+                    </button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => void saveMetadata()}>
+                  Save metadata
+                </button>{' '}
+                <button type="button" onClick={() => setEditingVideoId('')}>
+                  Cancel
                 </button>
-              </>
+              </section>
             )}
-            )
           </li>
         ))}
       </ul>

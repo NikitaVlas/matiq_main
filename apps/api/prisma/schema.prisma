@@ -46,9 +46,8 @@ enum RoadmapItemType {
 }
 
 enum LessonRelationType {
-  NEXT
-  REACTION
-  ALTERNATIVE
+  PRIMARY
+  BRANCH
 }
 
 enum SubscriptionStatus {
@@ -310,7 +309,37 @@ model Video {
   updatedAt       DateTime          @updatedAt
   watchEvents     VideoWatch[]
   revisions       VideoRevision[]
+  metadataValues  VideoMetadataOption[]
   Lesson          Lesson?
+}
+
+model MetadataField {
+  id        String           @id @default(cuid())
+  key       String           @unique
+  name      String
+  createdAt DateTime         @default(now())
+  options   MetadataOption[]
+}
+
+model MetadataOption {
+  id        String                @id @default(cuid())
+  fieldId   String
+  key       String
+  name      String
+  createdAt DateTime              @default(now())
+  field     MetadataField         @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  videos    VideoMetadataOption[]
+
+  @@unique([fieldId, key])
+}
+
+model VideoMetadataOption {
+  videoId  String
+  optionId String
+  video    Video          @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  option   MetadataOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, optionId])
 }
 
 model Course {
@@ -367,13 +396,23 @@ model LessonRelation {
   fromLessonId String
   toLessonId   String
   type         LessonRelationType
+  triggerId    String?
   condition    String?
   position     Int                @default(0)
   fromLesson   Lesson             @relation("LessonRelationFrom", fields: [fromLessonId], references: [id], onDelete: Cascade)
   toLesson     Lesson             @relation("LessonRelationTo", fields: [toLessonId], references: [id], onDelete: Cascade)
+  trigger      BranchTrigger?     @relation(fields: [triggerId], references: [id], onDelete: SetNull)
 
-  @@unique([fromLessonId, toLessonId, type])
+  @@unique([fromLessonId, toLessonId, type, triggerId])
   @@index([fromLessonId, type, position])
+}
+
+model BranchTrigger {
+  id        String           @id @default(cuid())
+  key       String           @unique
+  name      String
+  createdAt DateTime         @default(now())
+  relations LessonRelation[]
 }
 
 model VideoRevision {

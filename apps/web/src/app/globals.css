@@ -119,3 +119,46 @@ legend {
   font-size: 12px;
   text-transform: uppercase;
 }
+
+.course-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.course-card h2,
+.course-module h2 {
+  margin-bottom: 12px;
+}
+
+.course-module {
+  margin-top: 24px;
+}
+
+.action-link {
+  display: inline-block;
+  padding: 12px 16px;
+  background: #111418;
+  color: white;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.lesson-list {
+  display: grid;
+  gap: 12px;
+  padding-left: 0;
+  list-style: none;
+}
+
+.lesson-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 0;
+  border-top: 1px solid #d8d5ce;
+}
+
+.lesson-list p {
+  margin: 6px 0;
+}

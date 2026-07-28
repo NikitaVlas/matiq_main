@@ -4,11 +4,12 @@ import { AuthGuard } from './infrastructure/auth.guard';
 import { AuthService } from './application/auth.service';
 import { EmailService } from './infrastructure/email.service';
 import { SharedInfrastructureModule } from '../../shared/infrastructure';
+import { AdminSessionGuard, ContentSessionGuard } from './infrastructure/admin-session.guard';
 @Global()
 @Module({
   imports: [SharedInfrastructureModule],
   controllers: [AuthController],
-  providers: [AuthService, AuthGuard, EmailService],
-  exports: [AuthService, AuthGuard],
+  providers: [AuthService, AuthGuard, AdminSessionGuard, ContentSessionGuard, EmailService],
+  exports: [AuthService, AuthGuard, AdminSessionGuard, ContentSessionGuard],
 })
 export class IdentityModule {}

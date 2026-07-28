@@ -46,7 +46,7 @@ export default function AdminHome() {
     const mfaCode = String(data.get('mfaCode') ?? '').trim();
 
     try {
-      const login = await request(`${userApiUrl}/auth/login`, {
+      const login = await request(`${userApiUrl}/auth/admin-login`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'content-type': 'application/json' },
@@ -63,7 +63,7 @@ export default function AdminHome() {
 
       const loginResult = (await login.json()) as { mfaSetupRequired: boolean };
       if (loginResult.mfaSetupRequired) {
-        const setup = await request(`${userApiUrl}/auth/mfa/setup`, {
+        const setup = await request(`${userApiUrl}/auth/admin-mfa/setup`, {
           method: 'POST',
           credentials: 'include',
         });
@@ -112,7 +112,7 @@ export default function AdminHome() {
     setIsSubmitting(true);
 
     try {
-      const response = await request(`${userApiUrl}/auth/mfa/confirm`, {
+      const response = await request(`${userApiUrl}/auth/admin-mfa/confirm`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'content-type': 'application/json' },
