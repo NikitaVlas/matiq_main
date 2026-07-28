@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsInt, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class AssessmentAnswerDto {
   @ApiProperty()
@@ -31,4 +31,9 @@ export class RoadmapItemDto {
   @Min(0)
   @Max(100)
   position?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  lessonId?: string;
 }

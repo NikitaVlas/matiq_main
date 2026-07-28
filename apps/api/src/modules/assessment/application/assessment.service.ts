@@ -129,7 +129,7 @@ export class AssessmentService {
     return this.db.video.findMany({ where: { published: true, OR: [{ position: { key: skillKey } }, { technique: { key: skillKey } }] }, select: { id: true, title: true }, take: 3 });
   }
 
-  async addRoadmapItem(userId: string, title: string, skillKey?: string) {
+  async addRoadmapItem(userId: string, title: string, skillKey?: string, lessonId?: string) {
     const profile = await this.db.athleteProfile.findUnique({ where: { userId } });
     if (!profile) throw new NotFoundException('ATHLETE_PROFILE_REQUIRED');
     const last = await this.db.roadmapItem.findFirst({
