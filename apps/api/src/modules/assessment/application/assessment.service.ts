@@ -172,15 +172,24 @@ export class AssessmentService {
       'top-control': 'Kontrolle von oben',
       'bottom-escape': 'Escapes von unten',
     };
-    const items = [...scores.entries()]
-      .sort((a, b) => a[1] - b[1])
-      .map(([skillKey], index) => ({
+    const ranked = [...scores.entries()].sort((a, b) => a[1] - b[1]);
+    const items = await Promise.all(ranked.map(async ([skillKey], index) => {
+      const lesson = await this.db.lesson.findFirst({
+        where: {
+          published: true,
+          video: { OR: [{ position: { key: skillKey } }, { technique: { key: skillKey } }] },
+        },
+        select: { id: true },
+      });
+      return {
         athleteProfileId: profileId,
         type: 'SKILL_GROUP' as const,
         title: labels[skillKey] ?? skillKey,
         skillKey,
+        lessonId: lesson?.id,
         position: index,
-      }));
+      };
+    }));
     if (items.length) await this.db.roadmapItem.createMany({ data: items });
   }
 }
