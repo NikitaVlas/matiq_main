@@ -5,17 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7d5690e5-729f-4f1e-9004-24b2e48bed4f" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/prisma/schema.prisma" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/bootstrap.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/bootstrap.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/main.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/main.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/subscription/application/subscription.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/modules/subscription/application/subscription.service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/subscription/controllers/subscription.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/modules/subscription/controllers/subscription.controller.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/subscription/subscription.module.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/modules/subscription/subscription.module.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/src/screens/subscription/SubscriptionPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/screens/subscription/SubscriptionPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pnpm-lock.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pnpm-lock.yaml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,7 +60,8 @@
       <workItem from="1784466995011" duration="2848000" />
       <workItem from="1784531285483" duration="649000" />
       <workItem from="1784634464758" duration="1986000" />
-      <workItem from="1784792172474" duration="1706000" />
+      <workItem from="1784792172474" duration="5971000" />
+      <workItem from="1784895313441" duration="242000" />
     </task>
     <servers />
   </component>
