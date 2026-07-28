@@ -114,7 +114,7 @@ export class AssessmentService {
     });
     const profile = await this.db.athleteProfile.findUnique({
       where: { userId },
-      include: { roadmapItems: { orderBy: { position: 'asc' } } },
+      include: { roadmapItems: { orderBy: { position: 'asc' }, include: { lesson: { include: { video: true, outgoingRelations: { include: { toLesson: true } } } } } } },
     });
     return {
       completed: Boolean(assessment?.completedAt),

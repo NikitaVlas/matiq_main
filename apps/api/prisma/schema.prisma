@@ -194,7 +194,10 @@ model RoadmapItem {
   position         Int
   isAddedByUser    Boolean            @default(false)
   isHidden         Boolean            @default(false)
+  lessonId         String?
   athleteProfile   AthleteProfile     @relation(fields: [athleteProfileId], references: [id], onDelete: Cascade)
+
+  lesson Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
 
   @@index([athleteProfileId, position])
 }
@@ -353,6 +356,7 @@ model Lesson {
   video             Video            @relation(fields: [videoId], references: [id], onDelete: Cascade)
   outgoingRelations LessonRelation[] @relation("LessonRelationFrom")
   incomingRelations LessonRelation[] @relation("LessonRelationTo")
+  RoadmapItem       RoadmapItem[]
 
   @@unique([moduleId, key])
   @@index([moduleId, position])
