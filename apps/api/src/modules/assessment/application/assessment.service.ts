@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { AssessmentContext, Prisma } from '@prisma/client';
 import { Database } from '../../../shared/infrastructure/database';
 import { SubscriptionService } from '../../subscription/application/subscription.service';
@@ -132,6 +132,10 @@ export class AssessmentService {
   async addRoadmapItem(userId: string, title: string, skillKey?: string, lessonId?: string) {
     const profile = await this.db.athleteProfile.findUnique({ where: { userId } });
     if (!profile) throw new NotFoundException('ATHLETE_PROFILE_REQUIRED');
+    if (lessonId) {
+      const lesson = await this.db.lesson.findFirst({ where: { id: lessonId, published: true }, select: { id: true } });
+      if (!lesson) throw new BadRequestException('LESSON_NOT_AVAILABLE');
+    }
     const last = await this.db.roadmapItem.findFirst({
       where: { athleteProfileId: profile.id },
       orderBy: { position: 'desc' },
@@ -141,6 +145,7 @@ export class AssessmentService {
         athleteProfileId: profile.id,
         title,
         skillKey,
+        lessonId,
         type: 'TECHNIQUE',
         position: (last?.position ?? -1) + 1,
         isAddedByUser: true,
