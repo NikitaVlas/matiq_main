@@ -3,6 +3,21 @@
 import { useEffect, useState } from 'react';
 const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
 
+type Recommendation = {
+  source: 'ROADMAP' | 'LESSON_PATH' | 'METADATA';
+  lessonId: string;
+  videoId: string;
+  title: string;
+  reason: string;
+};
+
+type Recommendations = {
+  primarySource: Recommendation['source'] | null;
+  roadmap: Recommendation | null;
+  lessonPath: Recommendation | null;
+  metadataFallback: Recommendation | null;
+};
+
 export default function VideoDetail({ id }: { id: string }) {
   const [data, setData] = useState<{
     video: { title: string; description?: string; durationSec?: number };
@@ -11,6 +26,7 @@ export default function VideoDetail({ id }: { id: string }) {
   }>();
   const [error, setError] = useState('');
   const [locked, setLocked] = useState(false);
+  const [recommendations, setRecommendations] = useState<Recommendations>();
   useEffect(() => {
     fetch(`${api}/content/videos/${id}/playback`, { credentials: 'include' })
       .then(async (response) => {
@@ -20,6 +36,12 @@ export default function VideoDetail({ id }: { id: string }) {
         }
         if (!response.ok) throw new Error();
         setData(await response.json());
+        fetch(`${api}/content/videos/${id}/recommendations`, { credentials: 'include' })
+          .then((recommendationResponse) =>
+            recommendationResponse.ok ? recommendationResponse.json() : undefined,
+          )
+          .then(setRecommendations)
+          .catch(() => undefined);
       })
       .catch(() => setError('Dieses Video ist nicht verfügbar oder deine Sitzung ist abgelaufen.'));
   }, [id]);
@@ -52,7 +74,15 @@ export default function VideoDetail({ id }: { id: string }) {
       </main>
     );
   function saveProgress(element: HTMLVideoElement) {
-    fetch(`${api}/content/videos/${id}/watch`, { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ watchedSeconds: Math.floor(element.currentTime), completed: element.ended }) });
+    fetch(`${api}/content/videos/${id}/watch`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        watchedSeconds: Math.floor(element.currentTime),
+        completed: element.ended,
+      }),
+    });
   }
   return (
     <main>
@@ -63,7 +93,9 @@ export default function VideoDetail({ id }: { id: string }) {
           controls
           controlsList="nodownload"
           src={data.playbackUrl}
-          onLoadedMetadata={(event) => { event.currentTarget.currentTime = data.watchedSeconds; }}
+          onLoadedMetadata={(event) => {
+            event.currentTarget.currentTime = data.watchedSeconds;
+          }}
           onTimeUpdate={(event) => {
             const element = event.currentTarget;
             if (Math.floor(element.currentTime) % 15 === 0)
@@ -87,7 +119,59 @@ export default function VideoDetail({ id }: { id: string }) {
           <summary>Informationen zum Video</summary>
           <p>{data.video.description ?? 'Keine zusätzliche Beschreibung.'}</p>
         </details>
+        {recommendations?.roadmap ? (
+          <RecommendationBlock
+            recommendation={recommendations.roadmap}
+            title="Als Nächstes in deiner Roadmap"
+            primary={recommendations.primarySource === 'ROADMAP'}
+            roadmap
+          />
+        ) : null}
+        {recommendations?.lessonPath ? (
+          <RecommendationBlock
+            recommendation={recommendations.lessonPath}
+            title="Diese Technikfolge fortsetzen"
+            primary={recommendations.primarySource === 'LESSON_PATH'}
+          />
+        ) : null}
+        {recommendations?.metadataFallback ? (
+          <RecommendationBlock
+            recommendation={recommendations.metadataFallback}
+            title="Thematisch passend"
+            primary={recommendations.primarySource === 'METADATA'}
+          />
+        ) : null}
       </section>
     </main>
+  );
+}
+
+function RecommendationBlock({
+  recommendation,
+  title,
+  primary,
+  roadmap = false,
+}: {
+  recommendation: Recommendation;
+  title: string;
+  primary: boolean;
+  roadmap?: boolean;
+}) {
+  return (
+    <section
+      aria-label={title}
+      style={{ marginTop: '2rem', borderTop: '1px solid #ccc', paddingTop: '1.25rem' }}
+    >
+      <p className="eyebrow">{primary ? 'Hauptempfehlung' : 'Weitere Empfehlung'}</p>
+      <h2>{title}</h2>
+      <h3>{recommendation.title}</h3>
+      <p>{recommendation.reason}</p>
+      <a href={`/video/${recommendation.videoId}`}>Video ansehen</a>
+      {roadmap ? (
+        <p>
+          <a href="/roadmap">Zur Roadmap</a>
+        </p>
+      ) : null}
+    </section>
   );
 }

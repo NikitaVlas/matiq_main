@@ -23,18 +23,19 @@ export class ContentController {
   }
 
   @UseGuards(ContentSessionGuard)
+  @Get('videos/:id/recommendations')
+  recommendations(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.content.recommendations(req.userId, req.userRole, id);
+  }
+
+  @UseGuards(ContentSessionGuard)
   @Post('videos/:id/watch')
   watch(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() body: { watchedSeconds: number; completed?: boolean },
   ) {
-    return this.content.recordWatch(
-      req.userId,
-      req.userRole,
-      id,
-      body.watchedSeconds,
-    );
+    return this.content.recordWatch(req.userId, req.userRole, id, body.watchedSeconds);
   }
 
   @UseGuards(ContentSessionGuard)

@@ -10,9 +10,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "authentication"
-        ]
+        "tags": ["authentication"]
       }
     },
     "/auth/verify-email": {
@@ -24,9 +22,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "authentication"
-        ]
+        "tags": ["authentication"]
       }
     },
     "/auth/resend-verification": {
@@ -38,9 +34,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "authentication"
-        ]
+        "tags": ["authentication"]
       }
     },
     "/auth/login": {
@@ -52,9 +46,19 @@
             "description": ""
           }
         },
-        "tags": [
-          "authentication"
-        ]
+        "tags": ["authentication"]
+      }
+    },
+    "/auth/admin-login": {
+      "post": {
+        "operationId": "AuthController_adminLogin",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["authentication"]
       }
     },
     "/auth/forgot-password": {
@@ -66,9 +70,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "authentication"
-        ]
+        "tags": ["authentication"]
       }
     },
     "/auth/reset-password": {
@@ -80,9 +82,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "authentication"
-        ]
+        "tags": ["authentication"]
       }
     },
     "/auth/logout": {
@@ -94,9 +94,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "authentication"
-        ]
+        "tags": ["authentication"]
       }
     },
     "/auth/logout-all": {
@@ -108,9 +106,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "authentication"
-        ]
+        "tags": ["authentication"]
       }
     },
     "/auth/me": {
@@ -122,133 +118,127 @@
             "description": ""
           }
         },
-        "tags": [
-          "authentication"
-        ]
+        "tags": ["authentication"]
       }
     },
-    "/athlete-profile": {
+    "/auth/sessions": {
       "get": {
-        "operationId": "ProfileController_get",
+        "operationId": "AuthController_sessions",
         "parameters": [],
         "responses": {
           "200": {
             "description": ""
           }
         },
-        "tags": [
-          "athlete-profile"
-        ]
-      },
-      "put": {
-        "operationId": "ProfileController_save",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "athlete-profile"
-        ]
+        "tags": ["authentication"]
       }
     },
-    "/assessment/questions": {
-      "get": {
-        "operationId": "AssessmentController_questions",
+    "/auth/sessions/{id}": {
+      "delete": {
+        "operationId": "AuthController_revokeSession",
         "parameters": [],
         "responses": {
           "200": {
             "description": ""
           }
         },
-        "tags": [
-          "assessment"
-        ]
+        "tags": ["authentication"]
       }
     },
-    "/assessment/result": {
-      "get": {
-        "operationId": "AssessmentController_result",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "assessment"
-        ]
-      }
-    },
-    "/assessment/submit": {
+    "/auth/reauthenticate": {
       "post": {
-        "operationId": "AssessmentController_submit",
+        "operationId": "AuthController_reauthenticate",
         "parameters": [],
         "responses": {
           "201": {
             "description": ""
           }
         },
-        "tags": [
-          "assessment"
-        ]
+        "tags": ["authentication"]
       }
     },
-    "/assessment/roadmap-items": {
+    "/auth/change-password": {
       "post": {
-        "operationId": "AssessmentController_add",
+        "operationId": "AuthController_changePassword",
         "parameters": [],
         "responses": {
           "201": {
             "description": ""
           }
         },
-        "tags": [
-          "assessment"
-        ]
+        "tags": ["authentication"]
       }
     },
-    "/content/catalog": {
+    "/auth/account/export": {
       "get": {
-        "operationId": "ContentController_catalog",
+        "operationId": "AuthController_exportAccount",
         "parameters": [],
         "responses": {
           "200": {
             "description": ""
           }
         },
-        "tags": [
-          "content"
-        ]
+        "tags": ["authentication"]
       }
     },
-    "/content/videos/{id}/playback": {
-      "get": {
-        "operationId": "ContentController_playback",
+    "/auth/account": {
+      "delete": {
+        "operationId": "AuthController_deleteAccount",
         "parameters": [],
         "responses": {
           "200": {
             "description": ""
           }
         },
-        "tags": [
-          "content"
-        ]
+        "tags": ["authentication"]
       }
     },
-    "/content/videos/{id}/watch": {
+    "/auth/mfa/setup": {
       "post": {
-        "operationId": "ContentController_watch",
+        "operationId": "AuthController_beginMfaSetup",
         "parameters": [],
         "responses": {
           "201": {
             "description": ""
           }
         },
-        "tags": [
-          "content"
-        ]
+        "tags": ["authentication"]
+      }
+    },
+    "/auth/mfa/confirm": {
+      "post": {
+        "operationId": "AuthController_confirmMfaSetup",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["authentication"]
+      }
+    },
+    "/auth/admin-mfa/setup": {
+      "post": {
+        "operationId": "AuthController_beginAdminMfaSetup",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["authentication"]
+      }
+    },
+    "/auth/admin-mfa/confirm": {
+      "post": {
+        "operationId": "AuthController_confirmAdminMfaSetup",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["authentication"]
       }
     },
     "/subscription": {
@@ -260,9 +250,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "subscription"
-        ]
+        "tags": ["subscription"]
       }
     },
     "/subscription/activate-trial": {
@@ -274,23 +262,19 @@
             "description": ""
           }
         },
-        "tags": [
-          "subscription"
-        ]
+        "tags": ["subscription"]
       }
     },
-    "/subscription/activate": {
+    "/subscription/checkout": {
       "post": {
-        "operationId": "SubscriptionController_activate",
+        "operationId": "SubscriptionController_checkout",
         "parameters": [],
         "responses": {
           "201": {
             "description": ""
           }
         },
-        "tags": [
-          "subscription"
-        ]
+        "tags": ["subscription"]
       }
     },
     "/subscription/cancel": {
@@ -302,9 +286,209 @@
             "description": ""
           }
         },
-        "tags": [
-          "subscription"
-        ]
+        "tags": ["subscription"]
+      }
+    },
+    "/subscription/resume": {
+      "post": {
+        "operationId": "SubscriptionController_resume",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["subscription"]
+      }
+    },
+    "/subscription/billing-portal": {
+      "post": {
+        "operationId": "SubscriptionController_billingPortal",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["subscription"]
+      }
+    },
+    "/subscription/payment-update-portal": {
+      "post": {
+        "operationId": "SubscriptionController_paymentUpdatePortal",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["subscription"]
+      }
+    },
+    "/billing/stripe/webhook": {
+      "post": {
+        "operationId": "StripeWebhookController_webhook",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["StripeWebhook"]
+      }
+    },
+    "/athlete-profile": {
+      "get": {
+        "operationId": "ProfileController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["athlete-profile"]
+      },
+      "put": {
+        "operationId": "ProfileController_save",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["athlete-profile"]
+      }
+    },
+    "/assessment/questions": {
+      "get": {
+        "operationId": "AssessmentController_questions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["assessment"]
+      }
+    },
+    "/assessment/result": {
+      "get": {
+        "operationId": "AssessmentController_result",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["assessment"]
+      }
+    },
+    "/assessment/submit": {
+      "post": {
+        "operationId": "AssessmentController_submit",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["assessment"]
+      }
+    },
+    "/assessment/roadmap-items": {
+      "post": {
+        "operationId": "AssessmentController_add",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["assessment"]
+      }
+    },
+    "/assessment/roadmap-items/{id}": {
+      "patch": {
+        "operationId": "AssessmentController_update",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["assessment"]
+      }
+    },
+    "/content/courses": {
+      "get": {
+        "operationId": "ContentController_courses",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["content"]
+      }
+    },
+    "/content/catalog": {
+      "get": {
+        "operationId": "ContentController_catalog",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["content"]
+      }
+    },
+    "/content/videos/{id}/playback": {
+      "get": {
+        "operationId": "ContentController_playback",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["content"]
+      }
+    },
+    "/content/videos/{id}/recommendations": {
+      "get": {
+        "operationId": "ContentController_recommendations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["content"]
+      }
+    },
+    "/content/videos/{id}/watch": {
+      "post": {
+        "operationId": "ContentController_watch",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["content"]
+      }
+    },
+    "/content/history": {
+      "get": {
+        "operationId": "ContentController_history",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["content"]
       }
     }
   },

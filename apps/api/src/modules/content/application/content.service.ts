@@ -75,6 +75,133 @@ export class ContentService {
     };
   }
 
+  async recommendations(userId: string, role: UserRole | undefined, videoId: string) {
+    if (role !== UserRole.ADMIN && role !== UserRole.EDITOR)
+      await this.subscriptions.requireAccess(userId);
+
+    const currentLesson = await this.db.lesson.findUnique({
+      where: { videoId },
+      include: {
+        outgoingRelations: {
+          orderBy: { position: 'asc' },
+          include: { trigger: true, toLesson: { include: { video: true } } },
+        },
+      },
+    });
+    const completed = await this.db.videoWatch.findMany({
+      where: { userId, completed: true },
+      select: { videoId: true },
+    });
+    const excludedVideoIds = new Set([videoId, ...completed.map((watch) => watch.videoId)]);
+
+    const profile = await this.db.athleteProfile.findUnique({
+      where: { userId },
+      include: {
+        roadmapItems: {
+          where: { isHidden: false },
+          orderBy: { position: 'asc' },
+          include: { lesson: { include: { video: true } } },
+        },
+      },
+    });
+
+    let roadmap = null as Recommendation | null;
+    for (const item of profile?.roadmapItems ?? []) {
+      const direct = item.lesson;
+      if (direct?.published && direct.video.published && !excludedVideoIds.has(direct.videoId)) {
+        roadmap = recommendation('ROADMAP', direct, `Roadmap: ${item.title}`);
+        break;
+      }
+      if (!item.skillKey) continue;
+      const video = await this.db.video.findFirst({
+        where: {
+          id: { notIn: [...excludedVideoIds] },
+          published: true,
+          Lesson: { published: true },
+          OR: [{ position: { key: item.skillKey } }, { technique: { key: item.skillKey } }],
+        },
+        include: { Lesson: true },
+      });
+      if (video?.Lesson) {
+        roadmap = recommendation('ROADMAP', video.Lesson, `Roadmap: ${item.title}`);
+        break;
+      }
+    }
+
+    const availableRelations =
+      currentLesson?.outgoingRelations.filter(
+        (relation) =>
+          relation.toLesson.published &&
+          relation.toLesson.video.published &&
+          !excludedVideoIds.has(relation.toLesson.videoId),
+      ) ?? [];
+    const pathRelation =
+      availableRelations.find((relation) => relation.type === 'PRIMARY') ?? availableRelations[0];
+    const lessonPathCandidate = pathRelation
+      ? recommendation(
+          'LESSON_PATH',
+          pathRelation.toLesson,
+          pathRelation.type === 'PRIMARY'
+            ? 'Nächster Schritt in dieser Technikfolge'
+            : `Abzweigung: ${pathRelation.trigger?.name ?? pathRelation.condition ?? 'alternative Reaktion'}`,
+        )
+      : null;
+    const lessonPath =
+      lessonPathCandidate?.videoId === roadmap?.videoId ? null : lessonPathCandidate;
+
+    const metadataValues = await this.db.videoMetadataOption.findMany({
+      where: { videoId },
+      select: { optionId: true, option: { select: { name: true } } },
+    });
+    let metadataFallback = null as Recommendation | null;
+    if (metadataValues.length) {
+      const optionIds = metadataValues.map((value) => value.optionId);
+      const candidates = await this.db.video.findMany({
+        where: {
+          id: {
+            notIn: [
+              ...excludedVideoIds,
+              ...(roadmap ? [roadmap.videoId] : []),
+              ...(lessonPath ? [lessonPath.videoId] : []),
+            ],
+          },
+          published: true,
+          Lesson: { published: true },
+          metadataValues: { some: { optionId: { in: optionIds } } },
+        },
+        include: {
+          Lesson: true,
+          metadataValues: { where: { optionId: { in: optionIds } }, include: { option: true } },
+        },
+        take: 20,
+      });
+      const candidate = candidates.sort(
+        (left, right) => right.metadataValues.length - left.metadataValues.length,
+      )[0];
+      if (candidate?.Lesson) {
+        const shared = candidate.metadataValues.map((value) => value.option.name).join(', ');
+        metadataFallback = recommendation(
+          'METADATA',
+          candidate.Lesson,
+          `Passende Themen: ${shared}`,
+        );
+      }
+    }
+
+    return {
+      primarySource: roadmap
+        ? 'ROADMAP'
+        : lessonPath
+          ? 'LESSON_PATH'
+          : metadataFallback
+            ? 'METADATA'
+            : null,
+      roadmap,
+      lessonPath,
+      metadataFallback,
+    };
+  }
+
   async recordWatch(
     userId: string,
     role: UserRole | undefined,
@@ -153,4 +280,21 @@ export class ContentService {
       },
     });
   }
+}
+
+type RecommendationSource = 'ROADMAP' | 'LESSON_PATH' | 'METADATA';
+type Recommendation = {
+  source: RecommendationSource;
+  lessonId: string;
+  videoId: string;
+  title: string;
+  reason: string;
+};
+
+function recommendation(
+  source: RecommendationSource,
+  lesson: { id: string; videoId: string; title: string },
+  reason: string,
+): Recommendation {
+  return { source, lessonId: lesson.id, videoId: lesson.videoId, title: lesson.title, reason };
 }
