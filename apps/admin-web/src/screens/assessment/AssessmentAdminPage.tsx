@@ -26,6 +26,14 @@ type Question = {
 };
 type QuestionDraft = Omit<Question, 'id' | 'active'>;
 type Unmapped = { id: string; customText: string; question: { text: string } };
+type RoadmapTopic = { id: string; key: string; name: string };
+
+const slug = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 
 const emptyOption = (): Option => ({ key: '', label: '', value: 3 });
 const emptyQuestion = (): QuestionDraft => ({
@@ -42,19 +50,22 @@ const emptyQuestion = (): QuestionDraft => ({
 export default function AssessmentAdminPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [unmapped, setUnmapped] = useState<Unmapped[]>([]);
+  const [roadmapTopics, setRoadmapTopics] = useState<RoadmapTopic[]>([]);
   const [draft, setDraft] = useState(emptyQuestion());
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [status, setStatus] = useState('');
 
   const load = async () => {
-    const [questionResponse, unmappedResponse] = await Promise.all([
+    const [questionResponse, unmappedResponse, topicsResponse] = await Promise.all([
       adminApi('/admin/assessment/questions'),
       adminApi('/admin/assessment/unmapped-answers'),
+      adminApi('/admin/content/roadmap-topic-coverage'),
     ]);
-    if (!questionResponse.ok || !unmappedResponse.ok)
+    if (!questionResponse.ok || !unmappedResponse.ok || !topicsResponse.ok)
       return setStatus('Assessment data could not be loaded.');
     setQuestions(await questionResponse.json());
     setUnmapped(await unmappedResponse.json());
+    setRoadmapTopics(await topicsResponse.json());
   };
   useEffect(() => {
     void load();
@@ -93,7 +104,7 @@ export default function AssessmentAdminPage() {
             if (await save('/admin/assessment/questions', 'POST', draft)) setDraft(emptyQuestion());
           }}
         >
-          <QuestionFields value={draft} onChange={setDraft} />
+          <QuestionFields value={draft} onChange={setDraft} roadmapTopics={roadmapTopics} />
           <button>Create question</button>
         </form>
       </section>
@@ -101,7 +112,12 @@ export default function AssessmentAdminPage() {
       <section>
         <h2>Existing questions</h2>
         {questions.map((question) => (
-          <QuestionEditor key={question.id} question={question} save={save} />
+          <QuestionEditor
+            key={question.id}
+            question={question}
+            roadmapTopics={roadmapTopics}
+            save={save}
+          />
         ))}
       </section>
 
@@ -113,14 +129,20 @@ export default function AssessmentAdminPage() {
           <article key={answer.id} style={{ border: '1px solid #ddd', padding: 12, marginTop: 8 }}>
             <strong>{answer.customText}</strong>
             <p>{answer.question.text}</p>
-            <input
+            <select
               aria-label={`Topic for ${answer.customText}`}
-              placeholder="Roadmap topic key"
               value={mapping[answer.id] ?? ''}
               onChange={(event) =>
                 setMapping((current) => ({ ...current, [answer.id]: event.target.value }))
               }
-            />
+            >
+              <option value="">Select Roadmap topic</option>
+              {roadmapTopics.map((topic) => (
+                <option key={topic.id} value={topic.key}>
+                  {topic.name}
+                </option>
+              ))}
+            </select>
             <button
               disabled={!mapping[answer.id]?.trim()}
               onClick={() =>
@@ -140,9 +162,11 @@ export default function AssessmentAdminPage() {
 
 function QuestionEditor({
   question,
+  roadmapTopics,
   save,
 }: {
   question: Question;
+  roadmapTopics: RoadmapTopic[];
   save: (path: string, method: 'POST' | 'PATCH', body: unknown) => Promise<boolean>;
 }) {
   const [draft, setDraft] = useState(question);
@@ -156,7 +180,12 @@ function QuestionEditor({
       style={{ border: '1px solid #ddd', padding: 16, marginTop: 12 }}
     >
       <strong>{question.key}</strong>
-      <QuestionFields value={draft} onChange={setDraft} hideKey />
+      <QuestionFields
+        value={draft}
+        onChange={setDraft}
+        roadmapTopics={roadmapTopics}
+        hideKey
+      />
       <label>
         <input
           type="checkbox"
@@ -173,10 +202,12 @@ function QuestionEditor({
 function QuestionFields<T extends QuestionDraft>({
   value,
   onChange,
+  roadmapTopics,
   hideKey = false,
 }: {
   value: T;
   onChange: (value: T) => void;
+  roadmapTopics: RoadmapTopic[];
   hideKey?: boolean;
 }) {
   const patch = (change: Partial<T>) => onChange({ ...value, ...change });
@@ -243,15 +274,23 @@ function QuestionFields<T extends QuestionDraft>({
           <option value="BOTTOM">Bottom</option>
         </select>
       </label>
-      <label>
-        Default Roadmap topic key{' '}
-        <input
-          required
-          pattern="[a-z0-9-]+"
-          value={value.skillKey}
-          onChange={(event) => patch({ skillKey: event.target.value } as Partial<T>)}
-        />
-      </label>
+      {value.kind === 'CONFIDENCE' && (
+        <label>
+          Roadmap topic measured by this question{' '}
+          <select
+            required
+            value={value.skillKey}
+            onChange={(event) => patch({ skillKey: event.target.value } as Partial<T>)}
+          >
+            <option value="">Select topic</option>
+            {roadmapTopics.map((topic) => (
+              <option key={topic.id} value={topic.key}>
+                {topic.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <label>
         <input
           type="checkbox"
@@ -273,17 +312,22 @@ function QuestionFields<T extends QuestionDraft>({
         <div key={index} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           <input
             required
-            pattern="[a-z0-9-]+"
-            placeholder="key"
-            value={item.key}
-            onChange={(event) => option(index, { key: event.target.value })}
-          />
-          <input
-            required
-            placeholder="label"
+            maxLength={160}
+            placeholder="Answer shown to the athlete"
             value={item.label}
-            onChange={(event) => option(index, { label: event.target.value })}
+            onChange={(event) => {
+              const label = event.target.value;
+              const previousGeneratedKey = slug(item.label) || `answer-${index + 1}`;
+              option(index, {
+                label,
+                key:
+                  !item.key || item.key === previousGeneratedKey
+                    ? slug(label) || `answer-${index + 1}`
+                    : item.key,
+              });
+            }}
           />
+          <small>Internal key: {item.key || 'generated automatically'}</small>
           <input
             aria-label="score"
             type="number"
@@ -294,13 +338,18 @@ function QuestionFields<T extends QuestionDraft>({
           />
           {value.kind !== 'CONFIDENCE' && (
             <>
-              <input
+              <select
                 required
-                pattern="[a-z0-9-]+"
-                placeholder="Roadmap topic key"
                 value={item.skillKey ?? ''}
                 onChange={(event) => option(index, { skillKey: event.target.value })}
-              />
+              >
+                <option value="">Select Roadmap topic</option>
+                {roadmapTopics.map((topic) => (
+                  <option key={topic.id} value={topic.key}>
+                    {topic.name}
+                  </option>
+                ))}
+              </select>
               <select
                 value={
                   item.recommendationType ?? (value.kind === 'PREFERENCE' ? 'CORE' : 'EXPLORE')

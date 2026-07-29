@@ -20,12 +20,13 @@ describe('admin assessment management', () => {
         },
         { adminUserId: 'admin-1' },
       ),
-    ).rejects.toThrow('INVALID_ASSESSMENT_OPTION');
+    ).rejects.toThrow('ASSESSMENT_OPTION_1_KEY_INVALID');
     expect(db.assessmentQuestion.create).not.toHaveBeenCalled();
   });
 
   it('maps a custom answer and records an audit event', async () => {
     const db = {
+      metadataOption: { findMany: vi.fn().mockResolvedValue([{ key: 'octopus-guard' }]) },
       assessmentResponse: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'answer-1',

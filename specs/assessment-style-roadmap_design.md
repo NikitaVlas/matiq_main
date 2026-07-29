@@ -23,6 +23,7 @@
 - Existing answers are loaded and prefilled.
 - The UI explains that edits update the current Roadmap and handles loading, validation, errors, and success.
 - Admin Assessment management provides question authoring and an unmapped-answer review queue.
+- Assessment mappings use the shared DB-driven Roadmap topic catalogue instead of free-form keys.
 
 ### Backend
 
@@ -37,6 +38,7 @@
 - Athlete endpoints use the existing authenticated user guard and scope reads/writes to the session user.
 - Admin endpoints use the existing MFA-backed admin session; mutations require `ADMIN`.
 - DTO validation limits keys, labels, custom text, option counts, and numeric values.
+- Admin API rejects Assessment mappings that do not exist in the Roadmap topic catalogue.
 - Responses expose no credentials or unrelated user data; audit entries record admin mutations and mappings.
 
 ## Acceptance criteria

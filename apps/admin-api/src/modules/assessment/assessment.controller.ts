@@ -50,6 +50,7 @@ export class AssessmentController {
   @AdminRoles('ADMIN')
   async createQuestion(@Body() body: QuestionBody, @Req() request: { adminUserId: string }) {
     const data = validateQuestion(body, true);
+    await this.assertRoadmapTopics(data);
     const question = await this.db.assessmentQuestion.create({
       data: data as Prisma.AssessmentQuestionCreateInput,
     });
@@ -70,6 +71,7 @@ export class AssessmentController {
     @Req() request: { adminUserId: string },
   ) {
     const data = validateQuestion(body, false);
+    await this.assertRoadmapTopics(data);
     const question = await this.db.assessmentQuestion.update({
       where: { id },
       data: data as Prisma.AssessmentQuestionUpdateInput,
@@ -107,6 +109,7 @@ export class AssessmentController {
   ) {
     const skillKey = validKey(body.skillKey);
     if (!skillKey) throw new BadRequestException('INVALID_SKILL_KEY');
+    await this.assertRoadmapTopics({ skillKey });
     const source = await this.db.assessmentResponse.findUnique({
       where: { id },
       include: {
@@ -164,6 +167,23 @@ export class AssessmentController {
     );
     return answer;
   }
+
+  private async assertRoadmapTopics(data: QuestionBody) {
+    const keys = new Set<string>();
+    if (data.skillKey) keys.add(data.skillKey);
+    if (Array.isArray(data.options)) {
+      for (const raw of data.options) {
+        const option = raw as Record<string, unknown>;
+        if (typeof option.skillKey === 'string') keys.add(option.skillKey);
+      }
+    }
+    if (!keys.size) return;
+    const existing = await this.db.metadataOption.findMany({
+      where: { field: { key: 'roadmap-topic' }, key: { in: [...keys] } },
+      select: { key: true },
+    });
+    if (existing.length !== keys.size) throw new BadRequestException('UNKNOWN_ROADMAP_TOPIC');
+  }
 }
 
 function validateQuestion(body: QuestionBody, creating: boolean) {
@@ -180,6 +200,16 @@ function validateQuestion(body: QuestionBody, creating: boolean) {
     if (key in body && typeof body[key] === 'boolean') data[key] = body[key];
   if ('options' in body) data.options = validateOptions(body.options, data.kind);
   if (
+    data.kind &&
+    data.kind !== AssessmentQuestionKind.CONFIDENCE &&
+    Array.isArray(data.options)
+  ) {
+    const firstMappedOption = data.options.find(
+      (option) => typeof option === 'object' && option && 'skillKey' in option,
+    ) as { skillKey?: string } | undefined;
+    data.skillKey = firstMappedOption?.skillKey;
+  }
+  if (
     creating &&
     (!data.key || !data.text || !data.skillKey || !data.context || !data.kind || !data.options)
   )
@@ -194,21 +224,19 @@ function validateOptions(
   if (!Array.isArray(input) || input.length < 1 || input.length > 30)
     throw new BadRequestException('INVALID_ASSESSMENT_OPTIONS');
   const keys = new Set<string>();
-  return input.map((raw) => {
+  return input.map((raw, index) => {
     const option = raw as Record<string, unknown>;
     const key = validKey(option.key);
     const label = validText(option.label, 160);
     const value = option.value;
-    if (
-      !key ||
-      !label ||
-      typeof value !== 'number' ||
-      !Number.isInteger(value) ||
-      value < 0 ||
-      value > 5 ||
-      keys.has(key)
-    )
-      throw new BadRequestException('INVALID_ASSESSMENT_OPTION');
+    if (!key)
+      throw new BadRequestException(`ASSESSMENT_OPTION_${index + 1}_KEY_INVALID`);
+    if (!label)
+      throw new BadRequestException(`ASSESSMENT_OPTION_${index + 1}_LABEL_INVALID`);
+    if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 5)
+      throw new BadRequestException(`ASSESSMENT_OPTION_${index + 1}_SCORE_INVALID`);
+    if (keys.has(key))
+      throw new BadRequestException(`ASSESSMENT_OPTION_${index + 1}_KEY_DUPLICATED`);
     keys.add(key);
     const skillKey = option.skillKey === undefined ? undefined : validKey(option.skillKey);
     const recommendationType = option.recommendationType;
