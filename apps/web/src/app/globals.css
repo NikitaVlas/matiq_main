@@ -485,6 +485,32 @@ legend {
   background: #111418;
 }
 
+.lesson-completed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  border: 1px solid #bfd7c4;
+  background: #eef7f0;
+}
+
+.lesson-completed h2,
+.lesson-completed p {
+  margin: 0;
+}
+
+.lesson-completed .eyebrow {
+  margin-bottom: 8px;
+  color: #276337;
+}
+
+.lesson-progress-error {
+  margin: 0;
+  color: #a22d25;
+  font-weight: 700;
+}
+
 .lesson-player video {
   display: block;
   width: 100%;
@@ -754,6 +780,11 @@ legend {
   }
 
   .lesson-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lesson-completed {
     align-items: stretch;
     flex-direction: column;
   }

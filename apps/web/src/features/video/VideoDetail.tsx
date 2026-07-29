@@ -6,6 +6,7 @@ import {
   continuationLabel,
   formatDuration,
   getVideoTopics,
+  markCurrentLessonCompleted,
   progressPercent,
   type CourseContext,
   type LessonVideo,
@@ -35,12 +36,21 @@ type Playback = {
   courseContext: CourseContext | null;
 };
 
+type WatchProgress = {
+  watchedSeconds: number;
+  completed: boolean;
+  newlyCompleted: boolean;
+  roadmapItemsCompleted: number;
+};
+
 export default function VideoDetail({ id }: { id: string }) {
   const [data, setData] = useState<Playback>();
   const [error, setError] = useState('');
   const [locked, setLocked] = useState(false);
   const [recommendations, setRecommendations] = useState<Recommendations>();
   const [currentSeconds, setCurrentSeconds] = useState(0);
+  const [completed, setCompleted] = useState(false);
+  const [progressError, setProgressError] = useState('');
   const lastCheckpoint = useRef(-1);
 
   useEffect(() => {
@@ -60,6 +70,9 @@ export default function VideoDetail({ id }: { id: string }) {
         const playback = (await response.json()) as Playback;
         setData(playback);
         setCurrentSeconds(playback.watchedSeconds);
+        setCompleted(
+          Boolean(playback.courseContext?.lessons.find((lesson) => lesson.current)?.completed),
+        );
 
         const recommendationResponse = await fetch(`${api}/content/videos/${id}/recommendations`, {
           credentials: 'include',
@@ -80,12 +93,44 @@ export default function VideoDetail({ id }: { id: string }) {
   }, [id]);
 
   async function saveProgress(seconds: number) {
-    await fetch(`${api}/content/videos/${id}/watch`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ watchedSeconds: Math.floor(seconds) }),
-    }).catch(() => undefined);
+    try {
+      const response = await fetch(`${api}/content/videos/${id}/watch`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ watchedSeconds: Math.floor(seconds) }),
+      });
+      if (!response.ok) throw new Error();
+      const progressResult = (await response.json()) as WatchProgress;
+      setProgressError('');
+      if (!progressResult.completed) return;
+
+      setCompleted(true);
+      setCurrentSeconds(progressResult.watchedSeconds);
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              watchedSeconds: progressResult.watchedSeconds,
+              courseContext: markCurrentLessonCompleted(
+                current.courseContext,
+                progressResult.watchedSeconds,
+              ),
+            }
+          : current,
+      );
+
+      if (progressResult.newlyCompleted) {
+        const recommendationResponse = await fetch(`${api}/content/videos/${id}/recommendations`, {
+          credentials: 'include',
+        });
+        if (recommendationResponse.ok) {
+          setRecommendations((await recommendationResponse.json()) as Recommendations);
+        }
+      }
+    } catch {
+      setProgressError('Fortschritt konnte nicht gespeichert werden.');
+    }
   }
 
   if (locked) return <LockedLesson />;
@@ -138,6 +183,28 @@ export default function VideoDetail({ id }: { id: string }) {
           onEnded={(event) => void saveProgress(event.currentTarget.currentTime)}
         />
       </section>
+
+      {completed ? (
+        <section className="lesson-completed" role="status">
+          <div>
+            <p className="eyebrow">Fortschritt gespeichert</p>
+            <h2>Lektion abgeschlossen</h2>
+            <p>Deine Roadmap und dein Verlauf wurden aktualisiert.</p>
+          </div>
+          <div className="lesson-actions">
+            {recommendations?.roadmap ? (
+              <Link className="action-link" href={`/video/${recommendations.roadmap.videoId}`}>
+                Nächste Roadmap-Lektion
+              </Link>
+            ) : (
+              <Link className="action-link" href="/roadmap">
+                Roadmap öffnen
+              </Link>
+            )}
+          </div>
+        </section>
+      ) : null}
+      {progressError ? <p className="lesson-progress-error">{progressError}</p> : null}
 
       <div className="lesson-layout">
         <article className="lesson-content">

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { AssessmentContext, Discipline, UserRole } from '@prisma/client';
 import { Database } from '../../../shared/infrastructure/database';
 import { VideoStorageService } from '../infrastructure/video-storage.service';
@@ -300,20 +300,28 @@ export class ContentService {
       await this.subscriptions.requireAccess(userId);
     const video = await this.db.video.findUnique({ where: { id: videoId } });
     if (!video || !video.published) throw new Error('VIDEO_NOT_AVAILABLE');
-    const seconds = Math.max(0, watchedSeconds);
+    if (!Number.isFinite(watchedSeconds)) {
+      throw new BadRequestException('INVALID_WATCH_PROGRESS');
+    }
+    const seconds = Math.min(
+      Math.max(0, watchedSeconds),
+      video.durationSec ?? Number.POSITIVE_INFINITY,
+    );
     const watched = Boolean(video.durationSec && seconds >= video.durationSec * 0.8);
     const existing = await this.db.videoWatch.findUnique({
       where: { videoId_userId: { videoId, userId } },
     });
     const progress = Math.max(existing?.watchedSeconds ?? 0, seconds);
     const completed = Boolean(existing?.completed || watched);
+    const newlyCompleted = completed && !existing?.completed;
     const watchEvent = await this.db.videoWatch.upsert({
       where: { videoId_userId: { videoId, userId } },
       create: { videoId, userId, watchedSeconds: progress, completed },
       update: { watchedSeconds: progress, completed },
     });
-    if (completed) {
-      await this.db.roadmapItem.updateMany({
+    let roadmapItemsCompleted = 0;
+    if (newlyCompleted) {
+      const result = await this.db.roadmapItem.updateMany({
         where: {
           athleteProfile: { userId },
           lesson: { videoId },
@@ -321,8 +329,9 @@ export class ContentService {
         },
         data: { completedAt: new Date() },
       });
+      roadmapItemsCompleted = result.count;
     }
-    return watchEvent;
+    return { ...watchEvent, newlyCompleted, roadmapItemsCompleted };
   }
 
   async history(userId: string) {

@@ -69,3 +69,22 @@ export function continuationLabel(continuation: CourseContext['continuations'][n
   if (continuation.type === 'PRIMARY') return 'Hauptweg';
   return continuation.trigger ? `Wenn: ${continuation.trigger}` : 'Alternative Fortsetzung';
 }
+
+export function markCurrentLessonCompleted(
+  context: CourseContext | null,
+  watchedSeconds: number,
+): CourseContext | null {
+  if (!context) return null;
+  return {
+    ...context,
+    lessons: context.lessons.map((lesson) =>
+      lesson.current
+        ? {
+            ...lesson,
+            watchedSeconds: Math.max(lesson.watchedSeconds, watchedSeconds),
+            completed: true,
+          }
+        : lesson,
+    ),
+  };
+}

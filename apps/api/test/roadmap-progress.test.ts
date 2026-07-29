@@ -2,9 +2,11 @@ import { UserRole } from '@prisma/client';
 import { describe, expect, it, vi } from 'vitest';
 import { ContentService } from '../src/modules/content/application/content.service';
 
-function createService(watchedSeconds: number) {
+function createService(watchedSeconds: number, completed = false) {
   const updateMany = vi.fn().mockResolvedValue({ count: 1 });
-  const upsert = vi.fn().mockImplementation(({ create }) => Promise.resolve(create));
+  const upsert = vi
+    .fn()
+    .mockImplementation(({ create, update }) => Promise.resolve(completed ? update : create));
   const db = {
     video: {
       findUnique: vi.fn().mockResolvedValue({
@@ -14,7 +16,9 @@ function createService(watchedSeconds: number) {
       }),
     },
     videoWatch: {
-      findUnique: vi.fn().mockResolvedValue(null),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(completed ? { watchedSeconds: 80, completed: true } : null),
       upsert,
     },
     roadmapItem: { updateMany },
@@ -27,7 +31,12 @@ describe('Roadmap progress from video viewing', () => {
   it('completes a linked Roadmap step after 80 percent of the video', async () => {
     const { service, updateMany, watchedSeconds } = createService(80);
 
-    await service.recordWatch('athlete-1', UserRole.ATHLETE, 'video-1', watchedSeconds);
+    const result = await service.recordWatch(
+      'athlete-1',
+      UserRole.ATHLETE,
+      'video-1',
+      watchedSeconds,
+    );
 
     expect(updateMany).toHaveBeenCalledWith({
       where: {
@@ -37,6 +46,11 @@ describe('Roadmap progress from video viewing', () => {
       },
       data: { completedAt: expect.any(Date) },
     });
+    expect(result).toMatchObject({
+      completed: true,
+      newlyCompleted: true,
+      roadmapItemsCompleted: 1,
+    });
   });
 
   it('keeps the Roadmap step active below 80 percent', async () => {
@@ -45,5 +59,26 @@ describe('Roadmap progress from video viewing', () => {
     await service.recordWatch('athlete-1', UserRole.ATHLETE, 'video-1', watchedSeconds);
 
     expect(updateMany).not.toHaveBeenCalled();
+  });
+
+  it('does not repeat the Roadmap mutation after completion', async () => {
+    const { service, updateMany } = createService(90, true);
+
+    const result = await service.recordWatch('athlete-1', UserRole.ATHLETE, 'video-1', 90);
+
+    expect(updateMany).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      completed: true,
+      newlyCompleted: false,
+      roadmapItemsCompleted: 0,
+    });
+  });
+
+  it('rejects non-finite watch progress', async () => {
+    const { service } = createService(Number.NaN);
+
+    await expect(
+      service.recordWatch('athlete-1', UserRole.ATHLETE, 'video-1', Number.NaN),
+    ).rejects.toThrow('INVALID_WATCH_PROGRESS');
   });
 });
