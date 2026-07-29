@@ -66,12 +66,89 @@ export class ContentService {
       },
     });
     if (!video || !video.published) throw new Error('VIDEO_NOT_AVAILABLE');
+    const lesson = await this.db.lesson.findUnique({
+      where: { videoId },
+      include: {
+        module: {
+          include: {
+            course: true,
+            lessons: {
+              where: { published: true, video: { published: true } },
+              orderBy: { position: 'asc' },
+              select: {
+                id: true,
+                videoId: true,
+                title: true,
+                position: true,
+                video: {
+                  select: {
+                    durationSec: true,
+                    watchEvents: {
+                      where: { userId },
+                      take: 1,
+                      select: { watchedSeconds: true, completed: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        outgoingRelations: {
+          where: { toLesson: { published: true, video: { published: true } } },
+          orderBy: { position: 'asc' },
+          include: {
+            trigger: { select: { name: true } },
+            toLesson: { select: { id: true, videoId: true, title: true } },
+          },
+        },
+      },
+    });
+    const courseContext =
+      lesson?.published && lesson.module.course.published
+        ? {
+            course: {
+              id: lesson.module.course.id,
+              title: lesson.module.course.title,
+              discipline: lesson.module.course.discipline,
+            },
+            module: { id: lesson.module.id, title: lesson.module.title },
+            currentLesson: {
+              id: lesson.id,
+              title: lesson.title,
+              goal: lesson.goal,
+              startingPosition: lesson.startingPosition,
+              endingPosition: lesson.endingPosition,
+              level: lesson.level,
+              giNoGi: lesson.giNoGi,
+              position: lesson.position,
+            },
+            lessons: lesson.module.lessons.map((item) => ({
+              id: item.id,
+              videoId: item.videoId,
+              title: item.title,
+              position: item.position,
+              durationSec: item.video.durationSec,
+              watchedSeconds: item.video.watchEvents[0]?.watchedSeconds ?? 0,
+              completed: item.video.watchEvents[0]?.completed ?? false,
+              current: item.id === lesson.id,
+            })),
+            continuations: lesson.outgoingRelations.map((relation) => ({
+              type: relation.type,
+              lessonId: relation.toLesson.id,
+              videoId: relation.toLesson.videoId,
+              title: relation.toLesson.title,
+              trigger: relation.trigger?.name ?? relation.condition,
+            })),
+          }
+        : null;
     return {
       video,
       playbackUrl: await this.storage.playbackUrl(video.storageKey),
       expiresIn: 300,
       userId,
       watchedSeconds: video.watchEvents[0]?.watchedSeconds ?? 0,
+      courseContext,
     };
   }
 

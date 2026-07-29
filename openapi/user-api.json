@@ -10,7 +10,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/verify-email": {
@@ -22,7 +24,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/resend-verification": {
@@ -34,7 +38,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/login": {
@@ -46,7 +52,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/admin-login": {
@@ -58,7 +66,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/forgot-password": {
@@ -70,7 +80,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/reset-password": {
@@ -82,7 +94,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/logout": {
@@ -94,7 +108,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/logout-all": {
@@ -106,7 +122,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/me": {
@@ -118,7 +136,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/sessions": {
@@ -130,7 +150,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/sessions/{id}": {
@@ -142,7 +164,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/reauthenticate": {
@@ -154,7 +178,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/change-password": {
@@ -166,7 +192,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/account/export": {
@@ -178,7 +206,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/account": {
@@ -190,7 +220,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/mfa/setup": {
@@ -202,7 +234,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/mfa/confirm": {
@@ -214,7 +248,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/admin-mfa/setup": {
@@ -226,7 +262,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/auth/admin-mfa/confirm": {
@@ -238,7 +276,9 @@
             "description": ""
           }
         },
-        "tags": ["authentication"]
+        "tags": [
+          "authentication"
+        ]
       }
     },
     "/subscription": {
@@ -250,7 +290,9 @@
             "description": ""
           }
         },
-        "tags": ["subscription"]
+        "tags": [
+          "subscription"
+        ]
       }
     },
     "/subscription/activate-trial": {
@@ -262,7 +304,9 @@
             "description": ""
           }
         },
-        "tags": ["subscription"]
+        "tags": [
+          "subscription"
+        ]
       }
     },
     "/subscription/checkout": {
@@ -274,7 +318,9 @@
             "description": ""
           }
         },
-        "tags": ["subscription"]
+        "tags": [
+          "subscription"
+        ]
       }
     },
     "/subscription/cancel": {
@@ -286,7 +332,9 @@
             "description": ""
           }
         },
-        "tags": ["subscription"]
+        "tags": [
+          "subscription"
+        ]
       }
     },
     "/subscription/resume": {
@@ -298,7 +346,9 @@
             "description": ""
           }
         },
-        "tags": ["subscription"]
+        "tags": [
+          "subscription"
+        ]
       }
     },
     "/subscription/billing-portal": {
@@ -310,7 +360,9 @@
             "description": ""
           }
         },
-        "tags": ["subscription"]
+        "tags": [
+          "subscription"
+        ]
       }
     },
     "/subscription/payment-update-portal": {
@@ -322,7 +374,9 @@
             "description": ""
           }
         },
-        "tags": ["subscription"]
+        "tags": [
+          "subscription"
+        ]
       }
     },
     "/billing/stripe/webhook": {
@@ -334,7 +388,9 @@
             "description": ""
           }
         },
-        "tags": ["StripeWebhook"]
+        "tags": [
+          "StripeWebhook"
+        ]
       }
     },
     "/athlete-profile": {
@@ -346,7 +402,9 @@
             "description": ""
           }
         },
-        "tags": ["athlete-profile"]
+        "tags": [
+          "athlete-profile"
+        ]
       },
       "put": {
         "operationId": "ProfileController_save",
@@ -356,7 +414,9 @@
             "description": ""
           }
         },
-        "tags": ["athlete-profile"]
+        "tags": [
+          "athlete-profile"
+        ]
       }
     },
     "/assessment/questions": {
@@ -368,7 +428,9 @@
             "description": ""
           }
         },
-        "tags": ["assessment"]
+        "tags": [
+          "assessment"
+        ]
       }
     },
     "/assessment/result": {
@@ -380,7 +442,9 @@
             "description": ""
           }
         },
-        "tags": ["assessment"]
+        "tags": [
+          "assessment"
+        ]
       }
     },
     "/assessment/submit": {
@@ -392,7 +456,9 @@
             "description": ""
           }
         },
-        "tags": ["assessment"]
+        "tags": [
+          "assessment"
+        ]
       }
     },
     "/assessment/roadmap-items": {
@@ -404,7 +470,9 @@
             "description": ""
           }
         },
-        "tags": ["assessment"]
+        "tags": [
+          "assessment"
+        ]
       }
     },
     "/assessment/roadmap-items/{id}": {
@@ -416,7 +484,9 @@
             "description": ""
           }
         },
-        "tags": ["assessment"]
+        "tags": [
+          "assessment"
+        ]
       }
     },
     "/content/courses": {
@@ -428,7 +498,9 @@
             "description": ""
           }
         },
-        "tags": ["content"]
+        "tags": [
+          "content"
+        ]
       }
     },
     "/content/catalog": {
@@ -440,7 +512,9 @@
             "description": ""
           }
         },
-        "tags": ["content"]
+        "tags": [
+          "content"
+        ]
       }
     },
     "/content/videos/{id}/playback": {
@@ -452,7 +526,9 @@
             "description": ""
           }
         },
-        "tags": ["content"]
+        "tags": [
+          "content"
+        ]
       }
     },
     "/content/videos/{id}/recommendations": {
@@ -464,7 +540,9 @@
             "description": ""
           }
         },
-        "tags": ["content"]
+        "tags": [
+          "content"
+        ]
       }
     },
     "/content/videos/{id}/watch": {
@@ -476,7 +554,9 @@
             "description": ""
           }
         },
-        "tags": ["content"]
+        "tags": [
+          "content"
+        ]
       }
     },
     "/content/history": {
@@ -488,7 +568,9 @@
             "description": ""
           }
         },
-        "tags": ["content"]
+        "tags": [
+          "content"
+        ]
       }
     }
   },

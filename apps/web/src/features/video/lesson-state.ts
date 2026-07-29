@@ -11,6 +11,38 @@ export type LessonVideo = {
   drill?: TopicReference;
 };
 
+export type CourseContext = {
+  course: { id: string; title: string; discipline: string };
+  module: { id: string; title: string };
+  currentLesson: {
+    id: string;
+    title: string;
+    goal?: string | null;
+    startingPosition?: string | null;
+    endingPosition?: string | null;
+    level?: string | null;
+    giNoGi?: string | null;
+    position: number;
+  };
+  lessons: Array<{
+    id: string;
+    videoId: string;
+    title: string;
+    position: number;
+    durationSec?: number | null;
+    watchedSeconds: number;
+    completed: boolean;
+    current: boolean;
+  }>;
+  continuations: Array<{
+    type: 'PRIMARY' | 'BRANCH';
+    lessonId: string;
+    videoId: string;
+    title: string;
+    trigger?: string | null;
+  }>;
+};
+
 export function formatDuration(durationSec?: number | null) {
   if (!durationSec || durationSec < 1) return 'Nicht angegeben';
   const minutes = Math.floor(durationSec / 60);
@@ -31,4 +63,9 @@ export function getVideoTopics(video: LessonVideo) {
     { label: 'Bewegung', value: video.movement?.name },
     { label: 'Drill', value: video.drill?.name },
   ].filter((topic): topic is { label: string; value: string } => Boolean(topic.value));
+}
+
+export function continuationLabel(continuation: CourseContext['continuations'][number]) {
+  if (continuation.type === 'PRIMARY') return 'Hauptweg';
+  return continuation.trigger ? `Wenn: ${continuation.trigger}` : 'Alternative Fortsetzung';
 }

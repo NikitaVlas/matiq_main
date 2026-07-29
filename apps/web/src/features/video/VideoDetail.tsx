@@ -2,7 +2,14 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { formatDuration, getVideoTopics, progressPercent, type LessonVideo } from './lesson-state';
+import {
+  continuationLabel,
+  formatDuration,
+  getVideoTopics,
+  progressPercent,
+  type CourseContext,
+  type LessonVideo,
+} from './lesson-state';
 
 const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
 
@@ -25,6 +32,7 @@ type Playback = {
   video: LessonVideo;
   playbackUrl: string;
   watchedSeconds: number;
+  courseContext: CourseContext | null;
 };
 
 export default function VideoDetail({ id }: { id: string }) {
@@ -89,6 +97,15 @@ export default function VideoDetail({ id }: { id: string }) {
 
   return (
     <main className="lesson-page">
+      {data.courseContext ? (
+        <nav className="lesson-breadcrumbs" aria-label="Kursnavigation">
+          <Link href={`/courses/${data.courseContext.course.id}`}>
+            {data.courseContext.course.title}
+          </Link>
+          <span aria-hidden="true">/</span>
+          <span>{data.courseContext.module.title}</span>
+        </nav>
+      ) : null}
       <header className="lesson-header">
         <div>
           <p className="eyebrow">Lektion</p>
@@ -130,7 +147,27 @@ export default function VideoDetail({ id }: { id: string }) {
               {data.video.description ??
                 'Für diese Lektion ist noch keine Beschreibung hinterlegt.'}
             </p>
+            {data.courseContext?.currentLesson.goal ? (
+              <p className="lesson-goal">
+                <strong>Lernziel:</strong> {data.courseContext.currentLesson.goal}
+              </p>
+            ) : null}
           </section>
+
+          {data.courseContext?.continuations.length ? (
+            <section className="lesson-continuations" aria-labelledby="continuations-title">
+              <h2 id="continuations-title">Mögliche Fortsetzungen</h2>
+              <p>Wähle den Hauptweg oder eine passende Reaktion auf die Situation.</p>
+              <div className="lesson-continuation-list">
+                {data.courseContext.continuations.map((continuation) => (
+                  <Link key={continuation.lessonId} href={`/video/${continuation.videoId}`}>
+                    <span>{continuationLabel(continuation)}</span>
+                    <strong>{continuation.title}</strong>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           {recommendations?.roadmap ? (
             <RecommendationBlock
@@ -179,6 +216,37 @@ export default function VideoDetail({ id }: { id: string }) {
         </article>
 
         <aside className="lesson-sidebar" aria-label="Lektionsdetails">
+          {data.courseContext ? (
+            <section className="lesson-module-nav" aria-labelledby="module-lessons-title">
+              <p className="eyebrow">{data.courseContext.course.title}</p>
+              <h2 id="module-lessons-title">{data.courseContext.module.title}</h2>
+              <ol>
+                {data.courseContext.lessons.map((lesson) => {
+                  const lessonProgress = progressPercent(lesson.watchedSeconds, lesson.durationSec);
+                  return (
+                    <li key={lesson.id} className={lesson.current ? 'is-current' : undefined}>
+                      <Link
+                        href={`/video/${lesson.videoId}`}
+                        aria-current={lesson.current ? 'page' : undefined}
+                      >
+                        <span>{lesson.position + 1}</span>
+                        <span>
+                          <strong>{lesson.title}</strong>
+                          <small>
+                            {lesson.completed
+                              ? 'Angesehen'
+                              : lessonProgress
+                                ? `${lessonProgress}% angesehen`
+                                : formatDuration(lesson.durationSec)}
+                          </small>
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ) : null}
           <h2>Details</h2>
           <dl>
             <div>

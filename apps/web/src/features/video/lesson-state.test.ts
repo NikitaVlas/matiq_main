@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDuration, getVideoTopics, progressPercent } from './lesson-state';
+import { continuationLabel, formatDuration, getVideoTopics, progressPercent } from './lesson-state';
 
 describe('lesson state', () => {
   it('formats duration and clamps playback progress', () => {
@@ -21,5 +21,25 @@ describe('lesson state', () => {
       { label: 'Position', value: 'Top Guard' },
       { label: 'Technik', value: 'Pressure Passing' },
     ]);
+  });
+
+  it('explains primary and conditional continuations', () => {
+    expect(
+      continuationLabel({
+        type: 'PRIMARY',
+        lessonId: 'next',
+        videoId: 'video-next',
+        title: 'Pressure pass',
+      }),
+    ).toBe('Hauptweg');
+    expect(
+      continuationLabel({
+        type: 'BRANCH',
+        lessonId: 'branch',
+        videoId: 'video-branch',
+        title: 'Back take',
+        trigger: 'Der Gegner dreht sich ein',
+      }),
+    ).toBe('Wenn: Der Gegner dreht sich ein');
   });
 });

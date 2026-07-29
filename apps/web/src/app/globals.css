@@ -428,6 +428,21 @@ legend {
   max-width: 1180px;
 }
 
+.lesson-breadcrumbs {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 24px;
+  color: #5d605f;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.lesson-breadcrumbs a {
+  color: #111418;
+  text-underline-offset: 4px;
+}
+
 .lesson-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -510,6 +525,40 @@ legend {
   line-height: 1.65;
 }
 
+.lesson-goal {
+  padding: 16px 20px;
+  border-left: 3px solid #c63d32;
+  background: #fff;
+}
+
+.lesson-continuation-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.lesson-continuation-list a {
+  display: grid;
+  gap: 8px;
+  min-height: 116px;
+  padding: 20px;
+  border: 1px solid #a9a69f;
+  background: #fff;
+  text-decoration: none;
+}
+
+.lesson-continuation-list a:active {
+  transform: translateY(1px);
+}
+
+.lesson-continuation-list span {
+  color: #c63d32;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .lesson-recommendation {
   position: relative;
   padding-left: 24px;
@@ -541,6 +590,58 @@ legend {
   padding: 24px;
   border: 1px solid #d8d5ce;
   background: #fff;
+}
+
+.lesson-module-nav {
+  margin: -24px -24px 28px;
+  padding: 24px;
+  border-bottom: 1px solid #a9a69f;
+  background: #111418;
+  color: #fff;
+}
+
+.lesson-module-nav .eyebrow {
+  color: #ee6258;
+}
+
+.lesson-module-nav ol {
+  display: grid;
+  gap: 0;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lesson-module-nav li {
+  border-top: 1px solid #41464b;
+}
+
+.lesson-module-nav li.is-current {
+  border-left: 3px solid #ee6258;
+}
+
+.lesson-module-nav a {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 10px;
+  padding: 14px 8px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.lesson-module-nav a > span:first-child {
+  color: #ee6258;
+  font-weight: 800;
+}
+
+.lesson-module-nav a strong,
+.lesson-module-nav a small {
+  display: block;
+}
+
+.lesson-module-nav a small {
+  margin-top: 5px;
+  color: #c9ccce;
 }
 
 .lesson-sidebar dl {
@@ -627,6 +728,10 @@ legend {
 
   .lesson-header,
   .lesson-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .lesson-continuation-list {
     grid-template-columns: 1fr;
   }
 
