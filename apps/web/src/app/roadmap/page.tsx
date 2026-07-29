@@ -32,26 +32,38 @@ type Result = { completed: boolean; roadmaps: Roadmap[] };
 export default function RoadmapPage() {
   const [result, setResult] = useState<Result>();
   const [selectedDiscipline, setSelectedDiscipline] = useState<Discipline>();
+  const [error, setError] = useState('');
+  const [updatingId, setUpdatingId] = useState('');
 
   async function load() {
     const response = await fetch(`${api}/assessment/result`, { credentials: 'include' });
+    if (!response.ok) throw new Error('ROADMAP_LOAD_FAILED');
     const value = (await response.json()) as Result;
     setResult(value);
     setSelectedDiscipline((current) => current ?? value.roadmaps[0]?.discipline);
   }
 
   useEffect(() => {
-    void load();
+    void load().catch(() => setError('Die Roadmap konnte nicht geladen werden.'));
   }, []);
 
   async function update(id: string, body: object) {
-    await fetch(`${api}/assessment/roadmap-items/${id}`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    await load();
+    setError('');
+    setUpdatingId(id);
+    try {
+      const response = await fetch(`${api}/assessment/roadmap-items/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) throw new Error('ROADMAP_UPDATE_FAILED');
+      await load();
+    } catch {
+      setError('Die Änderung konnte nicht gespeichert werden. Bitte versuche es erneut.');
+    } finally {
+      setUpdatingId('');
+    }
   }
 
   const roadmap = result?.roadmaps.find((item) => item.discipline === selectedDiscipline);
@@ -69,14 +81,21 @@ export default function RoadmapPage() {
       <section className="shell">
         <p className="eyebrow">Roadmap</p>
         <h1>DEIN NÄCHSTER SCHRITT</h1>
-        {!result ? <p>Roadmap wird geladen …</p> : null}
+        {!result && !error ? (
+          <div className="roadmap-loading" aria-label="Roadmap wird geladen" />
+        ) : null}
+        {error ? (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        ) : null}
         {result && !result.completed ? (
           <p>
             Schließe zuerst dein <a href="/assessment">Assessment</a> ab.
           </p>
         ) : null}
         {result?.roadmaps.length ? (
-          <nav aria-label="Disziplin auswählen">
+          <nav className="roadmap-discipline-tabs" aria-label="Disziplin auswählen">
             {result.roadmaps.map((item) => (
               <button
                 key={item.discipline}
@@ -121,9 +140,28 @@ export default function RoadmapPage() {
                         {video.title}
                       </a>
                     ))}
-                    <button onClick={() => update(item.id, { direction: 'up' })}>↑</button>
-                    <button onClick={() => update(item.id, { direction: 'down' })}>↓</button>
-                    <button onClick={() => update(item.id, { isHidden: true })}>Ausblenden</button>
+                    <div className="roadmap-item-actions">
+                      <button
+                        disabled={Boolean(updatingId)}
+                        aria-label={`${item.title} nach oben verschieben`}
+                        onClick={() => update(item.id, { direction: 'up' })}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        disabled={Boolean(updatingId)}
+                        aria-label={`${item.title} nach unten verschieben`}
+                        onClick={() => update(item.id, { direction: 'down' })}
+                      >
+                        ↓
+                      </button>
+                      <button
+                        disabled={Boolean(updatingId)}
+                        onClick={() => update(item.id, { isHidden: true })}
+                      >
+                        {updatingId === item.id ? 'Wird gespeichert...' : 'Ausblenden'}
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>
@@ -159,8 +197,11 @@ export default function RoadmapPage() {
               {roadmap.hiddenItems.map((item) => (
                 <article key={item.id}>
                   <strong>{item.title}</strong>
-                  <button onClick={() => update(item.id, { isHidden: false })}>
-                    Wiederherstellen
+                  <button
+                    disabled={Boolean(updatingId)}
+                    onClick={() => update(item.id, { isHidden: false })}
+                  >
+                    {updatingId === item.id ? 'Wird gespeichert...' : 'Wiederherstellen'}
                   </button>
                 </article>
               ))}
@@ -179,7 +220,7 @@ function RoadmapProgress({ item }: { item: RoadmapItem }) {
     <div aria-label={`Fortschritt ${progress.percent} Prozent`}>
       <progress max={100} value={progress.percent} />
       <p>
-        {progress.completedVideos} von {progress.totalVideos} Videos abgeschlossen —{' '}
+        {progress.completedVideos} von {progress.totalVideos} Videos abgeschlossen.{' '}
         {progressStatusLabel(progress.status)}
       </p>
     </div>

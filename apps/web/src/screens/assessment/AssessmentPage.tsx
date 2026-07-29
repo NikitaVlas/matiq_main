@@ -22,6 +22,7 @@ export default function AssessmentPage() {
   const [previouslyCompleted, setPreviouslyCompleted] = useState(false);
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [missingQuestionKey, setMissingQuestionKey] = useState('');
   const [roadmap, setRoadmap] = useState<
@@ -55,7 +56,8 @@ export default function AssessmentPage() {
         setCustomAnswers(custom);
         setPreviouslyCompleted(saved.completed);
       })
-      .catch(() => setError('Das Assessment konnte nicht geladen werden.'));
+      .catch(() => setError('Das Assessment konnte nicht geladen werden.'))
+      .finally(() => setLoading(false));
   }, []);
 
   const select = (question: Question, optionKey: string, checked: boolean) => {
@@ -157,22 +159,31 @@ export default function AssessmentPage() {
             Reihenfolge und Fortschritt bleiben erhalten.
           </p>
         )}
-        {error && <p role="alert">{error}</p>}
-        <form onSubmit={submit}>
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
+        {loading ? (
+          <div className="assessment-skeleton" aria-label="Assessment wird geladen">
+            <span />
+            <span />
+            <span />
+          </div>
+        ) : null}
+        <form className="assessment-form" onSubmit={submit} aria-busy={saving}>
           {questions.map((question) => (
             <fieldset
               id={`assessment-question-${question.key}`}
               key={question.key}
               aria-invalid={missingQuestionKey === question.key}
-              style={
-                missingQuestionKey === question.key
-                  ? { borderColor: '#cf3b31', borderWidth: 2 }
-                  : undefined
-              }
+              className={missingQuestionKey === question.key ? 'has-error' : undefined}
             >
               <legend>{question.text}</legend>
               {missingQuestionKey === question.key && (
-                <p role="alert">Bitte beantworte diese Frage, bevor du die Roadmap aktualisierst.</p>
+                <p role="alert">
+                  Bitte beantworte diese Frage, bevor du die Roadmap aktualisierst.
+                </p>
               )}
               {question.multiple && <small>Mehrere Antworten sind möglich.</small>}
               {question.options.map((option) => {
@@ -209,7 +220,7 @@ export default function AssessmentPage() {
               )}
             </fieldset>
           ))}
-          <button disabled={!questions.length || saving}>
+          <button className="assessment-submit" disabled={!questions.length || saving}>
             {saving
               ? 'Roadmap wird aktualisiert...'
               : previouslyCompleted

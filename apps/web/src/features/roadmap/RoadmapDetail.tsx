@@ -34,24 +34,36 @@ type RoadmapDetailResult = {
 export default function RoadmapDetail({ id }: { id: string }) {
   const [result, setResult] = useState<RoadmapDetailResult>();
   const [error, setError] = useState('');
+  const [updating, setUpdating] = useState(false);
 
   async function update(body: { completed?: boolean; isHidden?: boolean }) {
-    const response = await fetch(`${api}/assessment/roadmap-items/${encodeURIComponent(id)}`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!response.ok) return setError('Der Roadmap-Schritt konnte nicht aktualisiert werden.');
-    if (body.isHidden) return (window.location.href = '/roadmap');
-    setResult((current) =>
-      current
-        ? {
-            ...current,
-            item: { ...current.item, completedAt: body.completed ? new Date().toISOString() : null },
-          }
-        : current,
-    );
+    setError('');
+    setUpdating(true);
+    try {
+      const response = await fetch(`${api}/assessment/roadmap-items/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) throw new Error('ROADMAP_UPDATE_FAILED');
+      if (body.isHidden) return (window.location.href = '/roadmap');
+      setResult((current) =>
+        current
+          ? {
+              ...current,
+              item: {
+                ...current.item,
+                completedAt: body.completed ? new Date().toISOString() : null,
+              },
+            }
+          : current,
+      );
+    } catch {
+      setError('Der Roadmap-Schritt konnte nicht aktualisiert werden.');
+    } finally {
+      setUpdating(false);
+    }
   }
 
   useEffect(() => {
@@ -71,11 +83,13 @@ export default function RoadmapDetail({ id }: { id: string }) {
     return () => controller.abort();
   }, [id]);
 
-  if (error)
+  if (error && !result)
     return (
       <main>
         <section className="shell">
-          <p>{error}</p>
+          <p className="error" role="alert">
+            {error}
+          </p>
           <Link href="/roadmap">Zur Roadmap</Link>
         </section>
       </main>
@@ -84,7 +98,11 @@ export default function RoadmapDetail({ id }: { id: string }) {
     return (
       <main>
         <section className="shell">
-          <p>Roadmap-Schritt wird geladen …</p>
+          <div className="roadmap-detail-skeleton" aria-label="Roadmap-Schritt wird geladen">
+            <span />
+            <span />
+            <span />
+          </div>
         </section>
       </main>
     );
@@ -132,10 +150,23 @@ export default function RoadmapDetail({ id }: { id: string }) {
           </Link>
         ) : null}
         <div>
-          <button type="button" onClick={() => void update({ completed: !result.item.completedAt })}>
-            {result.item.completedAt ? 'Schritt wieder öffnen' : 'Schritt manuell abschließen'}
+          {error ? (
+            <p className="error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <button
+            disabled={updating}
+            type="button"
+            onClick={() => void update({ completed: !result.item.completedAt })}
+          >
+            {updating
+              ? 'Wird gespeichert...'
+              : result.item.completedAt
+                ? 'Schritt wieder öffnen'
+                : 'Schritt manuell abschließen'}
           </button>{' '}
-          <button type="button" onClick={() => void update({ isHidden: true })}>
+          <button disabled={updating} type="button" onClick={() => void update({ isHidden: true })}>
             Empfehlung ausblenden
           </button>
         </div>
@@ -165,24 +196,29 @@ export default function RoadmapDetail({ id }: { id: string }) {
                   <h3>{roleLabel(group.role)}</h3>
                   <div className="roadmap-lesson-grid">
                     {group.lessons.map((lesson) => {
-                const percent = lesson.durationSec
-                  ? Math.min(100, Math.round((lesson.watchedSeconds / lesson.durationSec) * 100))
-                  : 0;
+                      const percent = lesson.durationSec
+                        ? Math.min(
+                            100,
+                            Math.round((lesson.watchedSeconds / lesson.durationSec) * 100),
+                          )
+                        : 0;
                       return (
-                  <article key={lesson.videoId}>
-                    <div>
-                      <span>{lesson.completed ? 'Abgeschlossen' : `${percent}% angesehen`}</span>
-                      <h3>{lesson.title}</h3>
-                      <p>
-                        {lesson.course
-                          ? `${lesson.course.title} · ${lesson.module?.title}`
-                          : 'Einzelvideo'}
-                      </p>
-                    </div>
-                    <Link className="action-link" href={`/video/${lesson.videoId}`}>
-                      {lesson.watchedSeconds ? 'Weiter ansehen' : 'Lektion starten'}
-                    </Link>
-                  </article>
+                        <article key={lesson.videoId}>
+                          <div>
+                            <span>
+                              {lesson.completed ? 'Abgeschlossen' : `${percent}% angesehen`}
+                            </span>
+                            <h3>{lesson.title}</h3>
+                            <p>
+                              {lesson.course
+                                ? `${lesson.course.title} · ${lesson.module?.title}`
+                                : 'Einzelvideo'}
+                            </p>
+                          </div>
+                          <Link className="action-link" href={`/video/${lesson.videoId}`}>
+                            {lesson.watchedSeconds ? 'Weiter ansehen' : 'Lektion starten'}
+                          </Link>
+                        </article>
                       );
                     })}
                   </div>
