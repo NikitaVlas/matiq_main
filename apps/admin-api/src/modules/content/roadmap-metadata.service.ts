@@ -73,4 +73,48 @@ export class RoadmapMetadataService {
       })),
     );
   }
+
+  async diagnostics() {
+    const topics = await this.coverage();
+    const questions = await this.db.assessmentQuestion.findMany({
+      where: { active: true },
+      select: { skillKey: true, kind: true, options: true },
+    });
+    const assessmentMappings = new Map<string, number>();
+    for (const question of questions) {
+      if (question.kind === 'CONFIDENCE')
+        assessmentMappings.set(
+          question.skillKey,
+          (assessmentMappings.get(question.skillKey) ?? 0) + 1,
+        );
+      if (!Array.isArray(question.options)) continue;
+      for (const raw of question.options) {
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+        const option = raw as { skillKey?: unknown };
+        if (typeof option.skillKey !== 'string') continue;
+        assessmentMappings.set(
+          option.skillKey,
+          (assessmentMappings.get(option.skillKey) ?? 0) + 1,
+        );
+      }
+    }
+    const enrichedTopics = await Promise.all(
+      topics.map(async (topic) => ({
+        ...topic,
+        draftVideoCount: await this.db.videoMetadataOption.count({
+          where: { optionId: topic.id, video: { published: false } },
+        }),
+        assessmentMappingCount: assessmentMappings.get(topic.key) ?? 0,
+      })),
+    );
+    const unlinkedVideos = await this.db.video.findMany({
+      where: {
+        published: true,
+        metadataValues: { none: { option: { field: { key: 'roadmap-topic' } } } },
+      },
+      select: { id: true, title: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    return { topics: enrichedTopics, unlinkedVideos };
+  }
 }

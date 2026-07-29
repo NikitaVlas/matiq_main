@@ -6,6 +6,10 @@ import { adminApi } from '../../shared/api/client';
 type MetadataOption = { id: string; key: string; name: string };
 type MetadataField = { id: string; key: string; name: string; options: MetadataOption[] };
 type RoadmapCoverage = MetadataOption & { publishedVideoCount: number };
+type RoadmapDiagnostics = {
+  topics: (RoadmapCoverage & { draftVideoCount: number; assessmentMappingCount: number })[];
+  unlinkedVideos: { id: string; title: string }[];
+};
 type Video = {
   id: string;
   title: string;
@@ -28,6 +32,7 @@ export default function VideoUploadPage() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [fields, setFields] = useState<MetadataField[]>([]);
   const [roadmapCoverage, setRoadmapCoverage] = useState<RoadmapCoverage[]>([]);
+  const [roadmapDiagnostics, setRoadmapDiagnostics] = useState<RoadmapDiagnostics>();
   const [editingVideoId, setEditingVideoId] = useState('');
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [newOptions, setNewOptions] = useState<Record<string, string>>({});
@@ -35,14 +40,17 @@ export default function VideoUploadPage() {
   const [newRoadmapTopic, setNewRoadmapTopic] = useState('');
 
   const load = async () => {
-    const [videosResponse, fieldsResponse, coverageResponse] = await Promise.all([
+    const [videosResponse, fieldsResponse, coverageResponse, diagnosticsResponse] =
+      await Promise.all([
       adminApi('/admin/videos'),
       adminApi('/admin/content/metadata-fields'),
       adminApi('/admin/content/roadmap-topic-coverage'),
+      adminApi('/admin/content/roadmap-diagnostics'),
     ]);
     if (videosResponse.ok) setVideos(await videosResponse.json());
     if (fieldsResponse.ok) setFields(await fieldsResponse.json());
     if (coverageResponse.ok) setRoadmapCoverage(await coverageResponse.json());
+    if (diagnosticsResponse.ok) setRoadmapDiagnostics(await diagnosticsResponse.json());
   };
 
   useEffect(() => {
@@ -238,6 +246,34 @@ export default function VideoUploadPage() {
         ) : (
           <p>No Roadmap topics available.</p>
         )}
+        {roadmapDiagnostics ? (
+          <div role="status" aria-label="Roadmap diagnostics">
+            <h3>Warnings</h3>
+            <ul>
+              {roadmapDiagnostics.topics.flatMap((topic) => [
+                ...(topic.publishedVideoCount === 0
+                  ? [
+                      <li key={`${topic.id}-content`}>
+                        {topic.name}: no published content
+                        {topic.draftVideoCount ? ` (${topic.draftVideoCount} draft)` : ''}
+                      </li>,
+                    ]
+                  : []),
+                ...(topic.assessmentMappingCount === 0
+                  ? [<li key={`${topic.id}-assessment`}>{topic.name}: not used by Assessment</li>]
+                  : []),
+              ])}
+              {roadmapDiagnostics.unlinkedVideos.map((video) => (
+                <li key={video.id}>{video.title}: published without a Roadmap topic</li>
+              ))}
+            </ul>
+            {!roadmapDiagnostics.topics.some(
+              (topic) => topic.publishedVideoCount === 0 || topic.assessmentMappingCount === 0,
+            ) && !roadmapDiagnostics.unlinkedVideos.length ? (
+              <p>No Roadmap connection warnings.</p>
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       <h2>Videos</h2>

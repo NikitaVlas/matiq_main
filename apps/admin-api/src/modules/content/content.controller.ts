@@ -256,6 +256,9 @@ export class ContentController {
   @Get('roadmap-topic-coverage') roadmapTopicCoverage() {
     return this.roadmapMetadata.coverage();
   }
+  @Get('roadmap-diagnostics') roadmapDiagnostics() {
+    return this.roadmapMetadata.diagnostics();
+  }
   @Post('roadmap-topics') createRoadmapTopic(@Body() body: { key?: string; name?: string }) {
     return this.roadmapMetadata.createTopic(body);
   }

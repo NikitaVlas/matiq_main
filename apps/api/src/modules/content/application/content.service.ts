@@ -210,7 +210,23 @@ export class ContentService {
           id: { notIn: [...excludedVideoIds] },
           published: true,
           Lesson: { published: true },
-          OR: [{ position: { key: item.skillKey } }, { technique: { key: item.skillKey } }],
+          metadataValues: {
+            some: {
+              option: {
+                key: disciplineMetadataKey(item.discipline),
+                field: { key: 'discipline' },
+              },
+            },
+          },
+          OR: [
+            { position: { key: item.skillKey } },
+            { technique: { key: item.skillKey } },
+            {
+              metadataValues: {
+                some: { option: { key: item.skillKey, field: { key: 'roadmap-topic' } } },
+              },
+            },
+          ],
         },
         include: { Lesson: true },
       });
@@ -406,4 +422,8 @@ function recommendation(
   reason: string,
 ): Recommendation {
   return { source, lessonId: lesson.id, videoId: lesson.videoId, title: lesson.title, reason };
+}
+
+function disciplineMetadataKey(discipline: Discipline) {
+  return discipline === Discipline.BJJ_GI ? 'bjj-gi' : 'no-gi';
 }

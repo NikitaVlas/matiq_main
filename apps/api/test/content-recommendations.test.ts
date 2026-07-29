@@ -86,6 +86,38 @@ describe('ContentService recommendations', () => {
     });
   });
 
+  it('matches a Roadmap candidate through the shared Roadmap topic metadata', async () => {
+    const findFirst = vi.fn().mockResolvedValue({
+      id: 'video-half-guard',
+      Lesson: { id: 'lesson-half-guard', videoId: 'video-half-guard', title: 'Half Guard' },
+    });
+    const { service } = createService({
+      athleteProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          roadmapItems: [{ title: 'Half Guard', skillKey: 'half-guard', lesson: null }],
+        }),
+      },
+      video: { findFirst, findMany: vi.fn().mockResolvedValue([]) },
+    });
+
+    await expect(
+      service.recommendations('athlete-1', UserRole.ATHLETE, 'video-current'),
+    ).resolves.toMatchObject({ primarySource: 'ROADMAP', roadmap: { videoId: 'video-half-guard' } });
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            {
+              metadataValues: {
+                some: { option: { key: 'half-guard', field: { key: 'roadmap-topic' } } },
+              },
+            },
+          ]),
+        }),
+      }),
+    );
+  });
+
   it('does not require a subscription for an administrator', async () => {
     const { service, subscriptions } = createService();
     await service.recommendations('admin-1', UserRole.ADMIN, 'video-current');
