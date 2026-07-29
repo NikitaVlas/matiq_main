@@ -23,6 +23,7 @@ export default function AssessmentPage() {
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [missingQuestionKey, setMissingQuestionKey] = useState('');
   const [roadmap, setRoadmap] = useState<
     { id: string; title: string; recommendationType: 'CORE' | 'GAP' | 'EXPLORE' }[]
   >([]);
@@ -58,6 +59,8 @@ export default function AssessmentPage() {
   }, []);
 
   const select = (question: Question, optionKey: string, checked: boolean) => {
+    setMissingQuestionKey('');
+    setError('');
     setAnswers((current) => {
       if (!question.multiple) return { ...current, [question.key]: [optionKey] };
       const values = current[question.key] ?? [];
@@ -73,11 +76,19 @@ export default function AssessmentPage() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError('');
+    setMissingQuestionKey('');
     const missing = questions.find(
       (question) => !(answers[question.key]?.length || customAnswers[question.key]?.trim()),
     );
     if (missing) {
       setError(`Bitte beantworte: ${missing.text}`);
+      setMissingQuestionKey(missing.key);
+      requestAnimationFrame(() => {
+        document.getElementById(`assessment-question-${missing.key}`)?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      });
       return;
     }
     setSaving(true);
@@ -149,8 +160,20 @@ export default function AssessmentPage() {
         {error && <p role="alert">{error}</p>}
         <form onSubmit={submit}>
           {questions.map((question) => (
-            <fieldset key={question.key}>
+            <fieldset
+              id={`assessment-question-${question.key}`}
+              key={question.key}
+              aria-invalid={missingQuestionKey === question.key}
+              style={
+                missingQuestionKey === question.key
+                  ? { borderColor: '#cf3b31', borderWidth: 2 }
+                  : undefined
+              }
+            >
               <legend>{question.text}</legend>
+              {missingQuestionKey === question.key && (
+                <p role="alert">Bitte beantworte diese Frage, bevor du die Roadmap aktualisierst.</p>
+              )}
               {question.multiple && <small>Mehrere Antworten sind möglich.</small>}
               {question.options.map((option) => {
                 const checked = answers[question.key]?.includes(option.key) ?? false;
@@ -173,12 +196,14 @@ export default function AssessmentPage() {
                     maxLength={200}
                     placeholder="Wird zunächst manuell geprüft"
                     value={customAnswers[question.key] ?? ''}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      setMissingQuestionKey('');
+                      setError('');
                       setCustomAnswers((current) => ({
                         ...current,
                         [question.key]: event.target.value,
-                      }))
-                    }
+                      }));
+                    }}
                   />
                 </label>
               )}
