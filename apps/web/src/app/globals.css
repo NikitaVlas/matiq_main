@@ -162,3 +162,264 @@ legend {
 .lesson-list p {
   margin: 6px 0;
 }
+
+.dashboard-page {
+  max-width: 1180px;
+}
+
+.dashboard-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 48px;
+  align-items: end;
+  margin-bottom: 32px;
+}
+
+.dashboard-header h1 {
+  max-width: 780px;
+  margin-bottom: 0;
+}
+
+.dashboard-access {
+  display: grid;
+  gap: 8px;
+  padding-left: 24px;
+  border-left: 3px solid #c63d32;
+}
+
+.dashboard-access span {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.dashboard-access a,
+.text-link {
+  font-weight: 800;
+  text-underline-offset: 4px;
+}
+
+.dashboard-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.dashboard-tabs button {
+  background: transparent;
+  color: #111418;
+  border: 1px solid #a9a69f;
+}
+
+.dashboard-tabs button[aria-pressed='true'] {
+  background: #111418;
+  color: #fff;
+  border-color: #111418;
+}
+
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(260px, 0.8fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.dashboard-main-column,
+.dashboard-side-column {
+  display: grid;
+  gap: 24px;
+}
+
+.dashboard-feature {
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(28px, 5vw, 56px);
+  background: #111418;
+  color: #fff;
+}
+
+.dashboard-feature .eyebrow {
+  color: #ee6258;
+}
+
+.dashboard-feature h2 {
+  max-width: 650px;
+  margin: 10px 0 12px;
+  font-size: clamp(32px, 5vw, 58px);
+  line-height: 0.98;
+}
+
+.dashboard-feature p:not(.eyebrow) {
+  max-width: 58ch;
+  color: #d8d5ce;
+}
+
+.dashboard-feature .action-link {
+  background: #c63d32;
+}
+
+.dashboard-feature .text-link {
+  color: #fff;
+}
+
+.dashboard-complete {
+  background: #262b30;
+}
+
+.dashboard-actions {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  margin-top: 22px;
+}
+
+.dashboard-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 24px 0;
+  border-bottom: 1px solid #a9a69f;
+}
+
+.dashboard-row h2 {
+  margin: 4px 0 0;
+}
+
+.secondary-action {
+  background: transparent;
+  color: #111418;
+  border: 1px solid #111418;
+  white-space: nowrap;
+}
+
+.dashboard-panel {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #d8d5ce;
+}
+
+.dashboard-panel h2 {
+  font-size: 22px;
+}
+
+.dashboard-metric {
+  display: block;
+  margin: 12px 0;
+  font-size: 48px;
+  line-height: 1;
+}
+
+.dashboard-link-list {
+  display: grid;
+  gap: 0;
+}
+
+.dashboard-link-list > a,
+.dashboard-link-list article {
+  display: block;
+  padding: 14px 0;
+  border-top: 1px solid #d8d5ce;
+  font-weight: 800;
+}
+
+.dashboard-link-list article h3,
+.dashboard-link-list article p {
+  margin: 0 0 8px;
+}
+
+.dashboard-courses {
+  padding-top: 20px;
+}
+
+.dashboard-course-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-course-grid article {
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #d8d5ce;
+}
+
+.dashboard-course-grid article > p:first-child {
+  color: #c63d32;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.dashboard-empty {
+  max-width: 720px;
+  padding: 48px;
+  background: #fff;
+  border: 1px solid #d8d5ce;
+}
+
+.dashboard-skeleton {
+  background: linear-gradient(90deg, #e7e4de 25%, #f3f1ec 50%, #e7e4de 75%);
+  background-size: 200% 100%;
+  animation: dashboard-loading 1.2s linear infinite;
+}
+
+.dashboard-skeleton-title {
+  width: 65%;
+  height: 96px;
+  margin-bottom: 32px;
+}
+
+.dashboard-skeleton-feature {
+  height: 360px;
+}
+
+.dashboard-skeleton-panel {
+  height: 220px;
+}
+
+@keyframes dashboard-loading {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-skeleton {
+    animation: none;
+  }
+}
+
+@media (max-width: 800px) {
+  .dashboard-page {
+    padding: 40px 18px;
+  }
+
+  .dashboard-header,
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-access {
+    padding: 16px 0 0;
+    border-top: 3px solid #c63d32;
+    border-left: 0;
+  }
+
+  .dashboard-course-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-row,
+  .dashboard-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboard-tabs button {
+    flex: 1;
+    padding-inline: 10px;
+  }
+}
