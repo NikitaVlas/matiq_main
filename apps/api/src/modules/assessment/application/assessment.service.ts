@@ -551,6 +551,10 @@ export class AssessmentService {
               select: { watchedSeconds: true, completed: true },
               take: 1,
             },
+            metadataValues: {
+              where: { option: { field: { key: 'roadmap-content-role' } } },
+              select: { option: { select: { key: true } } },
+            },
             Lesson: {
               select: {
                 id: true,
@@ -584,6 +588,7 @@ export class AssessmentService {
         durationSec: video.durationSec,
         watchedSeconds: watch?.watchedSeconds ?? 0,
         completed: watch?.completed ?? false,
+        role: contentRole(video.metadataValues?.[0]?.option.key),
         course: publishedLesson
           ? {
               id: publishedLesson.module.course.id,
@@ -601,14 +606,19 @@ export class AssessmentService {
       .filter(
         (course, index, all) => all.findIndex((candidate) => candidate.id === course.id) === index,
       );
-    const completedLessons = lessons.filter((lesson) => lesson.completed).length;
+    const requiredLessons = lessons.filter((lesson) => lesson.role === 'REQUIRED');
+    const progressLessons = requiredLessons.length ? requiredLessons : lessons;
+    const completedLessons = progressLessons.filter((lesson) => lesson.completed).length;
 
     return {
       item,
       progress: {
         completedLessons,
-        totalLessons: lessons.length,
-        percent: lessons.length ? Math.round((completedLessons / lessons.length) * 100) : 0,
+        totalLessons: progressLessons.length,
+        requiredLessons: requiredLessons.length,
+        percent: progressLessons.length
+          ? Math.round((completedLessons / progressLessons.length) * 100)
+          : 0,
       },
       courses,
       lessons,
@@ -618,7 +628,7 @@ export class AssessmentService {
   async updateRoadmapItem(
     userId: string,
     itemId: string,
-    change: { isHidden?: boolean; direction?: 'up' | 'down' },
+    change: { isHidden?: boolean; direction?: 'up' | 'down'; completed?: boolean },
   ) {
     const profile = await this.db.athleteProfile.findUniqueOrThrow({ where: { userId } });
     const item = await this.db.roadmapItem.findFirst({
@@ -629,6 +639,11 @@ export class AssessmentService {
       return this.db.roadmapItem.update({
         where: { id: item.id },
         data: { isHidden: change.isHidden },
+      });
+    if (typeof change.completed === 'boolean')
+      return this.db.roadmapItem.update({
+        where: { id: item.id },
+        data: { completedAt: change.completed ? new Date() : null },
       });
     if (!change.direction) return item;
     const neighbor = await this.db.roadmapItem.findFirst({
@@ -772,4 +787,8 @@ function mappedOption(
 
 function disciplineMetadataKey(discipline: Discipline) {
   return discipline === Discipline.BJJ_GI ? 'bjj-gi' : 'no-gi';
+}
+
+function contentRole(key?: string) {
+  return key === 'required' ? 'REQUIRED' : key === 'optional' ? 'OPTIONAL' : 'RECOMMENDED';
 }

@@ -36,7 +36,7 @@ export class AssessmentController {
   @Patch('roadmap-items/:id') update(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() body: { isHidden?: boolean; direction?: 'up' | 'down' },
+    @Body() body: { isHidden?: boolean; direction?: 'up' | 'down'; completed?: boolean },
   ) {
     return this.assessment.updateRoadmapItem(req.userId, id, body);
   }

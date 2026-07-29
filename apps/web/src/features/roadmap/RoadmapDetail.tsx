@@ -6,8 +6,18 @@ import { useEffect, useState } from 'react';
 const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
 
 type RoadmapDetailResult = {
-  item: { id: string; title: string; discipline: 'BJJ_GI' | 'NO_GI_GRAPPLING' };
-  progress: { completedLessons: number; totalLessons: number; percent: number };
+  item: {
+    id: string;
+    title: string;
+    discipline: 'BJJ_GI' | 'NO_GI_GRAPPLING';
+    completedAt?: string | null;
+  };
+  progress: {
+    completedLessons: number;
+    totalLessons: number;
+    requiredLessons: number;
+    percent: number;
+  };
   courses: Array<{ id: string; title: string; description?: string | null }>;
   lessons: Array<{
     videoId: string;
@@ -15,6 +25,7 @@ type RoadmapDetailResult = {
     durationSec?: number | null;
     watchedSeconds: number;
     completed: boolean;
+    role: 'REQUIRED' | 'RECOMMENDED' | 'OPTIONAL';
     course: { id: string; title: string } | null;
     module: { id: string; title: string } | null;
   }>;
@@ -23,6 +34,25 @@ type RoadmapDetailResult = {
 export default function RoadmapDetail({ id }: { id: string }) {
   const [result, setResult] = useState<RoadmapDetailResult>();
   const [error, setError] = useState('');
+
+  async function update(body: { completed?: boolean; isHidden?: boolean }) {
+    const response = await fetch(`${api}/assessment/roadmap-items/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) return setError('Der Roadmap-Schritt konnte nicht aktualisiert werden.');
+    if (body.isHidden) return (window.location.href = '/roadmap');
+    setResult((current) =>
+      current
+        ? {
+            ...current,
+            item: { ...current.item, completedAt: body.completed ? new Date().toISOString() : null },
+          }
+        : current,
+    );
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -59,6 +89,15 @@ export default function RoadmapDetail({ id }: { id: string }) {
       </main>
     );
 
+  const roleOrder = ['REQUIRED', 'RECOMMENDED', 'OPTIONAL'] as const;
+  const groupedLessons = roleOrder.map((role) => ({
+    role,
+    lessons: result.lessons.filter((lesson) => lesson.role === role),
+  }));
+  const nextLesson = roleOrder
+    .flatMap((role) => result.lessons.filter((lesson) => lesson.role === role))
+    .find((lesson) => !lesson.completed);
+
   return (
     <main>
       <section className="shell roadmap-detail">
@@ -81,11 +120,25 @@ export default function RoadmapDetail({ id }: { id: string }) {
               {result.progress.completedLessons} von {result.progress.totalLessons} passenden
               Lektionen abgeschlossen.
             </p>
+            {result.progress.requiredLessons ? <p>Gezählt werden nur Pflichtvideos.</p> : null}
           </div>
           <progress value={result.progress.percent} max="100">
             {result.progress.percent}%
           </progress>
         </section>
+        {nextLesson ? (
+          <Link className="action-link" href={`/video/${nextLesson.videoId}`}>
+            Training fortsetzen: {nextLesson.title}
+          </Link>
+        ) : null}
+        <div>
+          <button type="button" onClick={() => void update({ completed: !result.item.completedAt })}>
+            {result.item.completedAt ? 'Schritt wieder öffnen' : 'Schritt manuell abschließen'}
+          </button>{' '}
+          <button type="button" onClick={() => void update({ isHidden: true })}>
+            Empfehlung ausblenden
+          </button>
+        </div>
         {result.courses.length ? (
           <section aria-labelledby="matching-courses-title">
             <p className="eyebrow">Passende Kurse</p>
@@ -106,12 +159,16 @@ export default function RoadmapDetail({ id }: { id: string }) {
           <p className="eyebrow">Passende Lektionen</p>
           <h2 id="matching-lessons-title">Direkt mit einer Technik starten</h2>
           {result.lessons.length ? (
-            <div className="roadmap-lesson-grid">
-              {result.lessons.map((lesson) => {
+            groupedLessons.map((group) =>
+              group.lessons.length ? (
+                <div key={group.role}>
+                  <h3>{roleLabel(group.role)}</h3>
+                  <div className="roadmap-lesson-grid">
+                    {group.lessons.map((lesson) => {
                 const percent = lesson.durationSec
                   ? Math.min(100, Math.round((lesson.watchedSeconds / lesson.durationSec) * 100))
                   : 0;
-                return (
+                      return (
                   <article key={lesson.videoId}>
                     <div>
                       <span>{lesson.completed ? 'Abgeschlossen' : `${percent}% angesehen`}</span>
@@ -126,9 +183,12 @@ export default function RoadmapDetail({ id }: { id: string }) {
                       {lesson.watchedSeconds ? 'Weiter ansehen' : 'Lektion starten'}
                     </Link>
                   </article>
-                );
-              })}
-            </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null,
+            )
           ) : (
             <div className="roadmap-empty-content">
               <h3>Noch keine passenden Lektionen veröffentlicht</h3>
@@ -143,4 +203,12 @@ export default function RoadmapDetail({ id }: { id: string }) {
       </section>
     </main>
   );
+}
+
+function roleLabel(role: 'REQUIRED' | 'RECOMMENDED' | 'OPTIONAL') {
+  return {
+    REQUIRED: 'Pflichtvideos',
+    RECOMMENDED: 'Empfohlene Videos',
+    OPTIONAL: 'Optionale Vertiefung',
+  }[role];
 }

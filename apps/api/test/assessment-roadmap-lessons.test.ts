@@ -93,7 +93,12 @@ describe('assessment roadmap lesson matching', () => {
 
     const result = await service.roadmapItemDetails('user-1', 'item-1');
 
-    expect(result.progress).toEqual({ completedLessons: 1, totalLessons: 1, percent: 100 });
+    expect(result.progress).toEqual({
+      completedLessons: 1,
+      totalLessons: 1,
+      requiredLessons: 0,
+      percent: 100,
+    });
     expect(result.courses).toEqual([{ id: 'course-1', title: 'Top Game', description: null }]);
     expect(result.lessons[0]).toMatchObject({ videoId: 'video-1', completed: true });
     expect(db.video.findMany).toHaveBeenCalledWith(
