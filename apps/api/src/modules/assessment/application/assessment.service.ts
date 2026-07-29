@@ -1,5 +1,12 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { AssessmentContext, Discipline, Prisma } from '@prisma/client';
+import {
+  AssessmentContext,
+  AssessmentMappingStatus,
+  AssessmentQuestionKind,
+  Discipline,
+  Prisma,
+  RoadmapRecommendationType,
+} from '@prisma/client';
 import { Database } from '../../../shared/infrastructure/database';
 import { SubscriptionService } from '../../subscription/application/subscription.service';
 
@@ -78,7 +85,82 @@ const QUESTION_SEED = [
     skillKey: 'side-control-top',
     options: confidenceOptions('Ich verliere Side Control schnell'),
   },
+  {
+    key: 'preferred-game',
+    text: 'Welche Positionen und Techniken gehören bereits zu deinem Spiel?',
+    context: AssessmentContext.TOP,
+    skillKey: 'preferred-game',
+    kind: AssessmentQuestionKind.PREFERENCE,
+    multiple: true,
+    allowCustom: true,
+    options: [
+      mappedOption('standing', 'Stand und Takedowns', 'standing', RoadmapRecommendationType.CORE),
+      mappedOption(
+        'top-control',
+        'Kontrolle von oben',
+        'top-control',
+        RoadmapRecommendationType.CORE,
+      ),
+      mappedOption(
+        'closed-guard',
+        'Geschlossene Guard',
+        'closed-guard',
+        RoadmapRecommendationType.CORE,
+      ),
+      mappedOption('open-guard', 'Offene Guard', 'open-guard', RoadmapRecommendationType.CORE),
+      mappedOption(
+        'bottom-escape',
+        'Escapes von unten',
+        'bottom-escape',
+        RoadmapRecommendationType.CORE,
+      ),
+    ],
+  },
+  {
+    key: 'development-goal',
+    text: 'Was möchtest du als Nächstes entwickeln?',
+    context: AssessmentContext.TOP,
+    skillKey: 'development-goal',
+    kind: AssessmentQuestionKind.GOAL,
+    multiple: true,
+    allowCustom: true,
+    options: [
+      mappedOption(
+        'standing',
+        'Mein Standspiel aufbauen',
+        'standing',
+        RoadmapRecommendationType.EXPLORE,
+      ),
+      mappedOption(
+        'top-control',
+        'Mein Top Game erweitern',
+        'top-control',
+        RoadmapRecommendationType.EXPLORE,
+      ),
+      mappedOption(
+        'closed-guard',
+        'Aus der Closed Guard angreifen',
+        'closed-guard',
+        RoadmapRecommendationType.EXPLORE,
+      ),
+      mappedOption(
+        'open-guard',
+        'Eine Open Guard entwickeln',
+        'open-guard',
+        RoadmapRecommendationType.EXPLORE,
+      ),
+      mappedOption(
+        'bottom-escape',
+        'Sicherer aus schlechten Positionen entkommen',
+        'bottom-escape',
+        RoadmapRecommendationType.EXPLORE,
+      ),
+    ],
+  },
 ];
+
+type SubmissionAnswer = { questionKey: string; optionKey?: string; customText?: string };
+type Recommendation = { skillKey: string; type: RoadmapRecommendationType; score: number };
 
 @Injectable()
 export class AssessmentService {
@@ -92,7 +174,13 @@ export class AssessmentService {
       await this.db.assessmentQuestion.upsert({
         where: { key: question.key },
         create: question as Prisma.AssessmentQuestionCreateInput,
-        update: { text: question.text, options: question.options, active: true },
+        update: {
+          text: question.text,
+          options: question.options,
+          kind: question.kind ?? AssessmentQuestionKind.CONFIDENCE,
+          multiple: question.multiple ?? false,
+          allowCustom: question.allowCustom ?? false,
+        },
       });
     }
     return this.db.assessmentQuestion.findMany({
@@ -101,20 +189,93 @@ export class AssessmentService {
     });
   }
 
-  async submit(userId: string, answers: { questionKey: string; optionKey: string }[]) {
+  async currentAnswers(userId: string) {
+    const assessment = await this.db.assessment.findUnique({
+      where: { userId },
+      select: {
+        completedAt: true,
+        responses: {
+          select: {
+            optionKey: true,
+            customText: true,
+            mappingStatus: true,
+            question: { select: { key: true } },
+          },
+        },
+      },
+    });
+    return {
+      completed: Boolean(assessment?.completedAt),
+      answers: (assessment?.responses ?? []).map((response) => ({
+        questionKey: response.question.key,
+        optionKey: response.optionKey === '__custom__' ? undefined : response.optionKey,
+        customText: response.customText ?? undefined,
+        mappingStatus: response.mappingStatus,
+      })),
+    };
+  }
+
+  async submit(userId: string, answers: SubmissionAnswer[]) {
     const questions = await this.questions();
     const profile = await this.db.athleteProfile.findUnique({ where: { userId } });
     if (!profile) throw new NotFoundException('ATHLETE_PROFILE_REQUIRED');
+    const answerCounts = new Map<string, number>();
+    const submittedValues = new Set<string>();
     const selected = answers.map((answer) => {
       const question = questions.find((item) => item.key === answer.questionKey);
-      const option = (question?.options as Array<{ key: string; value: number }> | undefined)?.find(
-        (item) => item.key === answer.optionKey,
-      );
-      if (!question || !option) throw new NotFoundException('ASSESSMENT_OPTION_NOT_FOUND');
-      return { question, option };
+      if (!question) throw new NotFoundException('ASSESSMENT_QUESTION_NOT_FOUND');
+      answerCounts.set(question.key, (answerCounts.get(question.key) ?? 0) + 1);
+      if (!question.multiple && answerCounts.get(question.key)! > 1)
+        throw new BadRequestException('ASSESSMENT_SINGLE_ANSWER_REQUIRED');
+      const customText = answer.customText?.trim();
+      if (customText) {
+        if (!question.allowCustom) throw new BadRequestException('CUSTOM_ANSWER_NOT_ALLOWED');
+        const submissionKey = `${question.key}:__custom__`;
+        if (submittedValues.has(submissionKey))
+          throw new BadRequestException('ASSESSMENT_DUPLICATE_ANSWER');
+        submittedValues.add(submissionKey);
+        return { question, option: null, customText };
+      }
+      const option = (
+        question.options as Array<{
+          key: string;
+          value: number;
+          skillKey?: string;
+          recommendationType?: RoadmapRecommendationType;
+        }>
+      ).find((item) => item.key === answer.optionKey);
+      if (!option) throw new NotFoundException('ASSESSMENT_OPTION_NOT_FOUND');
+      const submissionKey = `${question.key}:${option.key}`;
+      if (submittedValues.has(submissionKey))
+        throw new BadRequestException('ASSESSMENT_DUPLICATE_ANSWER');
+      submittedValues.add(submissionKey);
+      return { question, option, customText: undefined };
     });
+    if (new Set(selected.map((item) => item.question.key)).size !== questions.length)
+      throw new BadRequestException('ASSESSMENT_INCOMPLETE');
     const scores = new Map<string, number>();
-    for (const item of selected) scores.set(item.question.skillKey, item.option.value);
+    const recommendations: Recommendation[] = [];
+    for (const item of selected) {
+      if (!item.option) continue;
+      if (item.question.kind === AssessmentQuestionKind.CONFIDENCE) {
+        scores.set(item.question.skillKey, item.option.value);
+        recommendations.push({
+          skillKey: item.question.skillKey,
+          type: RoadmapRecommendationType.GAP,
+          score: item.option.value,
+        });
+      } else if (item.option.skillKey && item.option.recommendationType) {
+        recommendations.push({
+          skillKey: item.option.skillKey,
+          type: item.option.recommendationType,
+          score: item.option.value,
+        });
+      }
+    }
+    const previous = await this.db.assessment.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
     const assessment = await this.db.assessment.upsert({
       where: { userId },
       create: { userId, completedAt: new Date() },
@@ -128,8 +289,13 @@ export class AssessmentService {
           data: {
             assessmentId: assessment.id,
             questionId: item.question.id,
-            optionKey: item.option.key,
-            value: item.option.value,
+            optionKey: item.option?.key ?? '__custom__',
+            value: item.option?.value ?? 0,
+            customText: item.customText,
+            mappedSkillKey: item.option?.skillKey,
+            mappingStatus: item.option
+              ? AssessmentMappingStatus.MAPPED
+              : AssessmentMappingStatus.UNMAPPED,
           },
         }),
       ),
@@ -137,8 +303,8 @@ export class AssessmentService {
         this.db.skillScore.create({ data: { assessmentId: assessment.id, skillKey, score } }),
       ),
     ]);
-    await this.generateRoadmap(profile.id, profile.disciplines, scores);
-    await this.subscriptions.startTrial(userId);
+    await this.generateRoadmap(profile.id, profile.disciplines, scores, recommendations);
+    if (!previous) await this.subscriptions.startTrial(userId);
     return this.getResult(userId);
   }
 
@@ -426,10 +592,8 @@ export class AssessmentService {
     profileId: string,
     disciplines: Discipline[],
     scores: Map<string, number>,
+    recommendationSignals?: Recommendation[],
   ) {
-    await this.db.roadmapItem.deleteMany({
-      where: { athleteProfileId: profileId, isAddedByUser: false },
-    });
     const labels: Record<string, string> = {
       standing: 'Arbeit im Stand',
       'top-control': 'Kontrolle von oben',
@@ -440,10 +604,24 @@ export class AssessmentService {
       'open-guard': 'Offene Guard',
       'side-control-top': 'Side-Control-Kontrolle',
     };
-    const ranked = [...scores.entries()].sort((a, b) => a[1] - b[1]);
-    const items = await Promise.all(
+    const signals =
+      recommendationSignals ??
+      [...scores.entries()].map(([skillKey, score]) => ({
+        skillKey,
+        score,
+        type: RoadmapRecommendationType.GAP,
+      }));
+    const priority = {
+      [RoadmapRecommendationType.CORE]: 0,
+      [RoadmapRecommendationType.GAP]: 1,
+      [RoadmapRecommendationType.EXPLORE]: 2,
+    };
+    const ranked = [
+      ...new Map(signals.map((item) => [`${item.type}:${item.skillKey}`, item])).values(),
+    ].sort((a, b) => priority[a.type] - priority[b.type] || a.score - b.score);
+    const desired = await Promise.all(
       disciplines.flatMap((discipline) =>
-        ranked.map(async ([skillKey], index) => {
+        ranked.map(async ({ skillKey, type }, index) => {
           const lesson = await this.db.lesson.findFirst({
             where: {
               published: true,
@@ -473,11 +651,43 @@ export class AssessmentService {
             skillKey,
             lessonId: lesson?.id,
             position: index,
+            recommendationType: type,
           };
         }),
       ),
     );
-    if (items.length) await this.db.roadmapItem.createMany({ data: items });
+    const existing = await this.db.roadmapItem.findMany({
+      where: { athleteProfileId: profileId, isAddedByUser: false },
+    });
+    const desiredKeys = new Set(
+      desired.map((item) => `${item.discipline}:${item.recommendationType}:${item.skillKey}`),
+    );
+    const obsolete = existing.filter(
+      (item) =>
+        !desiredKeys.has(`${item.discipline}:${item.recommendationType}:${item.skillKey ?? ''}`),
+    );
+    const operations: Prisma.PrismaPromise<unknown>[] = obsolete.map((item) =>
+      this.db.roadmapItem.delete({ where: { id: item.id } }),
+    );
+    for (const item of desired) {
+      const retained = existing.find(
+        (candidate) =>
+          candidate.discipline === item.discipline &&
+          candidate.skillKey === item.skillKey &&
+          candidate.recommendationType === item.recommendationType,
+      );
+      if (retained) {
+        operations.push(
+          this.db.roadmapItem.update({
+            where: { id: retained.id },
+            data: { title: item.title, lessonId: item.lessonId },
+          }),
+        );
+      } else {
+        operations.push(this.db.roadmapItem.create({ data: item }));
+      }
+    }
+    if (operations.length) await this.db.$transaction(operations);
   }
 }
 
@@ -489,6 +699,15 @@ function confidenceOptions(lowLabel: string) {
     { key: 'usually', label: 'Meistens gelingt es', value: 4 },
     { key: 'competition', label: 'Ich wende es sicher im Wettkampf an', value: 5 },
   ];
+}
+
+function mappedOption(
+  key: string,
+  label: string,
+  skillKey: string,
+  recommendationType: RoadmapRecommendationType,
+) {
+  return { key, label, value: 3, skillKey, recommendationType };
 }
 
 function disciplineMetadataKey(discipline: Discipline) {

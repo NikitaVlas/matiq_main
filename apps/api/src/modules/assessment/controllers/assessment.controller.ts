@@ -15,6 +15,9 @@ export class AssessmentController {
   @Get('result') result(@Req() req: AuthenticatedRequest) {
     return this.assessment.getResult(req.userId);
   }
+  @Get('answers') answers(@Req() req: AuthenticatedRequest) {
+    return this.assessment.currentAnswers(req.userId);
+  }
   @Post('submit') submit(@Req() req: AuthenticatedRequest, @Body() dto: SubmitAssessmentDto) {
     return this.assessment.submit(req.userId, dto.answers);
   }

@@ -16,6 +16,7 @@
 
 - Reuse the existing metadata editor and `Add new option` flow.
 - Visually explain the special `Roadmap-Thema` field and render a coverage summary.
+- Allow an administrator to create a Roadmap topic directly from the coverage summary.
 - Preserve explicit loading and HTTP error feedback.
 
 ### Backend

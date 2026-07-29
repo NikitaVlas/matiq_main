@@ -447,6 +447,20 @@
         ]
       }
     },
+    "/assessment/answers": {
+      "get": {
+        "operationId": "AssessmentController_answers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "assessment"
+        ]
+      }
+    },
     "/assessment/submit": {
       "post": {
         "operationId": "AssessmentController_submit",

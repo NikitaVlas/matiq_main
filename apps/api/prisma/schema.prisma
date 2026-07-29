@@ -45,6 +45,23 @@ enum RoadmapItemType {
   TECHNIQUE
 }
 
+enum AssessmentQuestionKind {
+  CONFIDENCE
+  PREFERENCE
+  GOAL
+}
+
+enum AssessmentMappingStatus {
+  MAPPED
+  UNMAPPED
+}
+
+enum RoadmapRecommendationType {
+  CORE
+  GAP
+  EXPLORE
+}
+
 enum LessonRelationType {
   PRIMARY
   BRANCH
@@ -153,6 +170,9 @@ model AssessmentQuestion {
   text      String
   context   AssessmentContext
   skillKey  String
+  kind      AssessmentQuestionKind @default(CONFIDENCE)
+  multiple  Boolean                @default(false)
+  allowCustom Boolean              @default(false)
   options   Json
   active    Boolean              @default(true)
   createdAt DateTime             @default(now())
@@ -166,11 +186,14 @@ model AssessmentResponse {
   questionId   String
   optionKey    String
   value        Int
+  customText   String?
+  mappedSkillKey String?
+  mappingStatus AssessmentMappingStatus @default(MAPPED)
   createdAt    DateTime           @default(now())
   assessment   Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   question     AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Restrict)
 
-  @@unique([assessmentId, questionId])
+  @@unique([assessmentId, questionId, optionKey])
 }
 
 model SkillScore {
@@ -196,6 +219,7 @@ model RoadmapItem {
   isHidden         Boolean            @default(false)
   lessonId         String?
   completedAt      DateTime?
+  recommendationType RoadmapRecommendationType @default(GAP)
   athleteProfile   AthleteProfile     @relation(fields: [athleteProfileId], references: [id], onDelete: Cascade)
 
   lesson Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)

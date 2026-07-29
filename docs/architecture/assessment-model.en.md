@@ -262,6 +262,23 @@ erDiagram
 
 Cardinalities will be refined during physical-schema design.
 
+## Style-aware MVP recommendation model
+
+The first deterministic implementation combines positive and negative signals:
+
+- `CORE` identifies positions and techniques that already form the athlete's preferred game;
+- `GAP` identifies weaknesses that block safe progress;
+- `EXPLORE` identifies an explicit development goal or a new direction.
+
+Catalogue options map directly to approved Roadmap topic keys. When an athlete cannot find a
+position or technique, an allowed free-text answer is stored as `UNMAPPED` and does not affect the
+Roadmap automatically. An `Admin` can map it to a topic; that mapping creates the corresponding
+typed recommendation without AI. AI may suggest mappings in a later version, but may not create or
+apply them autonomously.
+
+Editing a completed Assessment refreshes generated recommendations while preserving manually added
+Roadmap steps and the hidden, ordering, and completion state of retained generated steps.
+
 ## Invariants
 
 - `AM-001`: Only an `Admin` creates questions and answer options from approved
@@ -289,5 +306,5 @@ Cardinalities will be refined during physical-schema design.
 
 - Status: Approved conceptual baseline; scoring parameters pending expert bank
 - Owner: MATIQ team
-- Last reviewed: 2026-07-19
-- Related code: Assessment and recommendation; implementation pending
+- Last reviewed: 2026-07-29
+- Related code: `apps/api/src/modules/assessment`, `apps/admin-api/src/modules/assessment`, Assessment UI

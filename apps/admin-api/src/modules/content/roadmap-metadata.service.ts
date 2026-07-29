@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
 
 const ROADMAP_TOPICS = [
@@ -40,6 +40,20 @@ export class RoadmapMetadataService {
       include: { options: { orderBy: { name: 'asc' } } },
       orderBy: { name: 'asc' },
     });
+  }
+
+  async createTopic(input: { key?: string; name?: string }) {
+    const name = input.name?.trim();
+    const key = input.key?.trim().toLowerCase();
+    if (!name || name.length > 120 || !key || !/^[a-z0-9-]{1,100}$/.test(key)) {
+      throw new BadRequestException('INVALID_ROADMAP_TOPIC');
+    }
+    const field = await this.ensureField();
+    const existing = await this.db.metadataOption.findUnique({
+      where: { fieldId_key: { fieldId: field.id, key } },
+    });
+    if (existing) throw new ConflictException('ROADMAP_TOPIC_ALREADY_EXISTS');
+    return this.db.metadataOption.create({ data: { fieldId: field.id, key, name } });
   }
 
   async coverage() {

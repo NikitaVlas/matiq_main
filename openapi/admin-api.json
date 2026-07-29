@@ -613,11 +613,51 @@
         "tags": [
           "admin-assessment"
         ]
+      },
+      "post": {
+        "operationId": "AssessmentController_createQuestion",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-assessment"
+        ]
       }
     },
     "/admin/assessment/questions/{id}": {
       "patch": {
         "operationId": "AssessmentController_updateQuestion",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-assessment"
+        ]
+      }
+    },
+    "/admin/assessment/unmapped-answers": {
+      "get": {
+        "operationId": "AssessmentController_unmappedAnswers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-assessment"
+        ]
+      }
+    },
+    "/admin/assessment/unmapped-answers/{id}/map": {
+      "patch": {
+        "operationId": "AssessmentController_mapAnswer",
         "parameters": [],
         "responses": {
           "200": {

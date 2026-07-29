@@ -1,20 +1,45 @@
 import { Discipline } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 export class AssessmentAnswerDto {
   @ApiProperty()
   @IsString()
   questionKey!: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsString()
-  optionKey!: string;
+  @MaxLength(100)
+  optionKey?: string;
+
+  @ApiProperty({ required: false, maxLength: 200 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  customText?: string;
 }
 
 export class SubmitAssessmentDto {
   @ApiProperty({ type: [AssessmentAnswerDto] })
   @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => AssessmentAnswerDto)
   answers!: AssessmentAnswerDto[];
 }
 

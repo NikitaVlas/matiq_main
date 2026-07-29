@@ -85,13 +85,30 @@ describe('assessment roadmap lesson matching', () => {
     );
   });
 
-  it('attaches a matching lesson and preserves unmatched items', async () => {
-    const createMany = vi.fn().mockResolvedValue({ count: 2 });
+  it('attaches matching lessons while preserving retained Roadmap state', async () => {
+    const create = vi.fn().mockResolvedValue({});
+    const update = vi.fn().mockResolvedValue({});
     const db = {
-      roadmapItem: { deleteMany: vi.fn(), createMany },
+      roadmapItem: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'existing',
+            discipline: Discipline.BJJ_GI,
+            skillKey: 'standing',
+            recommendationType: 'GAP',
+            position: 7,
+            isHidden: true,
+            completedAt: new Date(),
+          },
+        ]),
+        delete: vi.fn(),
+        create,
+        update,
+      },
       lesson: {
         findFirst: vi.fn().mockResolvedValueOnce({ id: 'lesson-1' }).mockResolvedValueOnce(null),
       },
+      $transaction: vi.fn().mockResolvedValue([]),
     };
     const service = new AssessmentService(db as never, {} as never);
     await (
@@ -110,15 +127,49 @@ describe('assessment roadmap lesson matching', () => {
         ['unknown', 2],
       ]),
     );
-    expect(createMany).toHaveBeenCalledWith({
-      data: expect.arrayContaining([
-        expect.objectContaining({
-          discipline: Discipline.BJJ_GI,
-          skillKey: 'standing',
-          lessonId: 'lesson-1',
-        }),
-        expect.objectContaining({ discipline: Discipline.NO_GI_GRAPPLING }),
-      ]),
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'existing' },
+      data: expect.objectContaining({ lessonId: 'lesson-1' }),
     });
+    expect(update.mock.calls[0]?.[0].data).not.toHaveProperty('position');
+    expect(update.mock.calls[0]?.[0].data).not.toHaveProperty('isHidden');
+    expect(update.mock.calls[0]?.[0].data).not.toHaveProperty('completedAt');
+    expect(create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ discipline: Discipline.NO_GI_GRAPPLING }),
+    });
+  });
+
+  it('returns saved answers only for the authenticated user', async () => {
+    const db = {
+      assessment: {
+        findUnique: vi.fn().mockResolvedValue({
+          completedAt: new Date(),
+          responses: [
+            {
+              optionKey: '__custom__',
+              customText: 'Octopus Guard',
+              mappingStatus: 'UNMAPPED',
+              question: { key: 'preferred-game' },
+            },
+          ],
+        }),
+      },
+    };
+    const service = new AssessmentService(db as never, {} as never);
+
+    await expect(service.currentAnswers('user-1')).resolves.toEqual({
+      completed: true,
+      answers: [
+        {
+          questionKey: 'preferred-game',
+          optionKey: undefined,
+          customText: 'Octopus Guard',
+          mappingStatus: 'UNMAPPED',
+        },
+      ],
+    });
+    expect(db.assessment.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 'user-1' } }),
+    );
   });
 });

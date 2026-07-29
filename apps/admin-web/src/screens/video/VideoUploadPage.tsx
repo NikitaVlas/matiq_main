@@ -32,6 +32,7 @@ export default function VideoUploadPage() {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [newOptions, setNewOptions] = useState<Record<string, string>>({});
   const [newFieldName, setNewFieldName] = useState('');
+  const [newRoadmapTopic, setNewRoadmapTopic] = useState('');
 
   const load = async () => {
     const [videosResponse, fieldsResponse, coverageResponse] = await Promise.all([
@@ -123,6 +124,31 @@ export default function VideoUploadPage() {
     await load();
   };
 
+  const addRoadmapTopic = async () => {
+    const name = newRoadmapTopic.trim();
+    const key = slug(name);
+    if (!name || !key) {
+      setResult('Use a Roadmap topic name that contains Latin letters or numbers.');
+      return;
+    }
+    const response = await adminApi('/admin/content/roadmap-topics', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ key, name }),
+    });
+    if (!response.ok) {
+      setResult(
+        response.status === 409
+          ? 'This Roadmap topic already exists.'
+          : `Roadmap topic creation failed (${response.status})`,
+      );
+      return;
+    }
+    setNewRoadmapTopic('');
+    setResult('Roadmap topic added. It is now available for video metadata.');
+    await load();
+  };
+
   const saveMetadata = async () => {
     const response = await adminApi(`/admin/videos/${editingVideoId}/metadata`, {
       method: 'POST',
@@ -183,6 +209,22 @@ export default function VideoUploadPage() {
           Roadmap topics connect Assessment recommendations with published videos and courses. A
           topic without coverage remains visible to athletes but cannot recommend a lesson yet.
         </p>
+        <label>
+          New Roadmap topic{' '}
+          <input
+            maxLength={120}
+            placeholder="For example Half Guard"
+            value={newRoadmapTopic}
+            onChange={(event) => setNewRoadmapTopic(event.target.value)}
+          />
+        </label>{' '}
+        <button
+          type="button"
+          disabled={!newRoadmapTopic.trim()}
+          onClick={() => void addRoadmapTopic()}
+        >
+          Add Roadmap topic
+        </button>
         {roadmapCoverage.length ? (
           <ul>
             {roadmapCoverage.map((topic) => (

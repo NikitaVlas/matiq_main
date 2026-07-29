@@ -51,4 +51,41 @@ describe('Roadmap metadata', () => {
       where: { optionId: 'topic-1', video: { published: true } },
     });
   });
+
+  it('creates a validated custom Roadmap topic in the shared field', async () => {
+    const create = vi.fn().mockResolvedValue({ id: 'topic-half-guard' });
+    const db = {
+      metadataField: { upsert: vi.fn().mockResolvedValue({ id: 'field-1' }) },
+      metadataOption: {
+        upsert: vi.fn().mockResolvedValue({}),
+        findUnique: vi.fn().mockResolvedValue(null),
+        create,
+      },
+    };
+    const service = new RoadmapMetadataService(db as never);
+
+    await service.createTopic({ key: 'half-guard', name: 'Half Guard' });
+
+    expect(create).toHaveBeenCalledWith({
+      data: { fieldId: 'field-1', key: 'half-guard', name: 'Half Guard' },
+    });
+  });
+
+  it('rejects invalid or duplicate Roadmap topics', async () => {
+    const db = {
+      metadataField: { upsert: vi.fn().mockResolvedValue({ id: 'field-1' }) },
+      metadataOption: {
+        upsert: vi.fn().mockResolvedValue({}),
+        findUnique: vi.fn().mockResolvedValue({ id: 'existing' }),
+      },
+    };
+    const service = new RoadmapMetadataService(db as never);
+
+    await expect(service.createTopic({ key: '???', name: 'Invalid' })).rejects.toThrow(
+      'INVALID_ROADMAP_TOPIC',
+    );
+    await expect(service.createTopic({ key: 'half-guard', name: 'Half Guard' })).rejects.toThrow(
+      'ROADMAP_TOPIC_ALREADY_EXISTS',
+    );
+  });
 });
