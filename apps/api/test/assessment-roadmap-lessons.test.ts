@@ -3,6 +3,45 @@ import { describe, expect, it, vi } from 'vitest';
 import { AssessmentService } from '../src/modules/assessment/application/assessment.service';
 
 describe('assessment roadmap lesson matching', () => {
+  it('calculates Roadmap progress only from the authenticated user watch history', async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      { id: 'video-1', watchEvents: [{ completed: true }] },
+      { id: 'video-2', watchEvents: [] },
+    ]);
+    const service = new AssessmentService({ video: { findMany } } as never, {} as never);
+
+    await expect(
+      (
+        service as unknown as {
+          roadmapProgress: (
+            userId: string,
+            item: {
+              skillKey: string;
+              discipline: Discipline;
+              lesson: null;
+            },
+          ) => Promise<unknown>;
+        }
+      ).roadmapProgress('user-1', {
+        skillKey: 'half-guard',
+        discipline: Discipline.BJJ_GI,
+        lesson: null,
+      }),
+    ).resolves.toEqual({
+      completedVideos: 1,
+      totalVideos: 2,
+      percent: 50,
+      status: 'IN_PROGRESS',
+    });
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          watchEvents: expect.objectContaining({ where: { userId: 'user-1' } }),
+        }),
+      }),
+    );
+  });
+
   it('rejects access to a foreign Roadmap item', async () => {
     const db = { roadmapItem: { findFirst: vi.fn().mockResolvedValue(null) } };
     const service = new AssessmentService(db as never, {} as never);

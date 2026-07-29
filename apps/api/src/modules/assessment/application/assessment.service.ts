@@ -338,26 +338,22 @@ export class AssessmentService {
       hiddenItems: roadmapItems.filter((item) => item.discipline === discipline && item.isHidden),
     }));
     const primaryRoadmap = roadmaps[0];
+    const decorateItem = async (item: (typeof roadmapItems)[number]) => ({
+      ...item,
+      videos: await this.roadmapVideos(item),
+      progress: await this.roadmapProgress(userId, item),
+    });
     return {
       completed: Boolean(assessment?.completedAt),
       scores: assessment?.scores ?? [],
       roadmaps: await Promise.all(
         roadmaps.map(async (roadmap) => ({
           ...roadmap,
-          items: await Promise.all(
-            roadmap.items.map(async (item) => ({
-              ...item,
-              videos: await this.roadmapVideos(item),
-            })),
-          ),
+          items: await Promise.all(roadmap.items.map(decorateItem)),
+          completedItems: await Promise.all(roadmap.completedItems.map(decorateItem)),
         })),
       ),
-      roadmap: await Promise.all(
-        (primaryRoadmap?.items ?? []).map(async (item) => ({
-          ...item,
-          videos: await this.roadmapVideos(item),
-        })),
-      ),
+      roadmap: await Promise.all((primaryRoadmap?.items ?? []).map(decorateItem)),
       hiddenRoadmap: primaryRoadmap?.hiddenItems ?? [],
     };
   }
@@ -374,6 +370,60 @@ export class AssessmentService {
     return [...direct, ...recommended].filter(
       (video, index, videos) => videos.findIndex((item) => item.id === video.id) === index,
     );
+  }
+
+  private async roadmapProgress(
+    userId: string,
+    item: {
+      skillKey: string | null;
+      discipline: Discipline;
+      lesson: { video: { id: string; published: boolean } } | null;
+    },
+  ) {
+    const directVideoId = item.lesson?.video.published ? item.lesson.video.id : undefined;
+    if (!item.skillKey && !directVideoId)
+      return { completedVideos: 0, totalVideos: 0, percent: 0, status: 'NOT_STARTED' };
+    const topicMatch = item.skillKey
+      ? {
+          metadataValues: {
+            some: {
+              option: {
+                key: disciplineMetadataKey(item.discipline),
+                field: { key: 'discipline' },
+              },
+            },
+          },
+          OR: [
+            { position: { key: item.skillKey } },
+            { technique: { key: item.skillKey } },
+            { metadataValues: { some: { option: { key: item.skillKey } } } },
+          ],
+        }
+      : undefined;
+    const videos = await this.db.video.findMany({
+      where: {
+        published: true,
+        OR: [...(directVideoId ? [{ id: directVideoId }] : []), ...(topicMatch ? [topicMatch] : [])],
+      },
+      select: {
+        id: true,
+        watchEvents: { where: { userId }, select: { completed: true }, take: 1 },
+      },
+    });
+    const completedVideos = videos.filter((video) => video.watchEvents[0]?.completed).length;
+    const totalVideos = videos.length;
+    const percent = totalVideos ? Math.round((completedVideos / totalVideos) * 100) : 0;
+    return {
+      completedVideos,
+      totalVideos,
+      percent,
+      status:
+        completedVideos === 0
+          ? 'NOT_STARTED'
+          : completedVideos === totalVideos
+            ? 'COMPLETED'
+            : 'IN_PROGRESS',
+    };
   }
 
   private async recommendedVideos(skillKey: string | null | undefined, discipline: Discipline) {
