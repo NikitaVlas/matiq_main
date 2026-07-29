@@ -113,7 +113,7 @@ export class ContentService {
       where: { userId },
       include: {
         roadmapItems: {
-          where: { isHidden: false, discipline: roadmapDiscipline },
+          where: { isHidden: false, completedAt: null, discipline: roadmapDiscipline },
           orderBy: { position: 'asc' },
           include: { lesson: { include: { video: true } } },
         },
@@ -229,11 +229,23 @@ export class ContentService {
       where: { videoId_userId: { videoId, userId } },
     });
     const progress = Math.max(existing?.watchedSeconds ?? 0, seconds);
-    return this.db.videoWatch.upsert({
+    const completed = Boolean(existing?.completed || watched);
+    const watchEvent = await this.db.videoWatch.upsert({
       where: { videoId_userId: { videoId, userId } },
-      create: { videoId, userId, watchedSeconds: progress, completed: watched },
-      update: { watchedSeconds: progress, completed: existing?.completed || watched },
+      create: { videoId, userId, watchedSeconds: progress, completed },
+      update: { watchedSeconds: progress, completed },
     });
+    if (completed) {
+      await this.db.roadmapItem.updateMany({
+        where: {
+          athleteProfile: { userId },
+          lesson: { videoId },
+          completedAt: null,
+        },
+        data: { completedAt: new Date() },
+      });
+    }
+    return watchEvent;
   }
 
   async history(userId: string) {

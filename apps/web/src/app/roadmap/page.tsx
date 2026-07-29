@@ -8,11 +8,13 @@ type Discipline = 'BJJ_GI' | 'NO_GI_GRAPPLING';
 type RoadmapItem = {
   id: string;
   title: string;
+  completedAt?: string | null;
   videos?: { id: string; title: string }[];
 };
 type Roadmap = {
   discipline: Discipline;
   items: RoadmapItem[];
+  completedItems: RoadmapItem[];
   hiddenItems: RoadmapItem[];
 };
 type Result = { completed: boolean; roadmaps: Roadmap[] };
@@ -43,6 +45,8 @@ export default function RoadmapPage() {
   }
 
   const roadmap = result?.roadmaps.find((item) => item.discipline === selectedDiscipline);
+  const visibleCount = (roadmap?.items.length ?? 0) + (roadmap?.completedItems.length ?? 0);
+  const completedCount = roadmap?.completedItems.length ?? 0;
 
   return (
     <main>
@@ -69,12 +73,22 @@ export default function RoadmapPage() {
             ))}
           </nav>
         ) : null}
-        {roadmap && !roadmap.items.length ? (
+        {roadmap && !visibleCount ? (
           <p>Für diese Disziplin gibt es noch keine Empfehlungen.</p>
         ) : null}
+        {roadmap && visibleCount > 0 && !roadmap.items.length ? (
+          <p>Alle aktuellen Roadmap-Schritte sind abgeschlossen.</p>
+        ) : null}
+        {roadmap && visibleCount ? (
+          <p>
+            {completedCount} von {visibleCount} Roadmap-Schritten abgeschlossen. Das bedeutet nicht,
+            dass eine Technik als gemeistert gilt.
+          </p>
+        ) : null}
         <div className="roadmap">
-          {roadmap?.items.map((item) => (
+          {roadmap?.items.map((item, index) => (
             <article key={item.id}>
+              {index === 0 ? <p className="eyebrow">Als Nächstes</p> : null}
               <strong>{item.title}</strong>
               {item.videos?.map((video) => (
                 <a key={video.id} href={`/video/${video.id}`}>
@@ -87,6 +101,24 @@ export default function RoadmapPage() {
             </article>
           ))}
         </div>
+        {roadmap?.completedItems.length ? (
+          <>
+            <h2>Abgeschlossene Roadmap-Schritte</h2>
+            <div className="roadmap">
+              {roadmap.completedItems.map((item) => (
+                <article key={item.id}>
+                  <strong>{item.title}</strong>
+                  <p>
+                    Abgeschlossen am{' '}
+                    {item.completedAt
+                      ? new Intl.DateTimeFormat('de-DE').format(new Date(item.completedAt))
+                      : ''}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </>
+        ) : null}
         {roadmap?.hiddenItems.length ? (
           <>
             <h2>Ausgeblendete Empfehlungen</h2>

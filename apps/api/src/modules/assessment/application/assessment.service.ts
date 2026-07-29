@@ -128,7 +128,12 @@ export class AssessmentService {
     const roadmapItems = profile?.roadmapItems ?? [];
     const roadmaps = (profile?.disciplines ?? []).map((discipline) => ({
       discipline,
-      items: roadmapItems.filter((item) => item.discipline === discipline && !item.isHidden),
+      items: roadmapItems.filter(
+        (item) => item.discipline === discipline && !item.isHidden && item.completedAt === null,
+      ),
+      completedItems: roadmapItems.filter(
+        (item) => item.discipline === discipline && !item.isHidden && item.completedAt !== null,
+      ),
       hiddenItems: roadmapItems.filter((item) => item.discipline === discipline && item.isHidden),
     }));
     const primaryRoadmap = roadmaps[0];
@@ -141,7 +146,7 @@ export class AssessmentService {
           items: await Promise.all(
             roadmap.items.map(async (item) => ({
               ...item,
-              videos: await this.recommendedVideos(item.skillKey, item.discipline),
+              videos: await this.roadmapVideos(item),
             })),
           ),
         })),
@@ -149,11 +154,25 @@ export class AssessmentService {
       roadmap: await Promise.all(
         (primaryRoadmap?.items ?? []).map(async (item) => ({
           ...item,
-          videos: await this.recommendedVideos(item.skillKey, item.discipline),
+          videos: await this.roadmapVideos(item),
         })),
       ),
       hiddenRoadmap: primaryRoadmap?.hiddenItems ?? [],
     };
+  }
+
+  private async roadmapVideos(item: {
+    skillKey: string | null;
+    discipline: Discipline;
+    lesson: { video: { id: string; title: string; published: boolean } } | null;
+  }) {
+    const recommended = await this.recommendedVideos(item.skillKey, item.discipline);
+    const direct = item.lesson?.video.published
+      ? [{ id: item.lesson.video.id, title: item.lesson.video.title }]
+      : [];
+    return [...direct, ...recommended].filter(
+      (video, index, videos) => videos.findIndex((item) => item.id === video.id) === index,
+    );
   }
 
   private async recommendedVideos(skillKey: string | null | undefined, discipline: Discipline) {

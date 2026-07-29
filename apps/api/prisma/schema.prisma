@@ -195,11 +195,12 @@ model RoadmapItem {
   isAddedByUser    Boolean            @default(false)
   isHidden         Boolean            @default(false)
   lessonId         String?
+  completedAt      DateTime?
   athleteProfile   AthleteProfile     @relation(fields: [athleteProfileId], references: [id], onDelete: Cascade)
 
   lesson Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
 
-  @@index([athleteProfileId, discipline, position])
+  @@index([athleteProfileId, discipline, completedAt, position])
 }
 
 model GameArea {
