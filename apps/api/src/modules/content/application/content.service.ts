@@ -342,10 +342,67 @@ export class ContentService {
           athleteProfile: { userId },
           lesson: { videoId },
           completedAt: null,
+          OR: [{ isAddedByUser: true }, { skillKey: null }],
         },
         data: { completedAt: new Date() },
       });
       roadmapItemsCompleted = result.count;
+      const topicValues = await this.db.videoMetadataOption.findMany({
+        where: { videoId, option: { field: { key: 'roadmap-topic' } } },
+        select: { option: { select: { key: true } } },
+      });
+      const topicKeys = topicValues.map((value) => value.option.key);
+      if (topicKeys.length) {
+        const items = await this.db.roadmapItem.findMany({
+          where: {
+            athleteProfile: { userId },
+            skillKey: { in: topicKeys },
+            completedAt: null,
+            isHidden: false,
+          },
+          select: { id: true, skillKey: true, discipline: true },
+        });
+        for (const item of items) {
+          if (!item.skillKey) continue;
+          const requiredWhere = {
+            published: true,
+            metadataValues: {
+              some: { option: { key: item.skillKey, field: { key: 'roadmap-topic' } } },
+            },
+            AND: [
+              {
+                metadataValues: {
+                  some: { option: { key: 'required', field: { key: 'roadmap-content-role' } } },
+                },
+              },
+              {
+                metadataValues: {
+                  some: {
+                    option: {
+                      key: disciplineMetadataKey(item.discipline),
+                      field: { key: 'discipline' },
+                    },
+                  },
+                },
+              },
+            ],
+          };
+          const requiredCount = await this.db.video.count({ where: requiredWhere });
+          if (!requiredCount) continue;
+          const incompleteCount = await this.db.video.count({
+            where: {
+              ...requiredWhere,
+              watchEvents: { none: { userId, completed: true } },
+            },
+          });
+          if (incompleteCount) continue;
+          await this.db.roadmapItem.update({
+            where: { id: item.id },
+            data: { completedAt: new Date() },
+          });
+          roadmapItemsCompleted += 1;
+        }
+      }
     }
     return { ...watchEvent, newlyCompleted, roadmapItemsCompleted };
   }

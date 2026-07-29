@@ -408,10 +408,20 @@ export class AssessmentService {
       select: {
         id: true,
         watchEvents: { where: { userId }, select: { completed: true }, take: 1 },
+        metadataValues: {
+          where: { option: { field: { key: 'roadmap-content-role' } } },
+          select: { option: { select: { key: true } } },
+        },
       },
     });
-    const completedVideos = videos.filter((video) => video.watchEvents[0]?.completed).length;
-    const totalVideos = videos.length;
+    const requiredVideos = videos.filter((video) =>
+      video.metadataValues?.some((value) => value.option.key === 'required'),
+    );
+    const progressVideos = requiredVideos.length ? requiredVideos : videos;
+    const completedVideos = progressVideos.filter(
+      (video) => video.watchEvents[0]?.completed,
+    ).length;
+    const totalVideos = progressVideos.length;
     const percent = totalVideos ? Math.round((completedVideos / totalVideos) * 100) : 0;
     return {
       completedVideos,

@@ -5,8 +5,8 @@ import { AssessmentService } from '../src/modules/assessment/application/assessm
 describe('assessment roadmap lesson matching', () => {
   it('calculates Roadmap progress only from the authenticated user watch history', async () => {
     const findMany = vi.fn().mockResolvedValue([
-      { id: 'video-1', watchEvents: [{ completed: true }] },
-      { id: 'video-2', watchEvents: [] },
+      { id: 'video-1', watchEvents: [{ completed: true }], metadataValues: [] },
+      { id: 'video-2', watchEvents: [], metadataValues: [] },
     ]);
     const service = new AssessmentService({ video: { findMany } } as never, {} as never);
 

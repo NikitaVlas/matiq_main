@@ -11,6 +11,11 @@ const ROADMAP_TOPICS = [
   { key: 'open-guard', name: 'Offene Guard' },
   { key: 'side-control-top', name: 'Side-Control-Kontrolle' },
 ];
+const ROADMAP_CONTENT_ROLES = [
+  { key: 'required', name: 'Required' },
+  { key: 'recommended', name: 'Recommended' },
+  { key: 'optional', name: 'Optional' },
+];
 
 @Injectable()
 export class RoadmapMetadataService {
@@ -35,11 +40,29 @@ export class RoadmapMetadataService {
   }
 
   async fields() {
-    await this.ensureField();
+    await Promise.all([this.ensureField(), this.ensureRoleField()]);
     return this.db.metadataField.findMany({
       include: { options: { orderBy: { name: 'asc' } } },
       orderBy: { name: 'asc' },
     });
+  }
+
+  private async ensureRoleField() {
+    const field = await this.db.metadataField.upsert({
+      where: { key: 'roadmap-content-role' },
+      create: { key: 'roadmap-content-role', name: 'Roadmap content role' },
+      update: { name: 'Roadmap content role' },
+    });
+    await Promise.all(
+      ROADMAP_CONTENT_ROLES.map((role) =>
+        this.db.metadataOption.upsert({
+          where: { fieldId_key: { fieldId: field.id, key: role.key } },
+          create: { ...role, fieldId: field.id },
+          update: { name: role.name },
+        }),
+      ),
+    );
+    return field;
   }
 
   async createTopic(input: { key?: string; name?: string }) {

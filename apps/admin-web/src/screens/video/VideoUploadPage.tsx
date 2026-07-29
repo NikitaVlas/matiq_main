@@ -303,6 +303,12 @@ export default function VideoUploadPage() {
                         teaches. Use Add new option only for an approved methodology topic.
                       </p>
                     ) : null}
+                    {field.key === 'roadmap-content-role' ? (
+                      <p>
+                        <strong>Completion role:</strong> Required videos must all be completed;
+                        Recommended and Optional videos do not block the Roadmap step.
+                      </p>
+                    ) : null}
                     <label>
                       {field.name}
                       <select

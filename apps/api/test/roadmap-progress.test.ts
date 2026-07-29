@@ -21,7 +21,8 @@ function createService(watchedSeconds: number, completed = false) {
         .mockResolvedValue(completed ? { watchedSeconds: 80, completed: true } : null),
       upsert,
     },
-    roadmapItem: { updateMany },
+    videoMetadataOption: { findMany: vi.fn().mockResolvedValue([]) },
+    roadmapItem: { updateMany, findMany: vi.fn().mockResolvedValue([]), update: vi.fn() },
   };
   const service = new ContentService(db as never, {} as never, { requireAccess: vi.fn() } as never);
   return { service, updateMany, watchedSeconds };
@@ -43,6 +44,7 @@ describe('Roadmap progress from video viewing', () => {
         athleteProfile: { userId: 'athlete-1' },
         lesson: { videoId: 'video-1' },
         completedAt: null,
+        OR: [{ isAddedByUser: true }, { skillKey: null }],
       },
       data: { completedAt: expect.any(Date) },
     });
