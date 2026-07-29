@@ -93,12 +93,27 @@ export class ContentService {
       select: { videoId: true },
     });
     const excludedVideoIds = new Set([videoId, ...completed.map((watch) => watch.videoId)]);
+    const metadataValues = await this.db.videoMetadataOption.findMany({
+      where: { videoId },
+      select: {
+        optionId: true,
+        option: { select: { key: true, name: true, field: { select: { key: true } } } },
+      },
+    });
+    const disciplineOption = metadataValues.find((value) => value.option.field.key === 'discipline')
+      ?.option.key;
+    const roadmapDiscipline =
+      disciplineOption === 'bjj-gi'
+        ? 'BJJ_GI'
+        : disciplineOption === 'no-gi'
+          ? 'NO_GI_GRAPPLING'
+          : undefined;
 
     const profile = await this.db.athleteProfile.findUnique({
       where: { userId },
       include: {
         roadmapItems: {
-          where: { isHidden: false },
+          where: { isHidden: false, discipline: roadmapDiscipline },
           orderBy: { position: 'asc' },
           include: { lesson: { include: { video: true } } },
         },
@@ -149,10 +164,6 @@ export class ContentService {
     const lessonPath =
       lessonPathCandidate?.videoId === roadmap?.videoId ? null : lessonPathCandidate;
 
-    const metadataValues = await this.db.videoMetadataOption.findMany({
-      where: { videoId },
-      select: { optionId: true, option: { select: { name: true } } },
-    });
     let metadataFallback = null as Recommendation | null;
     if (metadataValues.length) {
       const optionIds = metadataValues.map((value) => value.optionId);

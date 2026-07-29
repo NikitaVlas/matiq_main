@@ -1,10 +1,16 @@
+import { Discipline } from '@prisma/client';
 import { describe, expect, it, vi } from 'vitest';
 import { AssessmentService } from '../src/modules/assessment/application/assessment.service';
 
 describe('assessment roadmap lesson matching', () => {
   it('rejects a manually assigned unpublished lesson', async () => {
     const db = {
-      athleteProfile: { findUnique: vi.fn().mockResolvedValue({ id: 'profile-1' }) },
+      athleteProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'profile-1',
+          disciplines: [Discipline.BJJ_GI],
+        }),
+      },
       lesson: { findFirst: vi.fn().mockResolvedValue(null) },
     };
     const service = new AssessmentService(db as never, {} as never);
@@ -24,10 +30,15 @@ describe('assessment roadmap lesson matching', () => {
     const service = new AssessmentService(db as never, {} as never);
     await (
       service as unknown as {
-        generateRoadmap: (id: string, scores: Map<string, number>) => Promise<void>;
+        generateRoadmap: (
+          id: string,
+          disciplines: Discipline[],
+          scores: Map<string, number>,
+        ) => Promise<void>;
       }
     ).generateRoadmap(
       'profile-1',
+      [Discipline.BJJ_GI, Discipline.NO_GI_GRAPPLING],
       new Map([
         ['standing', 1],
         ['unknown', 2],
@@ -35,8 +46,12 @@ describe('assessment roadmap lesson matching', () => {
     );
     expect(createMany).toHaveBeenCalledWith({
       data: expect.arrayContaining([
-        expect.objectContaining({ skillKey: 'standing', lessonId: 'lesson-1' }),
-        expect.objectContaining({ skillKey: 'unknown', lessonId: undefined }),
+        expect.objectContaining({
+          discipline: Discipline.BJJ_GI,
+          skillKey: 'standing',
+          lessonId: 'lesson-1',
+        }),
+        expect.objectContaining({ discipline: Discipline.NO_GI_GRAPPLING }),
       ]),
     });
   });

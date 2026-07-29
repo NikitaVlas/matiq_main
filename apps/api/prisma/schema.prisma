@@ -187,6 +187,7 @@ model RoadmapItem {
   id               String             @id @default(cuid())
   athleteProfileId String
   type             RoadmapItemType
+  discipline       Discipline
   title            String
   context          AssessmentContext?
   skillKey         String?
@@ -198,7 +199,7 @@ model RoadmapItem {
 
   lesson Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
 
-  @@index([athleteProfileId, position])
+  @@index([athleteProfileId, discipline, position])
 }
 
 model GameArea {

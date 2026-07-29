@@ -1,5 +1,6 @@
+import { Discipline } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class AssessmentAnswerDto {
   @ApiProperty()
@@ -21,6 +22,11 @@ export class RoadmapItemDto {
   @ApiProperty()
   @IsString()
   title!: string;
+
+  @ApiProperty({ enum: Discipline, required: false })
+  @IsOptional()
+  @IsEnum(Discipline)
+  discipline?: Discipline;
 
   @ApiProperty({ required: false })
   @IsString()

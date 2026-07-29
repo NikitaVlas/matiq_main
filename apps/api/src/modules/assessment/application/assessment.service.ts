@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { AssessmentContext, Prisma } from '@prisma/client';
+import { AssessmentContext, Discipline, Prisma } from '@prisma/client';
 import { Database } from '../../../shared/infrastructure/database';
 import { SubscriptionService } from '../../subscription/application/subscription.service';
 
@@ -102,7 +102,7 @@ export class AssessmentService {
         this.db.skillScore.create({ data: { assessmentId: assessment.id, skillKey, score } }),
       ),
     ]);
-    await this.generateRoadmap(profile.id, scores);
+    await this.generateRoadmap(profile.id, profile.disciplines, scores);
     await this.subscriptions.startTrial(userId);
     return this.getResult(userId);
   }
@@ -125,24 +125,50 @@ export class AssessmentService {
         },
       },
     });
+    const roadmapItems = profile?.roadmapItems ?? [];
+    const roadmaps = (profile?.disciplines ?? []).map((discipline) => ({
+      discipline,
+      items: roadmapItems.filter((item) => item.discipline === discipline && !item.isHidden),
+      hiddenItems: roadmapItems.filter((item) => item.discipline === discipline && item.isHidden),
+    }));
+    const primaryRoadmap = roadmaps[0];
     return {
       completed: Boolean(assessment?.completedAt),
       scores: assessment?.scores ?? [],
-      roadmap: await Promise.all(
-        (profile?.roadmapItems.filter((item) => !item.isHidden) ?? []).map(async (item) => ({
-          ...item,
-          videos: await this.recommendedVideos(item.skillKey),
+      roadmaps: await Promise.all(
+        roadmaps.map(async (roadmap) => ({
+          ...roadmap,
+          items: await Promise.all(
+            roadmap.items.map(async (item) => ({
+              ...item,
+              videos: await this.recommendedVideos(item.skillKey, item.discipline),
+            })),
+          ),
         })),
       ),
-      hiddenRoadmap: profile?.roadmapItems.filter((item) => item.isHidden) ?? [],
+      roadmap: await Promise.all(
+        (primaryRoadmap?.items ?? []).map(async (item) => ({
+          ...item,
+          videos: await this.recommendedVideos(item.skillKey, item.discipline),
+        })),
+      ),
+      hiddenRoadmap: primaryRoadmap?.hiddenItems ?? [],
     };
   }
 
-  private async recommendedVideos(skillKey?: string | null) {
+  private async recommendedVideos(skillKey: string | null | undefined, discipline: Discipline) {
     if (!skillKey) return [];
     return this.db.video.findMany({
       where: {
         published: true,
+        metadataValues: {
+          some: {
+            option: {
+              key: disciplineMetadataKey(discipline),
+              field: { key: 'discipline' },
+            },
+          },
+        },
         OR: [{ position: { key: skillKey } }, { technique: { key: skillKey } }],
       },
       select: { id: true, title: true },
@@ -150,23 +176,46 @@ export class AssessmentService {
     });
   }
 
-  async addRoadmapItem(userId: string, title: string, skillKey?: string, lessonId?: string) {
+  async addRoadmapItem(
+    userId: string,
+    title: string,
+    skillKey?: string,
+    lessonId?: string,
+    discipline?: Discipline,
+  ) {
     const profile = await this.db.athleteProfile.findUnique({ where: { userId } });
     if (!profile) throw new NotFoundException('ATHLETE_PROFILE_REQUIRED');
+    const selectedDiscipline = discipline ?? profile.disciplines[0];
+    if (!selectedDiscipline || !profile.disciplines.includes(selectedDiscipline))
+      throw new BadRequestException('DISCIPLINE_NOT_SELECTED');
     if (lessonId) {
       const lesson = await this.db.lesson.findFirst({
-        where: { id: lessonId, published: true },
+        where: {
+          id: lessonId,
+          published: true,
+          video: {
+            metadataValues: {
+              some: {
+                option: {
+                  key: disciplineMetadataKey(selectedDiscipline),
+                  field: { key: 'discipline' },
+                },
+              },
+            },
+          },
+        },
         select: { id: true },
       });
       if (!lesson) throw new BadRequestException('LESSON_NOT_AVAILABLE');
     }
     const last = await this.db.roadmapItem.findFirst({
-      where: { athleteProfileId: profile.id },
+      where: { athleteProfileId: profile.id, discipline: selectedDiscipline },
       orderBy: { position: 'desc' },
     });
     return this.db.roadmapItem.create({
       data: {
         athleteProfileId: profile.id,
+        discipline: selectedDiscipline,
         title,
         skillKey,
         lessonId,
@@ -196,6 +245,7 @@ export class AssessmentService {
     const neighbor = await this.db.roadmapItem.findFirst({
       where: {
         athleteProfileId: profile.id,
+        discipline: item.discipline,
         isHidden: false,
         position: change.direction === 'up' ? { lt: item.position } : { gt: item.position },
       },
@@ -209,7 +259,11 @@ export class AssessmentService {
     return this.db.roadmapItem.findUniqueOrThrow({ where: { id: item.id } });
   }
 
-  private async generateRoadmap(profileId: string, scores: Map<string, number>) {
+  private async generateRoadmap(
+    profileId: string,
+    disciplines: Discipline[],
+    scores: Map<string, number>,
+  ) {
     await this.db.roadmapItem.deleteMany({
       where: { athleteProfileId: profileId, isAddedByUser: false },
     });
@@ -220,24 +274,41 @@ export class AssessmentService {
     };
     const ranked = [...scores.entries()].sort((a, b) => a[1] - b[1]);
     const items = await Promise.all(
-      ranked.map(async ([skillKey], index) => {
-        const lesson = await this.db.lesson.findFirst({
-          where: {
-            published: true,
-            video: { OR: [{ position: { key: skillKey } }, { technique: { key: skillKey } }] },
-          },
-          select: { id: true },
-        });
-        return {
-          athleteProfileId: profileId,
-          type: 'SKILL_GROUP' as const,
-          title: labels[skillKey] ?? skillKey,
-          skillKey,
-          lessonId: lesson?.id,
-          position: index,
-        };
-      }),
+      disciplines.flatMap((discipline) =>
+        ranked.map(async ([skillKey], index) => {
+          const lesson = await this.db.lesson.findFirst({
+            where: {
+              published: true,
+              video: {
+                metadataValues: {
+                  some: {
+                    option: {
+                      key: disciplineMetadataKey(discipline),
+                      field: { key: 'discipline' },
+                    },
+                  },
+                },
+                OR: [{ position: { key: skillKey } }, { technique: { key: skillKey } }],
+              },
+            },
+            select: { id: true },
+          });
+          return {
+            athleteProfileId: profileId,
+            discipline,
+            type: 'SKILL_GROUP' as const,
+            title: labels[skillKey] ?? skillKey,
+            skillKey,
+            lessonId: lesson?.id,
+            position: index,
+          };
+        }),
+      ),
     );
     if (items.length) await this.db.roadmapItem.createMany({ data: items });
   }
+}
+
+function disciplineMetadataKey(discipline: Discipline) {
+  return discipline === Discipline.BJJ_GI ? 'bjj-gi' : 'no-gi';
 }
