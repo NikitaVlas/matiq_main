@@ -43,6 +43,41 @@ const QUESTION_SEED = [
       { key: 'competition', label: 'Ich wende es sicher im Wettkampf an', value: 5 },
     ],
   },
+  {
+    key: 'mount-top-confidence',
+    text: 'Wie sicher kontrollierst du die Mount-Position von oben?',
+    context: AssessmentContext.TOP,
+    skillKey: 'mount-top',
+    options: confidenceOptions('Ich verliere die Mount-Position schnell'),
+  },
+  {
+    key: 'mount-bottom-confidence',
+    text: 'Wie sicher befreist du dich aus der Mount-Position?',
+    context: AssessmentContext.BOTTOM,
+    skillKey: 'mount-bottom',
+    options: confidenceOptions('Ich kenne keine sicheren Befreiungen'),
+  },
+  {
+    key: 'closed-guard-confidence',
+    text: 'Wie sicher arbeitest du aus der geschlossenen Guard?',
+    context: AssessmentContext.BOTTOM,
+    skillKey: 'closed-guard',
+    options: confidenceOptions('Ich kann aus der geschlossenen Guard kaum angreifen'),
+  },
+  {
+    key: 'open-guard-confidence',
+    text: 'Wie sicher arbeitest du aus der offenen Guard?',
+    context: AssessmentContext.BOTTOM,
+    skillKey: 'open-guard',
+    options: confidenceOptions('Ich verliere Distanz und Kontrolle schnell'),
+  },
+  {
+    key: 'side-control-top-confidence',
+    text: 'Wie sicher kontrollierst du Side Control von oben?',
+    context: AssessmentContext.TOP,
+    skillKey: 'side-control-top',
+    options: confidenceOptions('Ich verliere Side Control schnell'),
+  },
 ];
 
 @Injectable()
@@ -188,7 +223,11 @@ export class AssessmentService {
             },
           },
         },
-        OR: [{ position: { key: skillKey } }, { technique: { key: skillKey } }],
+        OR: [
+          { position: { key: skillKey } },
+          { technique: { key: skillKey } },
+          { metadataValues: { some: { option: { key: skillKey } } } },
+        ],
       },
       select: { id: true, title: true },
       take: 3,
@@ -245,6 +284,111 @@ export class AssessmentService {
     });
   }
 
+  async roadmapItemDetails(userId: string, itemId: string) {
+    const item = await this.db.roadmapItem.findFirst({
+      where: { id: itemId, athleteProfile: { userId } },
+      select: {
+        id: true,
+        title: true,
+        discipline: true,
+        skillKey: true,
+        completedAt: true,
+      },
+    });
+    if (!item) throw new NotFoundException('ROADMAP_ITEM_NOT_FOUND');
+
+    const videos = item.skillKey
+      ? await this.db.video.findMany({
+          where: {
+            published: true,
+            metadataValues: {
+              some: {
+                option: {
+                  key: disciplineMetadataKey(item.discipline),
+                  field: { key: 'discipline' },
+                },
+              },
+            },
+            OR: [
+              { position: { key: item.skillKey } },
+              { technique: { key: item.skillKey } },
+              { metadataValues: { some: { option: { key: item.skillKey } } } },
+            ],
+          },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            durationSec: true,
+            watchEvents: {
+              where: { userId },
+              select: { watchedSeconds: true, completed: true },
+              take: 1,
+            },
+            Lesson: {
+              select: {
+                id: true,
+                title: true,
+                published: true,
+                module: {
+                  select: {
+                    id: true,
+                    title: true,
+                    course: {
+                      select: { id: true, title: true, description: true, published: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        })
+      : [];
+
+    const lessons = videos.map((video) => {
+      const watch = video.watchEvents[0];
+      const publishedLesson =
+        video.Lesson?.published && video.Lesson.module.course.published ? video.Lesson : null;
+      return {
+        id: publishedLesson?.id ?? null,
+        videoId: video.id,
+        title: publishedLesson?.title ?? video.title,
+        description: video.description,
+        durationSec: video.durationSec,
+        watchedSeconds: watch?.watchedSeconds ?? 0,
+        completed: watch?.completed ?? false,
+        course: publishedLesson
+          ? {
+              id: publishedLesson.module.course.id,
+              title: publishedLesson.module.course.title,
+              description: publishedLesson.module.course.description,
+            }
+          : null,
+        module: publishedLesson
+          ? { id: publishedLesson.module.id, title: publishedLesson.module.title }
+          : null,
+      };
+    });
+    const courses = lessons
+      .flatMap((lesson) => (lesson.course ? [lesson.course] : []))
+      .filter(
+        (course, index, all) => all.findIndex((candidate) => candidate.id === course.id) === index,
+      );
+    const completedLessons = lessons.filter((lesson) => lesson.completed).length;
+
+    return {
+      item,
+      progress: {
+        completedLessons,
+        totalLessons: lessons.length,
+        percent: lessons.length ? Math.round((completedLessons / lessons.length) * 100) : 0,
+      },
+      courses,
+      lessons,
+    };
+  }
+
   async updateRoadmapItem(
     userId: string,
     itemId: string,
@@ -290,6 +434,11 @@ export class AssessmentService {
       standing: 'Arbeit im Stand',
       'top-control': 'Kontrolle von oben',
       'bottom-escape': 'Escapes von unten',
+      'mount-top': 'Mount-Kontrolle',
+      'mount-bottom': 'Mount-Escapes',
+      'closed-guard': 'Geschlossene Guard',
+      'open-guard': 'Offene Guard',
+      'side-control-top': 'Side-Control-Kontrolle',
     };
     const ranked = [...scores.entries()].sort((a, b) => a[1] - b[1]);
     const items = await Promise.all(
@@ -307,7 +456,11 @@ export class AssessmentService {
                     },
                   },
                 },
-                OR: [{ position: { key: skillKey } }, { technique: { key: skillKey } }],
+                OR: [
+                  { position: { key: skillKey } },
+                  { technique: { key: skillKey } },
+                  { metadataValues: { some: { option: { key: skillKey } } } },
+                ],
               },
             },
             select: { id: true },
@@ -326,6 +479,16 @@ export class AssessmentService {
     );
     if (items.length) await this.db.roadmapItem.createMany({ data: items });
   }
+}
+
+function confidenceOptions(lowLabel: string) {
+  return [
+    { key: 'never', label: lowLabel, value: 1 },
+    { key: 'rarely', label: 'Es gelingt selten', value: 2 },
+    { key: 'sometimes', label: 'Manchmal gelingt es', value: 3 },
+    { key: 'usually', label: 'Meistens gelingt es', value: 4 },
+    { key: 'competition', label: 'Ich wende es sicher im Wettkampf an', value: 5 },
+  ];
 }
 
 function disciplineMetadataKey(discipline: Discipline) {

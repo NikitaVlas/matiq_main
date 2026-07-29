@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
 
@@ -89,7 +90,9 @@ export default function RoadmapPage() {
           {roadmap?.items.map((item, index) => (
             <article key={item.id}>
               {index === 0 ? <p className="eyebrow">Als Nächstes</p> : null}
-              <strong>{item.title}</strong>
+              <Link className="roadmap-title-link" href={`/roadmap/${item.id}`}>
+                <strong>{item.title}</strong>
+              </Link>
               {item.videos?.map((video) => (
                 <a key={video.id} href={`/video/${video.id}`}>
                   {video.title}
@@ -107,7 +110,9 @@ export default function RoadmapPage() {
             <div className="roadmap">
               {roadmap.completedItems.map((item) => (
                 <article key={item.id}>
-                  <strong>{item.title}</strong>
+                  <Link className="roadmap-title-link" href={`/roadmap/${item.id}`}>
+                    <strong>{item.title}</strong>
+                  </Link>
                   <p>
                     Abgeschlossen am{' '}
                     {item.completedAt

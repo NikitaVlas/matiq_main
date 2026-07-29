@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import Link from 'next/link';
 const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
 type Question = {
   key: string;
@@ -13,7 +14,7 @@ export default function AssessmentPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [done, setDone] = useState(false);
-  const [roadmap, setRoadmap] = useState<{ title: string; score?: number }[]>([]);
+  const [roadmap, setRoadmap] = useState<{ id: string; title: string }[]>([]);
   useEffect(() => {
     fetch(`${api}/assessment/questions`, { credentials: 'include' })
       .then((r) => r.json())
@@ -33,7 +34,12 @@ export default function AssessmentPage() {
       }),
     });
     const result = await response.json();
-    setRoadmap((result.roadmap ?? []).map((item: { title: string }) => ({ title: item.title })));
+    setRoadmap(
+      (result.roadmap ?? []).map((item: { id: string; title: string }) => ({
+        id: item.id,
+        title: item.title,
+      })),
+    );
     setDone(true);
   }
   if (done)
@@ -45,8 +51,10 @@ export default function AssessmentPage() {
           <p>Die Empfehlungen basieren auf deinen Antworten und können später erweitert werden.</p>
           <div className="roadmap">
             {roadmap.map((item) => (
-              <article key={item.title}>
-                <strong>{item.title}</strong>
+              <article key={item.id}>
+                <Link className="roadmap-title-link" href={`/roadmap/${item.id}`}>
+                  <strong>{item.title}</strong>
+                </Link>
                 <span>Empfohlen</span>
               </article>
             ))}

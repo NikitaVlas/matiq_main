@@ -27,6 +27,9 @@ export class AssessmentController {
       dto.discipline,
     );
   }
+  @Get('roadmap-items/:id') details(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.assessment.roadmapItemDetails(req.userId, id);
+  }
   @Patch('roadmap-items/:id') update(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,

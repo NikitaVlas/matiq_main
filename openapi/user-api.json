@@ -476,6 +476,18 @@
       }
     },
     "/assessment/roadmap-items/{id}": {
+      "get": {
+        "operationId": "AssessmentController_details",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "assessment"
+        ]
+      },
       "patch": {
         "operationId": "AssessmentController_update",
         "parameters": [],

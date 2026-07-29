@@ -1,0 +1,146 @@
+'use client';
+
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
+
+type RoadmapDetailResult = {
+  item: { id: string; title: string; discipline: 'BJJ_GI' | 'NO_GI_GRAPPLING' };
+  progress: { completedLessons: number; totalLessons: number; percent: number };
+  courses: Array<{ id: string; title: string; description?: string | null }>;
+  lessons: Array<{
+    videoId: string;
+    title: string;
+    durationSec?: number | null;
+    watchedSeconds: number;
+    completed: boolean;
+    course: { id: string; title: string } | null;
+    module: { id: string; title: string } | null;
+  }>;
+};
+
+export default function RoadmapDetail({ id }: { id: string }) {
+  const [result, setResult] = useState<RoadmapDetailResult>();
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`${api}/assessment/roadmap-items/${encodeURIComponent(id)}`, {
+      credentials: 'include',
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error();
+        setResult((await response.json()) as RoadmapDetailResult);
+      })
+      .catch((loadError: Error) => {
+        if (loadError.name !== 'AbortError')
+          setError('Dieser Roadmap-Schritt ist nicht verfügbar.');
+      });
+    return () => controller.abort();
+  }, [id]);
+
+  if (error)
+    return (
+      <main>
+        <section className="shell">
+          <p>{error}</p>
+          <Link href="/roadmap">Zur Roadmap</Link>
+        </section>
+      </main>
+    );
+  if (!result)
+    return (
+      <main>
+        <section className="shell">
+          <p>Roadmap-Schritt wird geladen …</p>
+        </section>
+      </main>
+    );
+
+  return (
+    <main>
+      <section className="shell roadmap-detail">
+        <Link className="text-link" href="/roadmap">
+          ← Zur Roadmap
+        </Link>
+        <div>
+          <p className="eyebrow">Dein Entwicklungsschritt</p>
+          <h1>{result.item.title}</h1>
+          <p>
+            {result.item.discipline === 'BJJ_GI' ? 'BJJ Gi' : 'No-Gi Grappling'} · Video-Fortschritt
+            bedeutet nicht automatisch Beherrschung.
+          </p>
+        </div>
+        <section className="roadmap-topic-progress" aria-labelledby="topic-progress-title">
+          <div>
+            <p className="eyebrow">Themenfortschritt</p>
+            <h2 id="topic-progress-title">{result.progress.percent}% angesehen</h2>
+            <p>
+              {result.progress.completedLessons} von {result.progress.totalLessons} passenden
+              Lektionen abgeschlossen.
+            </p>
+          </div>
+          <progress value={result.progress.percent} max="100">
+            {result.progress.percent}%
+          </progress>
+        </section>
+        {result.courses.length ? (
+          <section aria-labelledby="matching-courses-title">
+            <p className="eyebrow">Passende Kurse</p>
+            <h2 id="matching-courses-title">Vertiefe das Thema im Kurs</h2>
+            <div className="course-grid">
+              {result.courses.map((course) => (
+                <article className="course-card" key={course.id}>
+                  <h3>
+                    <Link href={`/courses/${course.id}`}>{course.title}</Link>
+                  </h3>
+                  <p>{course.description ?? 'Kurs mit passenden Lektionen für diesen Schritt.'}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+        <section aria-labelledby="matching-lessons-title">
+          <p className="eyebrow">Passende Lektionen</p>
+          <h2 id="matching-lessons-title">Direkt mit einer Technik starten</h2>
+          {result.lessons.length ? (
+            <div className="roadmap-lesson-grid">
+              {result.lessons.map((lesson) => {
+                const percent = lesson.durationSec
+                  ? Math.min(100, Math.round((lesson.watchedSeconds / lesson.durationSec) * 100))
+                  : 0;
+                return (
+                  <article key={lesson.videoId}>
+                    <div>
+                      <span>{lesson.completed ? 'Abgeschlossen' : `${percent}% angesehen`}</span>
+                      <h3>{lesson.title}</h3>
+                      <p>
+                        {lesson.course
+                          ? `${lesson.course.title} · ${lesson.module?.title}`
+                          : 'Einzelvideo'}
+                      </p>
+                    </div>
+                    <Link className="action-link" href={`/video/${lesson.videoId}`}>
+                      {lesson.watchedSeconds ? 'Weiter ansehen' : 'Lektion starten'}
+                    </Link>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="roadmap-empty-content">
+              <h3>Noch keine passenden Lektionen veröffentlicht</h3>
+              <p>
+                Der Schritt wird automatisch ergänzt, sobald die Redaktion Inhalte mit diesem Thema
+                verknüpft.
+              </p>
+              <Link href="/courses">Alle Kurse ansehen</Link>
+            </div>
+          )}
+        </section>
+      </section>
+    </main>
+  );
+}

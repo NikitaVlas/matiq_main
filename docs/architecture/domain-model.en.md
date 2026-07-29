@@ -353,6 +353,9 @@ The first physical content slice is implemented in Prisma and the API:
   continuations from one lesson. Lessons without paths remain valid standalone content.
 - `RoadmapItem.lessonId` optionally targets a published lesson; assessment generation
   attaches matching lessons by skill key when available.
+- A Roadmap item detail resolves its methodology skill key against published video Position,
+  Technique, and DB-driven metadata values. It exposes matching lessons, unique courses, and the
+  authenticated athlete's viewing progress without treating viewing as mastery.
 - Public course catalog and admin content-management endpoints are available locally.
 
 Unmatched legacy roadmap items remain valid and continue to use their existing skill
