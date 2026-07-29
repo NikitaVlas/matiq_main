@@ -356,6 +356,9 @@ The first physical content slice is implemented in Prisma and the API:
 - A Roadmap item detail resolves its methodology skill key against published video Position,
   Technique, and DB-driven metadata values. It exposes matching lessons, unique courses, and the
   authenticated athlete's viewing progress without treating viewing as mastery.
+- Admin content metadata includes a DB-driven `Roadmap-Thema` field. Its stable option keys align
+  Assessment recommendations with videos, while coverage reporting identifies topics without
+  published materials.
 - Public course catalog and admin content-management endpoints are available locally.
 
 Unmatched legacy roadmap items remain valid and continue to use their existing skill

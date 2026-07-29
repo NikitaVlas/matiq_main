@@ -5,6 +5,7 @@ import { adminApi } from '../../shared/api/client';
 
 type MetadataOption = { id: string; key: string; name: string };
 type MetadataField = { id: string; key: string; name: string; options: MetadataOption[] };
+type RoadmapCoverage = MetadataOption & { publishedVideoCount: number };
 type Video = {
   id: string;
   title: string;
@@ -26,18 +27,21 @@ export default function VideoUploadPage() {
   const [uploading, setUploading] = useState(false);
   const [videos, setVideos] = useState<Video[]>([]);
   const [fields, setFields] = useState<MetadataField[]>([]);
+  const [roadmapCoverage, setRoadmapCoverage] = useState<RoadmapCoverage[]>([]);
   const [editingVideoId, setEditingVideoId] = useState('');
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [newOptions, setNewOptions] = useState<Record<string, string>>({});
   const [newFieldName, setNewFieldName] = useState('');
 
   const load = async () => {
-    const [videosResponse, fieldsResponse] = await Promise.all([
+    const [videosResponse, fieldsResponse, coverageResponse] = await Promise.all([
       adminApi('/admin/videos'),
       adminApi('/admin/content/metadata-fields'),
+      adminApi('/admin/content/roadmap-topic-coverage'),
     ]);
     if (videosResponse.ok) setVideos(await videosResponse.json());
     if (fieldsResponse.ok) setFields(await fieldsResponse.json());
+    if (coverageResponse.ok) setRoadmapCoverage(await coverageResponse.json());
   };
 
   useEffect(() => {
@@ -173,6 +177,27 @@ export default function VideoUploadPage() {
         </button>
       </section>
 
+      <section aria-labelledby="roadmap-coverage-title">
+        <h2 id="roadmap-coverage-title">Roadmap content coverage</h2>
+        <p>
+          Roadmap topics connect Assessment recommendations with published videos and courses. A
+          topic without coverage remains visible to athletes but cannot recommend a lesson yet.
+        </p>
+        {roadmapCoverage.length ? (
+          <ul>
+            {roadmapCoverage.map((topic) => (
+              <li key={topic.id}>
+                <strong>{topic.name}</strong>: {topic.publishedVideoCount} published video
+                {topic.publishedVideoCount === 1 ? '' : 's'}{' '}
+                {topic.publishedVideoCount === 0 ? <span>— needs content</span> : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No Roadmap topics available.</p>
+        )}
+      </section>
+
       <h2>Videos</h2>
       <ul>
         {videos.map((video) => (
@@ -194,6 +219,12 @@ export default function VideoUploadPage() {
               <section style={{ border: '1px solid #ddd', padding: 16, marginTop: 12 }}>
                 {fields.map((field) => (
                   <div key={field.id} style={{ marginBottom: 16 }}>
+                    {field.key === 'roadmap-topic' ? (
+                      <p>
+                        <strong>Roadmap connection:</strong> select the Assessment topic this video
+                        teaches. Use Add new option only for an approved methodology topic.
+                      </p>
+                    ) : null}
                     <label>
                       {field.name}
                       <select

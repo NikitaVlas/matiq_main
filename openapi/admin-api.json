@@ -489,6 +489,20 @@
         ]
       }
     },
+    "/admin/content/roadmap-topic-coverage": {
+      "get": {
+        "operationId": "ContentController_roadmapTopicCoverage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
     "/admin/content/metadata-fields/{fieldId}/options": {
       "post": {
         "operationId": "ContentController_createMetadataOption",

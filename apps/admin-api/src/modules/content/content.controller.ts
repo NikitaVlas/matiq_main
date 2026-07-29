@@ -15,13 +15,17 @@ import { AdminDatabaseService } from '../../shared/infrastructure/admin-database
 import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 import { AdminRoles } from '../admin-auth/admin-roles.decorator';
 import { validateCourseStructure } from './course-validation';
+import { RoadmapMetadataService } from './roadmap-metadata.service';
 
 @ApiTags('admin-content')
 @Controller('admin/content')
 @UseGuards(AdminAuthGuard)
 @AdminRoles('ADMIN', 'EDITOR')
 export class ContentController {
-  constructor(private readonly db: AdminDatabaseService) {}
+  constructor(
+    private readonly db: AdminDatabaseService,
+    private readonly roadmapMetadata: RoadmapMetadataService,
+  ) {}
   @Get() catalog() {
     return Promise.all([
       this.db.gameArea.findMany({ include: { positions: true } }),
@@ -247,10 +251,10 @@ export class ContentController {
     return this.db.branchTrigger.create({ data: body });
   }
   @Get('metadata-fields') metadataFields() {
-    return this.db.metadataField.findMany({
-      include: { options: { orderBy: { name: 'asc' } } },
-      orderBy: { name: 'asc' },
-    });
+    return this.roadmapMetadata.fields();
+  }
+  @Get('roadmap-topic-coverage') roadmapTopicCoverage() {
+    return this.roadmapMetadata.coverage();
   }
   @Post('metadata-fields') createMetadataField(@Body() body: { key: string; name: string }) {
     return this.db.metadataField.create({ data: body, include: { options: true } });
