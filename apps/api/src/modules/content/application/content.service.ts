@@ -201,7 +201,11 @@ export class ContentService {
     for (const item of profile?.roadmapItems ?? []) {
       const direct = item.lesson;
       if (direct?.published && direct.video.published && !excludedVideoIds.has(direct.videoId)) {
-        roadmap = recommendation('ROADMAP', direct, `Roadmap: ${item.title}`);
+        roadmap = recommendation(
+          'ROADMAP',
+          direct,
+          `Empfohlen, weil „${item.title}“ dein aktueller Roadmap-Schritt ist.`,
+        );
         break;
       }
       if (!item.skillKey) continue;
@@ -231,7 +235,11 @@ export class ContentService {
         include: { Lesson: true },
       });
       if (video?.Lesson) {
-        roadmap = recommendation('ROADMAP', video.Lesson, `Roadmap: ${item.title}`);
+        roadmap = recommendation(
+          'ROADMAP',
+          video.Lesson,
+          `Empfohlen, weil „${item.title}“ dein aktueller Roadmap-Schritt ist.`,
+        );
         break;
       }
     }
@@ -287,7 +295,7 @@ export class ContentService {
         metadataFallback = recommendation(
           'METADATA',
           candidate.Lesson,
-          `Passende Themen: ${shared}`,
+          `Empfohlen, weil dieses Video dieselben Themen behandelt: ${shared}.`,
         );
       }
     }

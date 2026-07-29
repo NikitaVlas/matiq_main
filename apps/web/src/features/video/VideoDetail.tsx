@@ -51,6 +51,7 @@ export default function VideoDetail({ id }: { id: string }) {
   const [currentSeconds, setCurrentSeconds] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [progressError, setProgressError] = useState('');
+  const [sessionResult, setSessionResult] = useState<WatchProgress>();
   const lastCheckpoint = useRef(-1);
 
   useEffect(() => {
@@ -102,6 +103,7 @@ export default function VideoDetail({ id }: { id: string }) {
       });
       if (!response.ok) throw new Error();
       const progressResult = (await response.json()) as WatchProgress;
+      setSessionResult(progressResult);
       setProgressError('');
       if (!progressResult.completed) return;
 
@@ -139,6 +141,15 @@ export default function VideoDetail({ id }: { id: string }) {
 
   const topics = getVideoTopics(data.video);
   const progress = progressPercent(currentSeconds, data.video.durationSec);
+  const primaryRecommendation = recommendations
+    ? recommendations.primarySource === 'ROADMAP'
+      ? recommendations.roadmap
+      : recommendations.primarySource === 'LESSON_PATH'
+        ? recommendations.lessonPath
+        : recommendations.primarySource === 'METADATA'
+          ? recommendations.metadataFallback
+          : null
+    : null;
 
   return (
     <main className="lesson-page">
@@ -189,18 +200,26 @@ export default function VideoDetail({ id }: { id: string }) {
           <div>
             <p className="eyebrow">Fortschritt gespeichert</p>
             <h2>Lektion abgeschlossen</h2>
-            <p>Deine Roadmap und dein Verlauf wurden aktualisiert.</p>
+            <p>
+              {sessionResult?.roadmapItemsCompleted
+                ? `${sessionResult.roadmapItemsCompleted} Roadmap-Schritt wurde abgeschlossen.`
+                : 'Dein Video-Fortschritt und deine Roadmap wurden aktualisiert.'}
+            </p>
+            {primaryRecommendation ? <p>{primaryRecommendation.reason}</p> : null}
           </div>
           <div className="lesson-actions">
-            {recommendations?.roadmap ? (
-              <Link className="action-link" href={`/video/${recommendations.roadmap.videoId}`}>
-                Nächste Roadmap-Lektion
+            {primaryRecommendation ? (
+              <Link className="action-link" href={`/video/${primaryRecommendation.videoId}`}>
+                Nächstes Training: {primaryRecommendation.title}
               </Link>
             ) : (
               <Link className="action-link" href="/roadmap">
-                Roadmap öffnen
+                Nächsten Roadmap-Schritt wählen
               </Link>
             )}
+            <Link className="text-link" href="/dashboard">
+              Training beenden
+            </Link>
           </div>
         </section>
       ) : null}
