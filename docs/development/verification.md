@@ -5,35 +5,36 @@
 Run commands from the repository root with pnpm 10.12.1 and Node.js 22+.
 On Windows with restricted PowerShell scripts, use `pnpm.cmd`.
 
-| Check | Command | Required in CI |
-|---|---|---|
-| Setup | `pnpm install --frozen-lockfile` | Yes |
-| Development | `pnpm dev` | No |
-| Infrastructure | `docker compose up -d` | Integration only |
-| Prisma client | `pnpm db:generate` | Yes |
-| Migration | `pnpm --filter @matiq/api prisma:deploy` | Integration |
-| OpenAPI documents | `pnpm openapi:generate` | Contract changes |
-| Format | `pnpm format:check` | Yes |
-| Lint | `pnpm lint` | Yes |
-| Typecheck | `pnpm typecheck` | Yes |
-| Unit tests | `pnpm test` | Yes |
+| Check                | Command                                     | Required in CI      |
+| -------------------- | ------------------------------------------- | ------------------- |
+| Setup                | `pnpm install --frozen-lockfile`            | Yes                 |
+| Development          | `pnpm dev`                                  | No                  |
+| Infrastructure       | `docker compose up -d`                      | Integration only    |
+| Prisma client        | `pnpm db:generate`                          | Yes                 |
+| Migration            | `pnpm --filter @matiq/api prisma:deploy`    | Integration         |
+| OpenAPI documents    | `pnpm openapi:generate`                     | Contract changes    |
+| Format               | `pnpm format:check`                         | Yes                 |
+| Lint                 | `pnpm lint`                                 | Yes                 |
+| Typecheck            | `pnpm typecheck`                            | Yes                 |
+| Unit tests           | `pnpm test`                                 | Yes                 |
+| Browser E2E          | `pnpm e2e`                                  | Critical flows      |
 | Identity integration | `pnpm --filter @matiq/api test:integration` | Yes with PostgreSQL |
-| Build | `pnpm build` | Yes |
-| Full verification | `pnpm verify` | Yes |
+| Build                | `pnpm build`                                | Yes                 |
+| Full verification    | `pnpm verify`                               | Yes                 |
 
 `DATABASE_URL` must point to a disposable test/local PostgreSQL for migration
 and integration tests. Never run these commands against production.
 
 ## Required by change type
 
-| Change | Required checks |
-|---|---|
-| Documentation | Link check and `git diff --check` |
-| Business policy | Format, lint, typecheck, unit, build |
-| Prisma/data access | Standard checks, migration, integration |
-| API/OpenAPI | Standard checks, generated-client drift, integration |
-| Critical user flow | Standard checks and E2E/integration |
-| Permissions/security | Integration, negative cases, security review |
+| Change               | Required checks                                      |
+| -------------------- | ---------------------------------------------------- |
+| Documentation        | Link check and `git diff --check`                    |
+| Business policy      | Format, lint, typecheck, unit, build                 |
+| Prisma/data access   | Standard checks, migration, integration              |
+| API/OpenAPI          | Standard checks, generated-client drift, integration |
+| Critical user flow   | Standard checks and `pnpm e2e`/integration           |
+| Permissions/security | Integration, negative cases, security review         |
 
 ## Reporting
 
@@ -43,5 +44,5 @@ Report every command, outcome, skipped check, manual check, and residual risk.
 
 - Status: Active
 - Owner: MATIQ team
-- Last reviewed: 2026-07-20
+- Last reviewed: 2026-07-29
 - Related code: Root scripts, CI, all workspace packages

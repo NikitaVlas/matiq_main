@@ -11,6 +11,7 @@ Make the Assessment and Roadmap training flow understandable and reliable on des
 - Prevent duplicate Roadmap mutations while a request is in progress.
 - Keep Roadmap controls readable and operable on narrow screens.
 - Preserve keyboard focus visibility and reduced-motion behavior.
+- Cover the critical athlete flow with a deterministic Chromium E2E test.
 
 ## Acceptance criteria
 
@@ -19,10 +20,12 @@ Make the Assessment and Roadmap training flow understandable and reliable on des
 - Reorder, hide, restore, complete, and reopen actions cannot be submitted twice concurrently.
 - Relevant controls fit a 320-pixel-wide viewport without horizontal page overflow.
 - Existing URLs, API contracts, authorization, and recommendation logic remain unchanged.
+- The automated flow verifies login, Assessment submission, Roadmap navigation, lesson completion,
+  and the resulting Roadmap progress.
 
 ## Document status
 
-- Status: Implemented
+- Status: Verified
 - Owner: MATIQ team
 - Last reviewed: 2026-07-29
 - Related code: `apps/web/src/screens/assessment`, `apps/web/src/app/roadmap`, `apps/web/src/features/roadmap`, `apps/web/src/app/globals.css`
