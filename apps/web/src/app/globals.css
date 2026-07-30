@@ -1004,3 +1004,122 @@ legend {
     text-align: center;
   }
 }
+.settings-page {
+  width: min(920px, calc(100% - 32px));
+  margin: 48px auto 80px;
+}
+
+.settings-header {
+  border-bottom: 3px solid var(--red);
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+}
+
+.settings-header h1 {
+  margin: 0;
+}
+
+.settings-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  margin-bottom: 20px;
+  padding: 28px;
+}
+
+.settings-card h2 {
+  margin-top: 0;
+}
+
+.settings-summary {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 20px;
+}
+
+.settings-summary div,
+.settings-sessions li {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settings-summary dt {
+  font-weight: 700;
+}
+
+.settings-summary dd {
+  margin: 0;
+}
+
+.settings-form {
+  display: grid;
+  gap: 14px;
+  max-width: 620px;
+}
+
+.settings-form label {
+  display: grid;
+  font-weight: 700;
+  gap: 6px;
+}
+
+.settings-form input {
+  min-height: 42px;
+}
+
+.settings-sessions {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+}
+
+.settings-sessions li {
+  border-top: 1px solid var(--line);
+  padding: 14px 0;
+}
+
+.settings-message {
+  background: #fff;
+  border-left: 4px solid var(--red);
+  padding: 14px 18px;
+}
+
+.settings-secret {
+  background: #f1efe9;
+  overflow-wrap: anywhere;
+  padding: 14px;
+}
+
+.settings-recovery ul {
+  columns: 2;
+  padding-left: 20px;
+}
+
+.settings-danger {
+  border-color: var(--red);
+}
+
+.danger-button {
+  background: #9f1710;
+}
+
+@media (max-width: 640px) {
+  .settings-page {
+    margin-top: 24px;
+  }
+
+  .settings-card {
+    padding: 20px;
+  }
+
+  .settings-summary div,
+  .settings-sessions li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .settings-recovery ul {
+    columns: 1;
+  }
+}

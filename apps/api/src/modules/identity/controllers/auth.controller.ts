@@ -122,6 +122,7 @@ export class AuthController {
       email: user.email,
       emailVerified: Boolean(user.emailVerifiedAt),
       athleteProfileCompleted: Boolean(user.athleteProfile?.completedAt),
+      mfaEnabled: Boolean(user.mfaEnabledAt),
       role: user.role,
     };
   }
