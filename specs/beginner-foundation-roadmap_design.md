@@ -66,12 +66,13 @@
 - Prisma Client generation and the local additive migration completed successfully.
 - Workspace typecheck, lint, tests, production build, and changed-file formatting passed.
 - API unit coverage includes eligible, ineligible, and idempotent assignment behavior.
-- Browser E2E for the complete onboarding flow remains a manual follow-up check.
+- Chromium E2E covers beginner onboarding, automatic Foundation assignment, the no-video state,
+  voluntary Assessment, and preservation of Foundation recommendations.
 - Repository-wide formatting remains blocked by seven pre-existing files outside this change.
 
 ## Document status
 
-- Status: Implemented; manual browser verification pending
+- Status: Implemented and verified
 - Owner: MATIQ team
 - Last reviewed: 2026-07-30
 - Related code: `apps/api/src/modules/athlete-profile`, `apps/api/src/modules/assessment`, `apps/admin-api`, `apps/web`, `apps/admin-web`
