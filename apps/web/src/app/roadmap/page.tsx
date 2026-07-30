@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { selectRoadmapFocus } from '../../features/roadmap/roadmap-focus';
 
 const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
 
@@ -69,12 +70,7 @@ export default function RoadmapPage() {
   const roadmap = result?.roadmaps.find((item) => item.discipline === selectedDiscipline);
   const visibleCount = (roadmap?.items.length ?? 0) + (roadmap?.completedItems.length ?? 0);
   const completedCount = roadmap?.completedItems.length ?? 0;
-  const sections = roadmap
-    ? (['GAP', 'CORE', 'EXPLORE'] as const).map((type) => ({
-        type,
-        items: roadmap.items.filter((item) => item.recommendationType === type),
-      }))
-    : [];
+  const focus = selectRoadmapFocus(roadmap?.items ?? []);
 
   return (
     <main>
@@ -119,55 +115,43 @@ export default function RoadmapPage() {
           </p>
         ) : null}
 
-        {sections.map((section) =>
-          section.items.length ? (
-            <section key={section.type} aria-labelledby={`roadmap-${section.type}`}>
-              <p className="eyebrow">{sectionLabel(section.type)}</p>
-              <h2 id={`roadmap-${section.type}`}>{sectionTitle(section.type)}</h2>
-              <p>{sectionDescription(section.type)}</p>
-              <div className="roadmap">
-                {section.items.map((item, index) => (
-                  <article key={item.id}>
-                    {section.type === 'GAP' && index === 0 ? (
-                      <p className="eyebrow">Als Nächstes</p>
-                    ) : null}
-                    <Link className="roadmap-title-link" href={`/roadmap/${item.id}`}>
-                      <strong>{item.title}</strong>
-                    </Link>
-                    <RoadmapProgress item={item} />
-                    {item.videos?.map((video) => (
-                      <a key={video.id} href={`/video/${video.id}`}>
-                        {video.title}
-                      </a>
-                    ))}
-                    <div className="roadmap-item-actions">
-                      <button
-                        disabled={Boolean(updatingId)}
-                        aria-label={`${item.title} nach oben verschieben`}
-                        onClick={() => update(item.id, { direction: 'up' })}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        disabled={Boolean(updatingId)}
-                        aria-label={`${item.title} nach unten verschieben`}
-                        onClick={() => update(item.id, { direction: 'down' })}
-                      >
-                        ↓
-                      </button>
-                      <button
-                        disabled={Boolean(updatingId)}
-                        onClick={() => update(item.id, { isHidden: true })}
-                      >
-                        {updatingId === item.id ? 'Wird gespeichert...' : 'Ausblenden'}
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-          ) : null,
-        )}
+        {focus.primary ? (
+          <section className="roadmap-focus" aria-labelledby="roadmap-focus-title">
+            <p className="eyebrow">Jetzt trainieren</p>
+            <h2 id="roadmap-focus-title">Dein aktueller Fokus</h2>
+            <p>
+              Konzentriere dich zuerst auf dieses Thema. Die weiteren Ergebnisse bleiben erhalten.
+            </p>
+            <div className="roadmap">
+              <RoadmapCard item={focus.primary} primary updatingId={updatingId} update={update} />
+            </div>
+          </section>
+        ) : null}
+
+        {focus.next.length ? (
+          <section aria-labelledby="roadmap-next-title">
+            <p className="eyebrow">Danach</p>
+            <h2 id="roadmap-next-title">Deine nächsten Richtungen</h2>
+            <p>Diese Themen folgen, sobald du mit deinem aktuellen Fokus weitergekommen bist.</p>
+            <div className="roadmap">
+              {focus.next.map((item) => (
+                <RoadmapCard key={item.id} item={item} updatingId={updatingId} update={update} />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {focus.backlog.length ? (
+          <details className="roadmap-backlog">
+            <summary>Später bearbeiten · {focus.backlog.length} weitere Themen</summary>
+            <p>Diese Ergebnisse sind gespeichert, aber momentan nicht Teil deines aktiven Plans.</p>
+            <div className="roadmap">
+              {focus.backlog.map((item) => (
+                <RoadmapCard key={item.id} item={item} updatingId={updatingId} update={update} />
+              ))}
+            </div>
+          </details>
+        ) : null}
 
         {roadmap?.completedItems.length ? (
           <>
@@ -213,6 +197,52 @@ export default function RoadmapPage() {
   );
 }
 
+function RoadmapCard({
+  item,
+  primary = false,
+  updatingId,
+  update,
+}: {
+  item: RoadmapItem;
+  primary?: boolean;
+  updatingId: string;
+  update: (id: string, body: object) => Promise<void>;
+}) {
+  return (
+    <article className={primary ? 'is-primary' : undefined}>
+      <p className="roadmap-type">{recommendationLabel(item.recommendationType)}</p>
+      <Link className="roadmap-title-link" href={`/roadmap/${item.id}`}>
+        <strong>{item.title}</strong>
+      </Link>
+      <RoadmapProgress item={item} />
+      {primary && item.videos?.[0] ? (
+        <Link className="action-link" href={`/video/${item.videos[0].id}`}>
+          Training starten
+        </Link>
+      ) : null}
+      <div className="roadmap-item-actions">
+        <button
+          disabled={Boolean(updatingId)}
+          aria-label={`${item.title} nach oben verschieben`}
+          onClick={() => update(item.id, { direction: 'up' })}
+        >
+          ↑
+        </button>
+        <button
+          disabled={Boolean(updatingId)}
+          aria-label={`${item.title} nach unten verschieben`}
+          onClick={() => update(item.id, { direction: 'down' })}
+        >
+          ↓
+        </button>
+        <button disabled={Boolean(updatingId)} onClick={() => update(item.id, { isHidden: true })}>
+          {updatingId === item.id ? 'Wird gespeichert...' : 'Ausblenden'}
+        </button>
+      </div>
+    </article>
+  );
+}
+
 function RoadmapProgress({ item }: { item: RoadmapItem }) {
   const progress = item.progress;
   if (!progress?.totalVideos) return <p>Noch keine veröffentlichten Videos für dieses Thema.</p>;
@@ -231,24 +261,8 @@ function disciplineLabel(discipline: Discipline) {
   return discipline === 'BJJ_GI' ? 'BJJ Gi' : 'No-Gi Grappling';
 }
 
-function sectionLabel(type: RecommendationType) {
-  return { GAP: 'Entwicklung', CORE: 'Dein Spiel', EXPLORE: 'Entdecken' }[type];
-}
-
-function sectionTitle(type: RecommendationType) {
-  return {
-    GAP: 'Aktuelle Entwicklungslücken',
-    CORE: 'Stärken weiter ausbauen',
-    EXPLORE: 'Neue Ziele erkunden',
-  }[type];
-}
-
-function sectionDescription(type: RecommendationType) {
-  return {
-    GAP: 'Diese Themen blockieren aktuell deinen nächsten Entwicklungsschritt.',
-    CORE: 'Diese Positionen und Techniken gehören bereits zu deinem bevorzugten Spiel.',
-    EXPLORE: 'Diese Themen hast du als nächste Entwicklungsrichtung ausgewählt.',
-  }[type];
+function recommendationLabel(type: RecommendationType) {
+  return { GAP: 'Entwicklung', CORE: 'Dein Spiel', EXPLORE: 'Neues Ziel' }[type];
 }
 
 function progressStatusLabel(status: ProgressStatus) {

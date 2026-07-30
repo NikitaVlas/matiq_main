@@ -136,6 +136,34 @@ legend {
   grid-column: 1 / -1;
   margin: 0;
 }
+.roadmap article.is-primary {
+  border: 3px solid #c63d32;
+  padding: 22px;
+}
+.roadmap-type {
+  color: #c63d32;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.roadmap-focus {
+  margin-top: 36px;
+}
+.roadmap-backlog {
+  margin-top: 36px;
+  border-top: 1px solid #d8d5ce;
+  padding-top: 22px;
+}
+.roadmap-backlog summary {
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 800;
+}
+.roadmap-backlog summary:focus-visible {
+  outline: 3px solid #c63d32;
+  outline-offset: 5px;
+}
 .roadmap-discipline-tabs,
 .roadmap-item-actions {
   display: flex;
