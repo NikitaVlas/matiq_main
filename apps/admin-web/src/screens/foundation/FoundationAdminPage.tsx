@@ -21,19 +21,37 @@ type Template = {
   maxExperienceMonths: number;
   steps: Step[];
 };
+type RoadmapTopic = { id: string; key: string; name: string; publishedVideoCount: number };
+
+const slug = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 
 export default function FoundationAdminPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [topics, setTopics] = useState<RoadmapTopic[]>([]);
   const [status, setStatus] = useState('');
 
   const load = async () => {
-    const response = await adminApi('/admin/assessment/foundation-templates');
-    if (!response.ok) return setStatus('Foundation templates could not be loaded.');
-    setTemplates(await response.json());
+    const [templatesResponse, topicsResponse] = await Promise.all([
+      adminApi('/admin/assessment/foundation-templates'),
+      adminApi('/admin/content/roadmap-topic-coverage'),
+    ]);
+    if (!templatesResponse.ok || !topicsResponse.ok)
+      return setStatus('Foundation data could not be loaded.');
+    setTemplates(await templatesResponse.json());
+    setTopics(await topicsResponse.json());
   };
   useEffect(() => void load(), []);
 
-  const saveStep = async (templateId: string, step: Step) => {
+  const saveStep = async (step: Step) => {
     setStatus('Saving...');
     const response = await adminApi(`/admin/assessment/foundation-steps/${step.id}`, {
       method: 'PATCH',
@@ -47,15 +65,18 @@ export default function FoundationAdminPage() {
   const addStep = async (event: FormEvent<HTMLFormElement>, templateId: string) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+    const title = String(data.get('title') ?? '');
+    const template = templates.find((item) => item.id === templateId);
+    const position = Math.max(-1, ...(template?.steps.map((step) => step.position) ?? [])) + 1;
     const response = await adminApi(`/admin/assessment/foundation-templates/${templateId}/steps`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        key: data.get('key'),
-        title: data.get('title'),
+        key: slug(title),
+        title,
         skillKey: data.get('skillKey'),
         description: data.get('description'),
-        position: Number(data.get('position')),
+        position,
       }),
     });
     setStatus(response.ok ? 'Step added.' : 'Add failed.');
@@ -97,6 +118,22 @@ export default function FoundationAdminPage() {
           <p>
             Eligibility: {template.minExperienceMonths}–{template.maxExperienceMonths} months
           </p>
+          <div
+            aria-hidden="true"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '60px 1fr 1fr 90px 90px',
+              gap: 8,
+              fontWeight: 700,
+              marginBottom: 8,
+            }}
+          >
+            <span>Order</span>
+            <span>Step title</span>
+            <span>Roadmap topic</span>
+            <span>Status</span>
+            <span>Action</span>
+          </div>
           {template.steps.map((step) => (
             <div
               key={step.id}
@@ -122,11 +159,17 @@ export default function FoundationAdminPage() {
                 value={step.title}
                 onChange={(event) => change(template.id, step.id, { title: event.target.value })}
               />
-              <input
+              <select
                 aria-label={`${step.title} topic`}
                 value={step.skillKey}
                 onChange={(event) => change(template.id, step.id, { skillKey: event.target.value })}
-              />
+              >
+                {topics.map((topic) => (
+                  <option key={topic.id} value={topic.key}>
+                    {topic.name}
+                  </option>
+                ))}
+              </select>
               <label>
                 <input
                   type="checkbox"
@@ -137,7 +180,7 @@ export default function FoundationAdminPage() {
                 />{' '}
                 Active
               </label>
-              <button type="button" onClick={() => void saveStep(template.id, step)}>
+              <button type="button" onClick={() => void saveStep(step)}>
                 Save
               </button>
             </div>
@@ -147,11 +190,38 @@ export default function FoundationAdminPage() {
             style={{ display: 'grid', gap: 8, marginTop: 20 }}
           >
             <h3>Add step</h3>
-            <input name="key" placeholder="stable-key" pattern="[a-z0-9-]+" required />
-            <input name="title" placeholder="Display title" maxLength={160} required />
-            <input name="skillKey" placeholder="Roadmap topic key" pattern="[a-z0-9-]+" required />
-            <input name="description" placeholder="Training focus" maxLength={500} />
-            <input name="position" type="number" min="0" max="200" required />
+            <label>
+              Step title
+              <input
+                name="title"
+                placeholder="For example: Closed Guard basics"
+                maxLength={160}
+                required
+              />
+            </label>
+            <label>
+              Roadmap topic
+              <select name="skillKey" required defaultValue="">
+                <option value="" disabled>
+                  Select what this step teaches
+                </option>
+                {topics.map((topic) => (
+                  <option key={topic.id} value={topic.key}>
+                    {topic.name} ({topic.publishedVideoCount} published videos)
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p>The Roadmap topic connects this step to matching courses and published videos.</p>
+            <label>
+              Training focus (optional)
+              <textarea
+                name="description"
+                placeholder="Explain what the athlete should understand or practise in this step."
+                maxLength={500}
+                rows={3}
+              />
+            </label>
             <button>Add foundation step</button>
           </form>
         </section>
