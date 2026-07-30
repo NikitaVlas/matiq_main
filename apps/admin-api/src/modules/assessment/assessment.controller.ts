@@ -34,6 +34,15 @@ type QuestionBody = {
   options?: unknown;
 };
 
+type FoundationStepBody = {
+  key?: string;
+  title?: string;
+  description?: string | null;
+  skillKey?: string;
+  position?: number;
+  active?: boolean;
+};
+
 @ApiTags('admin-assessment')
 @Controller('admin/assessment')
 @UseGuards(AdminAuthGuard)
@@ -45,6 +54,83 @@ export class AssessmentController {
   ) {}
   @Get('questions') questions() {
     return this.db.assessmentQuestion.findMany({ orderBy: { createdAt: 'asc' } });
+  }
+  @Get('foundation-templates')
+  foundationTemplates() {
+    return this.db.foundationTemplate.findMany({
+      include: { steps: { orderBy: { position: 'asc' } } },
+      orderBy: [{ discipline: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  @Patch('foundation-templates/:id')
+  @AdminRoles('ADMIN')
+  async updateFoundationTemplate(
+    @Param('id') id: string,
+    @Body() body: { name?: string; active?: boolean },
+    @Req() request: { adminUserId: string },
+  ) {
+    const data = {
+      ...(body.name !== undefined ? { name: requiredText(body.name, 120) } : {}),
+      ...(typeof body.active === 'boolean' ? { active: body.active } : {}),
+    };
+    const template = await this.db.foundationTemplate.update({ where: { id }, data });
+    await this.audit.record(
+      'FOUNDATION_TEMPLATE_UPDATED',
+      'FoundationTemplate',
+      id,
+      request.adminUserId,
+      data,
+    );
+    return template;
+  }
+
+  @Post('foundation-templates/:id/steps')
+  @AdminRoles('ADMIN')
+  async createFoundationStep(
+    @Param('id') templateId: string,
+    @Body() body: FoundationStepBody,
+    @Req() request: { adminUserId: string },
+  ) {
+    const data = validateFoundationStep(body, true);
+    const step = await this.db.foundationStep.create({
+      data: {
+        templateId,
+        key: data.key!,
+        title: data.title!,
+        description: data.description,
+        skillKey: data.skillKey!,
+        position: data.position!,
+        active: data.active,
+      },
+    });
+    await this.audit.record(
+      'FOUNDATION_STEP_CREATED',
+      'FoundationStep',
+      step.id,
+      request.adminUserId,
+      data,
+    );
+    return step;
+  }
+
+  @Patch('foundation-steps/:id')
+  @AdminRoles('ADMIN')
+  async updateFoundationStep(
+    @Param('id') id: string,
+    @Body() body: FoundationStepBody,
+    @Req() request: { adminUserId: string },
+  ) {
+    const data = validateFoundationStep(body, false);
+    const step = await this.db.foundationStep.update({ where: { id }, data });
+    await this.audit.record(
+      'FOUNDATION_STEP_UPDATED',
+      'FoundationStep',
+      id,
+      request.adminUserId,
+      data,
+    );
+    return step;
   }
   @Post('questions')
   @AdminRoles('ADMIN')
@@ -199,11 +285,7 @@ function validateQuestion(body: QuestionBody, creating: boolean) {
   for (const key of ['multiple', 'allowCustom', 'active'] as const)
     if (key in body && typeof body[key] === 'boolean') data[key] = body[key];
   if ('options' in body) data.options = validateOptions(body.options, data.kind);
-  if (
-    data.kind &&
-    data.kind !== AssessmentQuestionKind.CONFIDENCE &&
-    Array.isArray(data.options)
-  ) {
+  if (data.kind && data.kind !== AssessmentQuestionKind.CONFIDENCE && Array.isArray(data.options)) {
     const firstMappedOption = data.options.find(
       (option) => typeof option === 'object' && option && 'skillKey' in option,
     ) as { skillKey?: string } | undefined;
@@ -217,10 +299,7 @@ function validateQuestion(body: QuestionBody, creating: boolean) {
   return data;
 }
 
-function validateOptions(
-  input: unknown,
-  kind?: AssessmentQuestionKind,
-): Prisma.InputJsonValue {
+function validateOptions(input: unknown, kind?: AssessmentQuestionKind): Prisma.InputJsonValue {
   if (!Array.isArray(input) || input.length < 1 || input.length > 30)
     throw new BadRequestException('INVALID_ASSESSMENT_OPTIONS');
   const keys = new Set<string>();
@@ -229,10 +308,8 @@ function validateOptions(
     const key = validKey(option.key);
     const label = validText(option.label, 160);
     const value = option.value;
-    if (!key)
-      throw new BadRequestException(`ASSESSMENT_OPTION_${index + 1}_KEY_INVALID`);
-    if (!label)
-      throw new BadRequestException(`ASSESSMENT_OPTION_${index + 1}_LABEL_INVALID`);
+    if (!key) throw new BadRequestException(`ASSESSMENT_OPTION_${index + 1}_KEY_INVALID`);
+    if (!label) throw new BadRequestException(`ASSESSMENT_OPTION_${index + 1}_LABEL_INVALID`);
     if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 5)
       throw new BadRequestException(`ASSESSMENT_OPTION_${index + 1}_SCORE_INVALID`);
     if (keys.has(key))
@@ -266,4 +343,31 @@ function validKey(input: unknown) {
 function validText(input: unknown, max: number) {
   const value = typeof input === 'string' ? input.trim() : '';
   return value && value.length <= max ? value : undefined;
+}
+
+function requiredText(input: unknown, max: number) {
+  const value = validText(input, max);
+  if (!value) throw new BadRequestException('INVALID_FOUNDATION_TEXT');
+  return value;
+}
+
+function validateFoundationStep(body: FoundationStepBody, creating: boolean) {
+  const data: FoundationStepBody = {};
+  if ('key' in body) data.key = validKey(body.key);
+  if ('title' in body) data.title = requiredText(body.title, 160);
+  if ('description' in body)
+    data.description = body.description ? requiredText(body.description, 500) : null;
+  if ('skillKey' in body) data.skillKey = validKey(body.skillKey);
+  if ('position' in body) {
+    if (!Number.isInteger(body.position) || body.position! < 0 || body.position! > 200)
+      throw new BadRequestException('INVALID_FOUNDATION_POSITION');
+    data.position = body.position;
+  }
+  if (typeof body.active === 'boolean') data.active = body.active;
+  if (creating && (!data.key || !data.title || !data.skillKey || data.position === undefined))
+    throw new BadRequestException('FOUNDATION_STEP_INCOMPLETE');
+  if ('key' in body && !data.key) throw new BadRequestException('INVALID_FOUNDATION_KEY');
+  if ('skillKey' in body && !data.skillKey)
+    throw new BadRequestException('INVALID_FOUNDATION_TOPIC');
+  return data;
 }

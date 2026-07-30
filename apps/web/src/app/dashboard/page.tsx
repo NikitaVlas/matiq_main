@@ -14,6 +14,7 @@ const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
 
 type AssessmentResult = {
   completed: boolean;
+  foundationActive: boolean;
   roadmaps: Roadmap[];
 };
 
@@ -91,7 +92,7 @@ export default function DashboardPage() {
         <AccessStatus subscription={subscription} />
       </header>
 
-      {!assessment.completed ? (
+      {!assessment.completed && !assessment.foundationActive ? (
         <section className="dashboard-empty">
           <p className="eyebrow">Roadmap vorbereiten</p>
           <h2>Beginne mit deinem Assessment</h2>
@@ -104,6 +105,7 @@ export default function DashboardPage() {
         </section>
       ) : (
         <>
+          {assessment.foundationActive ? <FoundationNotice /> : null}
           <DisciplineSwitch
             roadmaps={assessment.roadmaps}
             selected={selectedDiscipline}
@@ -124,6 +126,29 @@ export default function DashboardPage() {
         </>
       )}
     </main>
+  );
+}
+
+function FoundationNotice() {
+  return (
+    <section className="dashboard-foundation-note">
+      <div>
+        <p className="eyebrow">Unsere Empfehlung</p>
+        <h2>Konzentriere dich zuerst auf die Grundlagen</h2>
+        <p>
+          Baue sichere Bewegungen, Escapes und Positionsverständnis auf. Deine persönlichen Ziele
+          kannst du trotzdem jederzeit ergänzen.
+        </p>
+      </div>
+      <div className="dashboard-actions">
+        <Link className="action-link" href="/roadmap">
+          Grundlagen starten
+        </Link>
+        <Link className="text-link" href="/assessment">
+          Assessment trotzdem starten
+        </Link>
+      </div>
+    </section>
   );
 }
 

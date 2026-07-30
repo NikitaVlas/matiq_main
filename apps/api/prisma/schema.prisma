@@ -62,6 +62,12 @@ enum RoadmapRecommendationType {
   EXPLORE
 }
 
+enum RoadmapItemSource {
+  ASSESSMENT
+  FOUNDATION
+  MANUAL
+}
+
 enum LessonRelationType {
   PRIMARY
   BRANCH
@@ -143,6 +149,7 @@ model AthleteProfile {
   disciplines             Discipline[]
   belt                    Belt?
   experienceYears         Int
+  experienceMonths        Int?
   trainingSessionsPerWeek Int
   competitionExperience   Boolean
   goals                   AthleteGoal[]
@@ -165,33 +172,33 @@ model Assessment {
 }
 
 model AssessmentQuestion {
-  id        String               @id @default(cuid())
-  key       String               @unique
-  text      String
-  context   AssessmentContext
-  skillKey  String
-  kind      AssessmentQuestionKind @default(CONFIDENCE)
-  multiple  Boolean                @default(false)
-  allowCustom Boolean              @default(false)
-  options   Json
-  active    Boolean              @default(true)
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @updatedAt
-  responses AssessmentResponse[]
+  id          String                 @id @default(cuid())
+  key         String                 @unique
+  text        String
+  context     AssessmentContext
+  skillKey    String
+  kind        AssessmentQuestionKind @default(CONFIDENCE)
+  multiple    Boolean                @default(false)
+  allowCustom Boolean                @default(false)
+  options     Json
+  active      Boolean                @default(true)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  responses   AssessmentResponse[]
 }
 
 model AssessmentResponse {
-  id           String             @id @default(cuid())
-  assessmentId String
-  questionId   String
-  optionKey    String
-  value        Int
-  customText   String?
+  id             String                  @id @default(cuid())
+  assessmentId   String
+  questionId     String
+  optionKey      String
+  value          Int
+  customText     String?
   mappedSkillKey String?
-  mappingStatus AssessmentMappingStatus @default(MAPPED)
-  createdAt    DateTime           @default(now())
-  assessment   Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  question     AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  mappingStatus  AssessmentMappingStatus @default(MAPPED)
+  createdAt      DateTime                @default(now())
+  assessment     Assessment              @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  question       AssessmentQuestion      @relation(fields: [questionId], references: [id], onDelete: Restrict)
 
   @@unique([assessmentId, questionId, optionKey])
 }
@@ -207,24 +214,58 @@ model SkillScore {
 }
 
 model RoadmapItem {
-  id               String             @id @default(cuid())
-  athleteProfileId String
-  type             RoadmapItemType
-  discipline       Discipline
-  title            String
-  context          AssessmentContext?
-  skillKey         String?
-  position         Int
-  isAddedByUser    Boolean            @default(false)
-  isHidden         Boolean            @default(false)
-  lessonId         String?
-  completedAt      DateTime?
+  id                 String                    @id @default(cuid())
+  athleteProfileId   String
+  type               RoadmapItemType
+  discipline         Discipline
+  title              String
+  context            AssessmentContext?
+  skillKey           String?
+  position           Int
+  isAddedByUser      Boolean                   @default(false)
+  isHidden           Boolean                   @default(false)
+  lessonId           String?
+  completedAt        DateTime?
   recommendationType RoadmapRecommendationType @default(GAP)
-  athleteProfile   AthleteProfile     @relation(fields: [athleteProfileId], references: [id], onDelete: Cascade)
+  source             RoadmapItemSource         @default(ASSESSMENT)
+  foundationStepId   String?
+  athleteProfile     AthleteProfile            @relation(fields: [athleteProfileId], references: [id], onDelete: Cascade)
 
-  lesson Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  lesson         Lesson?         @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  foundationStep FoundationStep? @relation(fields: [foundationStepId], references: [id], onDelete: SetNull)
 
+  @@unique([athleteProfileId, foundationStepId])
   @@index([athleteProfileId, discipline, completedAt, position])
+}
+
+model FoundationTemplate {
+  id                  String           @id @default(cuid())
+  key                 String           @unique
+  name                String
+  discipline          Discipline
+  belt                Belt             @default(WHITE)
+  minExperienceMonths Int              @default(0)
+  maxExperienceMonths Int              @default(6)
+  active              Boolean          @default(true)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  steps               FoundationStep[]
+}
+
+model FoundationStep {
+  id           String             @id @default(cuid())
+  templateId   String
+  key          String
+  title        String
+  description  String?
+  skillKey     String
+  position     Int
+  active       Boolean            @default(true)
+  template     FoundationTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  roadmapItems RoadmapItem[]
+
+  @@unique([templateId, key])
+  @@index([templateId, active, position])
 }
 
 model GameArea {
@@ -313,11 +354,11 @@ model Flow {
 }
 
 model Video {
-  id              String            @id @default(cuid())
+  id              String                @id @default(cuid())
   title           String
   description     String?
   storageKey      String
-  published       Boolean           @default(false)
+  published       Boolean               @default(false)
   durationSec     Int?
   previewStartSec Int?
   previewEndSec   Int?
@@ -326,13 +367,13 @@ model Video {
   variantId       String?
   movementId      String?
   drillId         String?
-  position        Position?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  technique       Technique?        @relation(fields: [techniqueId], references: [id], onDelete: SetNull)
-  variant         TechniqueVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
-  movement        Movement?         @relation(fields: [movementId], references: [id], onDelete: SetNull)
-  drill           Drill?            @relation(fields: [drillId], references: [id], onDelete: SetNull)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  position        Position?             @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  technique       Technique?            @relation(fields: [techniqueId], references: [id], onDelete: SetNull)
+  variant         TechniqueVariant?     @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  movement        Movement?             @relation(fields: [movementId], references: [id], onDelete: SetNull)
+  drill           Drill?                @relation(fields: [drillId], references: [id], onDelete: SetNull)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
   watchEvents     VideoWatch[]
   revisions       VideoRevision[]
   metadataValues  VideoMetadataOption[]

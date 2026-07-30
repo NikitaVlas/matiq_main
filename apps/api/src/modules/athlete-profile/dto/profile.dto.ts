@@ -29,6 +29,13 @@ export class SaveAthleteProfileDto {
   @Max(80)
   experienceYears!: number;
 
+  @ApiPropertyOptional({ minimum: 0, maximum: 960 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(960)
+  experienceMonths?: number;
+
   @ApiProperty({ minimum: 1, maximum: 14 })
   @IsInt()
   @Min(1)

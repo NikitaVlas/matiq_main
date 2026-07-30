@@ -214,7 +214,7 @@ export default function CourseBuilderPage() {
     <main style={{ maxWidth: 960, margin: '40px auto', padding: 24 }}>
       <nav>
         <a href="/">Courses</a> - <a href="/videos">Upload video</a> -{' '}
-        <a href="/assessment">Assessment</a>
+        <a href="/assessment">Assessment</a> - <a href="/foundation">Foundation Roadmap</a>
       </nav>
       <h1>MATIQ Content Builder</h1>
 

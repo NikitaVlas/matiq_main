@@ -28,7 +28,7 @@ type Roadmap = {
   completedItems: RoadmapItem[];
   hiddenItems: RoadmapItem[];
 };
-type Result = { completed: boolean; roadmaps: Roadmap[] };
+type Result = { completed: boolean; foundationActive: boolean; roadmaps: Roadmap[] };
 
 export default function RoadmapPage() {
   const [result, setResult] = useState<Result>();
@@ -85,9 +85,15 @@ export default function RoadmapPage() {
             {error}
           </p>
         ) : null}
-        {result && !result.completed ? (
+        {result && !result.completed && !result.foundationActive ? (
           <p>
             Schließe zuerst dein <a href="/assessment">Assessment</a> ab.
+          </p>
+        ) : null}
+        {result?.foundationActive && !result.completed ? (
+          <p>
+            Wir empfehlen dir, zuerst die Grundlagen zu trainieren. Du kannst dein{' '}
+            <a href="/assessment">Assessment trotzdem jederzeit starten</a>.
           </p>
         ) : null}
         {result?.roadmaps.length ? (

@@ -5,6 +5,7 @@ import {
   AssessmentQuestionKind,
   Discipline,
   Prisma,
+  RoadmapItemSource,
   RoadmapRecommendationType,
 } from '@prisma/client';
 import { Database } from '../../../shared/infrastructure/database';
@@ -345,6 +346,12 @@ export class AssessmentService {
     });
     return {
       completed: Boolean(assessment?.completedAt),
+      foundationActive: roadmapItems.some(
+        (item) =>
+          item.source === RoadmapItemSource.FOUNDATION &&
+          !item.isHidden &&
+          item.completedAt === null,
+      ),
       scores: assessment?.scores ?? [],
       roadmaps: await Promise.all(
         roadmaps.map(async (roadmap) => ({
@@ -403,7 +410,10 @@ export class AssessmentService {
     const videos = await this.db.video.findMany({
       where: {
         published: true,
-        OR: [...(directVideoId ? [{ id: directVideoId }] : []), ...(topicMatch ? [topicMatch] : [])],
+        OR: [
+          ...(directVideoId ? [{ id: directVideoId }] : []),
+          ...(topicMatch ? [topicMatch] : []),
+        ],
       },
       select: {
         id: true,
@@ -506,6 +516,7 @@ export class AssessmentService {
         type: 'TECHNIQUE',
         position: (last?.position ?? -1) + 1,
         isAddedByUser: true,
+        source: RoadmapItemSource.MANUAL,
       },
     });
   }
@@ -732,7 +743,7 @@ export class AssessmentService {
       ),
     );
     const existing = await this.db.roadmapItem.findMany({
-      where: { athleteProfileId: profileId, isAddedByUser: false },
+      where: { athleteProfileId: profileId, source: RoadmapItemSource.ASSESSMENT },
     });
     const desiredKeys = new Set(
       desired.map((item) => `${item.discipline}:${item.recommendationType}:${item.skillKey}`),

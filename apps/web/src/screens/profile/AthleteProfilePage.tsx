@@ -16,7 +16,8 @@ export default function AthleteProfilePage() {
         body: JSON.stringify({
           disciplines: data.getAll('disciplines'),
           belt: data.get('belt') || undefined,
-          experienceYears: Number(data.get('experienceYears')),
+          experienceMonths: Number(data.get('experienceMonths')),
+          experienceYears: Math.floor(Number(data.get('experienceMonths')) / 12),
           trainingSessionsPerWeek: Number(data.get('trainingSessionsPerWeek')),
           competitionExperience: data.get('competitionExperience') === 'yes',
           goals: data.getAll('goals'),
@@ -56,8 +57,8 @@ export default function AthleteProfilePage() {
             </select>
           </label>
           <label>
-            Jahre Erfahrung
-            <input name="experienceYears" type="number" min="0" max="80" required />
+            Trainingserfahrung in Monaten
+            <input name="experienceMonths" type="number" min="0" max="960" required />
           </label>
           <label>
             Trainings pro Woche
