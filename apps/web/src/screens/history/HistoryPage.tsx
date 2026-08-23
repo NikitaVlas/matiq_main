@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
+import { userApiResponse } from '../../shared/api/client';
 
 type HistoryItem = {
   watchedSeconds: number;
@@ -13,7 +12,7 @@ type HistoryItem = {
 export default function HistoryPage() {
   const [items, setItems] = useState<HistoryItem[]>();
   useEffect(() => {
-    fetch(`${api}/content/history`, { credentials: 'include' })
+    userApiResponse('/content/history')
       .then((response) => response.json())
       .then(setItems);
   }, []);
@@ -29,7 +28,11 @@ export default function HistoryPage() {
             <article key={item.video.id}>
               <div>
                 <strong>{item.video.title}</strong>
-                <p>{item.completed ? 'Angesehen' : `Weiter ab ${Math.floor(item.watchedSeconds / 60)}:${String(item.watchedSeconds % 60).padStart(2, '0')}`}</p>
+                <p>
+                  {item.completed
+                    ? 'Angesehen'
+                    : `Weiter ab ${Math.floor(item.watchedSeconds / 60)}:${String(item.watchedSeconds % 60).padStart(2, '0')}`}
+                </p>
               </div>
               <a href={`/video/${item.video.id}`}>Fortsetzen</a>
             </article>

@@ -18,7 +18,7 @@
     "test:integration": "turbo run test:integration",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
-    "openapi:generate": "turbo run openapi:generate",
+    "openapi:generate": "pnpm --filter @matiq/api openapi:generate && pnpm --filter @matiq/admin-api openapi:generate && pnpm --filter @matiq/contracts openapi:generate",
     "db:generate": "pnpm --filter @matiq/api prisma:generate",
     "db:migrate": "pnpm --filter @matiq/api prisma:migrate",
     "verify": "pnpm format:check && pnpm architecture:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"

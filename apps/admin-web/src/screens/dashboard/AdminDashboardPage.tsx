@@ -1,15 +1,16 @@
 'use client';
 
+import type { UserApiPath } from '@matiq/contracts';
 import { FormEvent, useState } from 'react';
-import { adminApi, userApiUrl } from '../../shared/api/client';
+import { adminApi, adminIdentityApi } from '../../shared/api/client';
 import { AdminStats } from '../../widgets/admin-stats/ui/AdminStats';
 
-async function request(url: string, init: RequestInit) {
+async function request(path: UserApiPath, init: RequestInit) {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 10_000);
 
   try {
-    return await fetch(url, { ...init, signal: controller.signal });
+    return await adminIdentityApi(path, { ...init, signal: controller.signal });
   } finally {
     window.clearTimeout(timeout);
   }
@@ -46,7 +47,7 @@ export default function AdminHome() {
     const mfaCode = String(data.get('mfaCode') ?? '').trim();
 
     try {
-      const login = await request(`${userApiUrl}/auth/admin-login`, {
+      const login = await request('/auth/admin-login', {
         method: 'POST',
         credentials: 'include',
         headers: { 'content-type': 'application/json' },
@@ -63,7 +64,7 @@ export default function AdminHome() {
 
       const loginResult = (await login.json()) as { mfaSetupRequired: boolean };
       if (loginResult.mfaSetupRequired) {
-        const setup = await request(`${userApiUrl}/auth/admin-mfa/setup`, {
+        const setup = await request('/auth/admin-mfa/setup', {
           method: 'POST',
           credentials: 'include',
         });
@@ -112,7 +113,7 @@ export default function AdminHome() {
     setIsSubmitting(true);
 
     try {
-      const response = await request(`${userApiUrl}/auth/admin-mfa/confirm`, {
+      const response = await request('/auth/admin-mfa/confirm', {
         method: 'POST',
         credentials: 'include',
         headers: { 'content-type': 'application/json' },

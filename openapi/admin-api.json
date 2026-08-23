@@ -10,7 +10,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-dashboard"]
+        "tags": [
+          "admin-dashboard"
+        ]
       }
     },
     "/admin/trainers": {
@@ -22,7 +24,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-trainers"]
+        "tags": [
+          "admin-trainers"
+        ]
       }
     },
     "/admin/videos": {
@@ -34,7 +38,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-videos"]
+        "tags": [
+          "admin-videos"
+        ]
       },
       "post": {
         "operationId": "VideoController_create",
@@ -44,7 +50,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-videos"]
+        "tags": [
+          "admin-videos"
+        ]
       }
     },
     "/admin/videos/upload": {
@@ -56,7 +64,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-videos"]
+        "tags": [
+          "admin-videos"
+        ]
       }
     },
     "/admin/videos/{id}/playback-url": {
@@ -68,7 +78,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-videos"]
+        "tags": [
+          "admin-videos"
+        ]
       }
     },
     "/admin/videos/{id}/metadata": {
@@ -80,7 +92,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-videos"]
+        "tags": [
+          "admin-videos"
+        ]
       }
     },
     "/admin/videos/{id}": {
@@ -92,7 +106,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-videos"]
+        "tags": [
+          "admin-videos"
+        ]
       }
     },
     "/admin/videos/{id}/publish": {
@@ -104,7 +120,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-videos"]
+        "tags": [
+          "admin-videos"
+        ]
       }
     },
     "/admin/videos/{id}/unpublish": {
@@ -116,7 +134,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-videos"]
+        "tags": [
+          "admin-videos"
+        ]
       }
     },
     "/admin/videos/{id}/preview": {
@@ -128,7 +148,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-videos"]
+        "tags": [
+          "admin-videos"
+        ]
       }
     },
     "/admin/videos/{id}/draft": {
@@ -140,7 +162,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-videos"]
+        "tags": [
+          "admin-videos"
+        ]
       }
     },
     "/admin/videos/{id}/revisions/{revisionId}/approve": {
@@ -152,7 +176,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-videos"]
+        "tags": [
+          "admin-videos"
+        ]
       }
     },
     "/admin/content": {
@@ -164,7 +190,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/courses": {
@@ -176,7 +204,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       },
       "post": {
         "operationId": "ContentController_createCourse",
@@ -186,7 +216,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/courses/{courseId}/validation": {
@@ -198,7 +230,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/courses/{courseId}/publish": {
@@ -210,7 +244,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/courses/{courseId}": {
@@ -222,7 +258,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       },
       "delete": {
         "operationId": "ContentController_deleteCourse",
@@ -232,7 +270,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/courses/{courseId}/modules": {
@@ -244,7 +284,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/modules/{moduleId}": {
@@ -256,7 +298,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       },
       "delete": {
         "operationId": "ContentController_deleteModule",
@@ -266,7 +310,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/courses/{courseId}/modules/reorder": {
@@ -278,7 +324,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/modules/{moduleId}/lessons": {
@@ -290,7 +338,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/lessons/{lessonId}": {
@@ -302,7 +352,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       },
       "delete": {
         "operationId": "ContentController_deleteLesson",
@@ -312,7 +364,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/lessons/{lessonId}/publish": {
@@ -324,7 +378,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/modules/{moduleId}/lessons/reorder": {
@@ -336,7 +392,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/lessons/{lessonId}/relations": {
@@ -348,7 +406,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/lesson-relations/{relationId}": {
@@ -360,7 +420,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       },
       "delete": {
         "operationId": "ContentController_deleteLessonRelation",
@@ -370,7 +432,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/branch-triggers": {
@@ -382,7 +446,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       },
       "post": {
         "operationId": "ContentController_createBranchTrigger",
@@ -392,7 +458,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/metadata-fields": {
@@ -404,7 +472,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       },
       "post": {
         "operationId": "ContentController_createMetadataField",
@@ -414,7 +484,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/roadmap-topic-coverage": {
@@ -426,7 +498,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/roadmap-diagnostics": {
@@ -438,7 +512,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/roadmap-topics": {
@@ -450,7 +526,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/metadata-fields/{fieldId}/options": {
@@ -462,7 +540,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/game-areas": {
@@ -474,7 +554,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/positions": {
@@ -486,7 +568,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/skill-groups": {
@@ -498,7 +582,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/techniques": {
@@ -510,7 +596,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/movements": {
@@ -522,7 +610,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/content/drills": {
@@ -534,7 +624,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-content"]
+        "tags": [
+          "admin-content"
+        ]
       }
     },
     "/admin/assessment/questions": {
@@ -546,7 +638,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-assessment"]
+        "tags": [
+          "admin-assessment"
+        ]
       },
       "post": {
         "operationId": "AssessmentController_createQuestion",
@@ -556,7 +650,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-assessment"]
+        "tags": [
+          "admin-assessment"
+        ]
       }
     },
     "/admin/assessment/foundation-templates": {
@@ -568,7 +664,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-assessment"]
+        "tags": [
+          "admin-assessment"
+        ]
       }
     },
     "/admin/assessment/foundation-templates/{id}": {
@@ -580,7 +678,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-assessment"]
+        "tags": [
+          "admin-assessment"
+        ]
       }
     },
     "/admin/assessment/foundation-templates/{id}/steps": {
@@ -592,7 +692,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-assessment"]
+        "tags": [
+          "admin-assessment"
+        ]
       }
     },
     "/admin/assessment/foundation-steps/{id}": {
@@ -604,7 +706,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-assessment"]
+        "tags": [
+          "admin-assessment"
+        ]
       }
     },
     "/admin/assessment/questions/{id}": {
@@ -616,7 +720,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-assessment"]
+        "tags": [
+          "admin-assessment"
+        ]
       }
     },
     "/admin/assessment/unmapped-answers": {
@@ -628,7 +734,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-assessment"]
+        "tags": [
+          "admin-assessment"
+        ]
       }
     },
     "/admin/assessment/unmapped-answers/{id}/map": {
@@ -640,7 +748,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-assessment"]
+        "tags": [
+          "admin-assessment"
+        ]
       }
     },
     "/admin/users": {
@@ -652,7 +762,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-roles"]
+        "tags": [
+          "admin-roles"
+        ]
       }
     },
     "/admin/users/{id}/role": {
@@ -664,7 +776,9 @@
             "description": ""
           }
         },
-        "tags": ["admin-roles"]
+        "tags": [
+          "admin-roles"
+        ]
       }
     },
     "/health": {
@@ -676,7 +790,23 @@
             "description": ""
           }
         },
-        "tags": ["health"]
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/ready": {
+      "get": {
+        "operationId": "HealthController_ready",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "health"
+        ]
       }
     }
   },

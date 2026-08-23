@@ -1,29 +1,26 @@
 'use client';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { userApiResponse } from '../../shared/api/client';
 export default function AthleteProfilePage() {
   const router = useRouter();
   const [error, setError] = useState('');
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000'}/athlete-profile`,
-      {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          disciplines: data.getAll('disciplines'),
-          belt: data.get('belt') || undefined,
-          experienceMonths: Number(data.get('experienceMonths')),
-          experienceYears: Math.floor(Number(data.get('experienceMonths')) / 12),
-          trainingSessionsPerWeek: Number(data.get('trainingSessionsPerWeek')),
-          competitionExperience: data.get('competitionExperience') === 'yes',
-          goals: data.getAll('goals'),
-        }),
-      },
-    );
+    const response = await userApiResponse('/athlete-profile', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        disciplines: data.getAll('disciplines'),
+        belt: data.get('belt') || undefined,
+        experienceMonths: Number(data.get('experienceMonths')),
+        experienceYears: Math.floor(Number(data.get('experienceMonths')) / 12),
+        trainingSessionsPerWeek: Number(data.get('trainingSessionsPerWeek')),
+        competitionExperience: data.get('competitionExperience') === 'yes',
+        goals: data.getAll('goals'),
+      }),
+    });
     if (!response.ok) {
       setError('Bitte prüfe deine Angaben.');
       return;

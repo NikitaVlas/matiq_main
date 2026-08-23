@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-
-const api = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+import { userApiResponse } from '../../shared/api/client';
 
 type Course = {
   id: string;
@@ -31,7 +30,7 @@ export default function CourseDetailPage({ id }: { id: string }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch(`${api}/content/courses`)
+    userApiResponse('/content/courses')
       .then(async (response) => {
         if (!response.ok) throw new Error();
         const courses = (await response.json()) as Course[];

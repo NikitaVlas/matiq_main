@@ -1,50 +1,101 @@
-# MATIQ Code Audit and Migration Plan
+# MATIQ implementation audit
 
-## Audit result
+## Repository state on 2026-08-23
 
-On 2026-07-20 the current Git branch contained documentation, design assets,
-and empty task directories, but no applications or workspace configuration.
-The `codebase-memory-mcp` index was stale and described earlier `apps/web`,
-`apps/api`, and `apps/worker` code that was absent from disk. No working code
-was moved or deleted.
+The repository contains a working TypeScript monorepo with five processes:
+`web`, `admin-web`, `api`, `admin-api`, and `worker`. It includes a Prisma schema
+and migrations, local PostgreSQL/Redis/S3-compatible infrastructure, two
+OpenAPI contracts, generated TypeScript types, CI, and unit, integration, and
+browser E2E tests.
 
-## Gap against the approved architecture
+The `codebase-memory-mcp` project `matiq-main-current` represents the main
+applications and is used for discovery and impact analysis. Conclusions are
+also checked against source because the index may lag behind uncommitted work.
 
-The pnpm/Turborepo workspace, five application hosts, shared packages,
-PostgreSQL/Redis/object-storage compose, Prisma, two OpenAPI contracts,
-generated clients, quality gates, CI, and the first identity/profile vertical
-slice were all absent.
+## Implemented vertical slices
 
-## Applied migration
+- registration, email verification, login/logout, and password recovery;
+- session management, password change, re-authentication, export, and deletion;
+- Admin/Editor TOTP MFA and recovery codes, roles, and audit foundation;
+- Athlete profile, assessment, deterministic recommendations, and Roadmap;
+- beginner foundation Roadmap, course/lesson navigation, and progress;
+- public catalog, courses, video, history, settings, and subscription UI;
+- Admin UI/API for assessment, Roadmap metadata, content, courses, and videos;
+- local S3-compatible upload/playback adapter and preview metadata;
+- trial and basic Stripe checkout/webhook/cancellation flow;
+- OpenAPI generation and frontend route types derived from generated contracts.
 
-A clean monorepo was created without deleting documentation or design assets.
-Shared business policy lives in `packages/backend`, HTTP hosts are separate,
-and User API owns the initial Prisma schema. Admin API currently provides only
-health/OpenAPI foundation and exposes no Athlete endpoint.
+## Partially implemented
 
-## Data ownership
+### Engineering foundation
 
-| Tables | Owner |
-|---|---|
-| `User`, `Session`, `EmailVerificationToken` | Identity |
-| `AthleteProfile` | Athlete Profiles |
+Workspace, CI, architecture checks, correlation IDs, structured HTTP completion
+logs, and process/database health/readiness endpoints exist. Metrics,
+accessibility/visual harness, external dependency probes beyond PostgreSQL, and
+an EU deployment skeleton are not complete.
 
-Direct cross-module writes are prohibited. Ownership must later be enforced by
-architecture tests and module documentation.
+### Shared backend modules
 
-## Residual risks
+`packages/backend` contains a small set of framework-free policies. Most
+application/domain logic still lives in `apps/api` and `apps/admin-api`, so the
+target shared-module model is only partially achieved.
 
-- No production email provider is selected; local delivery is a console adapter.
-- Local Admin API key authentication is implemented and covered by unit and
-  HTTP integration tests. Role-based Admin/Editor sessions and mandatory MFA
-  are not implemented yet.
-- MinIO is local S3-compatible infrastructure only.
-- Full assessment is the next vertical slice.
-- The MCP index must be refreshed for the new tree.
+### Assessment and Roadmap
+
+The working flow exists, but the backlog still requires versioned attempts and
+question banks, complete per-discipline resume, confidence/insufficient-data
+semantics, golden expert profiles, and machine-readable versions and reasons.
+
+### Video and viewing
+
+Short-lived signed object URLs, preview ranges, history, and progress exist.
+Provider processing lifecycle, playback sessions/watermarks, immutable
+heartbeats, interval aggregation/deduplication, anti-abuse, and Trainer
+analytics do not.
+
+### Worker
+
+The BullMQ process runs as a generic consumer. Outbox/inbox, domain-specific
+jobs, retries/dead-letter handling, and lifecycle jobs are not implemented.
+
+### Subscription
+
+Trial and Stripe test-mode foundations exist. Production PSP, EUR price,
+VAT/invoices, refund/cancellation policy, grace/reconciliation, and Admin
+support cannot be completed before their product and legal gates pass.
+
+## Not implemented
+
+- complete public Trainer profiles and an own-only Trainer cabinet;
+- verified viewing time, Trainer agreements, and payout reports;
+- AI explanation adapter with graceful fallback;
+- processor-wide GDPR deletion/export orchestration and retention jobs;
+- production observability, backup-restore evidence, and launch/security review.
+
+## Current risks and mismatches
+
+- production email, video, AI, and hosting providers are not approved;
+- price, VAT, refunds, and the legal retention schedule are not approved;
+- generated OpenAPI route enforcement covers shared frontend transports, and an
+  architecture check prevents direct frontend `fetch` calls outside them;
+- some specifications say `Implemented` without recorded full verification;
+- the full local `pnpm verify` passed on 2026-08-23; database-backed integration
+  and browser E2E still require their disposable infrastructure and remain CI
+  gates.
+
+## Next implementation order
+
+1. Close fully specified Identity/Profile and Assessment gaps.
+2. Add metrics and the remaining provider-neutral observability checks.
+3. Complete deterministic Roadmap versioning and explainability.
+4. Build the provider-neutral video entitlement and viewing-event model.
+5. Build the Worker outbox/idempotency foundation.
+6. Add Trainer analytics/reporting without automated payouts.
+7. Complete payments and production/GDPR after provider and legal gates pass.
 
 ## Document status
 
-- Status: Implemented audit baseline
+- Status: Active implementation audit
 - Owner: MATIQ team
-- Last reviewed: 2026-07-20
-- Related code: Repository-wide
+- Last reviewed: 2026-08-23
+- Related code: Repository-wide; MVP implementation is partial

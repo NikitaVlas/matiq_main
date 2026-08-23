@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { profileIsComplete, validatePassword } from '../src/index.js';
+import { profileIsComplete, safeCorrelationId, validatePassword } from '../src/index.js';
 
 describe('identity and profile policies', () => {
   it('requires a strong password', () => {
@@ -16,5 +16,13 @@ describe('identity and profile policies', () => {
         goals: ['GENERAL_DEVELOPMENT'],
       }),
     ).toBe(true);
+  });
+});
+
+describe('observability policies', () => {
+  it('preserves safe IDs and replaces unsafe or oversized input', () => {
+    expect(safeCorrelationId('request-123', () => 'generated')).toBe('request-123');
+    expect(safeCorrelationId('unsafe value', () => 'generated')).toBe('generated');
+    expect(safeCorrelationId('a'.repeat(129), () => 'generated')).toBe('generated');
   });
 });

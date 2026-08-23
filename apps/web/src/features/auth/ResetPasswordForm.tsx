@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
+import { userApiResponse } from '../../shared/api/client';
 
 export default function ResetPasswordForm({ token }: { token: string }) {
   const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
@@ -9,7 +9,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
     event.preventDefault();
     setStatus('pending');
     const data = new FormData(event.currentTarget);
-    const response = await fetch(`${api}/auth/reset-password`, {
+    const response = await userApiResponse('/auth/reset-password', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ token, password: data.get('password') }),

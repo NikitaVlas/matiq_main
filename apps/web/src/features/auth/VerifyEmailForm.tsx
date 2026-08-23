@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { userApiResponse } from '../../shared/api/client';
 
 export function VerifyEmailForm({ initialToken }: { initialToken: string }) {
   const router = useRouter();
@@ -10,15 +11,11 @@ export function VerifyEmailForm({ initialToken }: { initialToken: string }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const token = String(new FormData(event.currentTarget).get('token'));
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000'}/auth/verify-email`,
-      {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ token }),
-      },
-    );
+    const response = await userApiResponse('/auth/verify-email', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
     if (!response.ok) {
       setError('Der Link ist ungültig oder abgelaufen.');
       return;

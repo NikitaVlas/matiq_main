@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { userApiResponse } from '../../shared/api/client';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -13,14 +14,11 @@ export default function RegisterPage() {
     setPending(true);
     setError('');
     const data = new FormData(event.currentTarget);
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000'}/auth/register`,
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: data.get('email'), password: data.get('password') }),
-      },
-    );
+    const response = await userApiResponse('/auth/register', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: data.get('email'), password: data.get('password') }),
+    });
     const body = await response.json();
     setPending(false);
     if (!response.ok) {

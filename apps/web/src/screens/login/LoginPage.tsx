@@ -1,8 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-
-const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
+import { userApiResponse } from '../../shared/api/client';
 
 export default function LoginPage() {
   const [error, setError] = useState('');
@@ -12,9 +11,8 @@ export default function LoginPage() {
     setPending(true);
     setError('');
     const data = new FormData(event.currentTarget);
-    const response = await fetch(`${api}/auth/login`, {
+    const response = await userApiResponse('/auth/login', {
       method: 'POST',
-      credentials: 'include',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email: data.get('email'), password: data.get('password') }),
     });

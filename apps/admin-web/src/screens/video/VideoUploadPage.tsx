@@ -42,11 +42,11 @@ export default function VideoUploadPage() {
   const load = async () => {
     const [videosResponse, fieldsResponse, coverageResponse, diagnosticsResponse] =
       await Promise.all([
-      adminApi('/admin/videos'),
-      adminApi('/admin/content/metadata-fields'),
-      adminApi('/admin/content/roadmap-topic-coverage'),
-      adminApi('/admin/content/roadmap-diagnostics'),
-    ]);
+        adminApi('/admin/videos'),
+        adminApi('/admin/content/metadata-fields'),
+        adminApi('/admin/content/roadmap-topic-coverage'),
+        adminApi('/admin/content/roadmap-diagnostics'),
+      ]);
     if (videosResponse.ok) setVideos(await videosResponse.json());
     if (fieldsResponse.ok) setFields(await fieldsResponse.json());
     if (coverageResponse.ok) setRoadmapCoverage(await coverageResponse.json());

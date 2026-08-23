@@ -3,8 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { selectRoadmapFocus } from '../../features/roadmap/roadmap-focus';
-
-const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
+import { userApiResponse } from '../../shared/api/client';
 
 type Discipline = 'BJJ_GI' | 'NO_GI_GRAPPLING';
 type RecommendationType = 'CORE' | 'GAP' | 'EXPLORE';
@@ -37,7 +36,7 @@ export default function RoadmapPage() {
   const [updatingId, setUpdatingId] = useState('');
 
   async function load() {
-    const response = await fetch(`${api}/assessment/result`, { credentials: 'include' });
+    const response = await userApiResponse('/assessment/result');
     if (!response.ok) throw new Error('ROADMAP_LOAD_FAILED');
     const value = (await response.json()) as Result;
     setResult(value);
@@ -52,9 +51,8 @@ export default function RoadmapPage() {
     setError('');
     setUpdatingId(id);
     try {
-      const response = await fetch(`${api}/assessment/roadmap-items/${id}`, {
+      const response = await userApiResponse(`/assessment/roadmap-items/${id}`, {
         method: 'PATCH',
-        credentials: 'include',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body),
       });

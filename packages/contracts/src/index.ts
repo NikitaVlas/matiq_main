@@ -17,3 +17,5 @@ export interface AthleteProfile {
   competitionExperience: boolean;
   goals: AthleteGoal[];
 }
+
+export type { AdminApiPath, UserApiPath } from './openapi-paths.js';

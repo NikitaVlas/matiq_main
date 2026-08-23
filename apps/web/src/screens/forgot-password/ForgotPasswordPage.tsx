@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
+import { userApiResponse } from '../../shared/api/client';
 
 export default function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
@@ -10,7 +10,7 @@ export default function ForgotPasswordPage() {
     event.preventDefault();
     setPending(true);
     const data = new FormData(event.currentTarget);
-    await fetch(`${api}/auth/forgot-password`, {
+    await userApiResponse('/auth/forgot-password', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email: data.get('email') }),

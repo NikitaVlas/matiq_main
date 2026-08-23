@@ -7,7 +7,7 @@
     "dev": "nest start --watch",
     "lint": "eslint src test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run test/password.test.ts test/totp.test.ts test/bootstrap-admin.test.ts test/stripe-webhook.test.ts test/app-module.smoke.test.ts test/content-access.test.ts test/content-recommendations.test.ts test/assessment-roadmap-lessons.test.ts test/roadmap-progress.test.ts test/foundation-roadmap.test.ts",
+    "test": "vitest run test/password.test.ts test/totp.test.ts test/bootstrap-admin.test.ts test/stripe-webhook.test.ts test/app-module.smoke.test.ts test/observability.test.ts test/content-access.test.ts test/content-recommendations.test.ts test/assessment-roadmap-lessons.test.ts test/roadmap-progress.test.ts test/foundation-roadmap.test.ts",
     "test:integration": "vitest run test/vertical.integration.test.ts test/account-session.integration.test.ts test/account-deletion.integration.test.ts test/mfa.integration.test.ts test/stripe-webhook.integration.test.ts",
     "openapi:generate": "tsx src/openapi.ts",
     "prisma:generate": "prisma generate",

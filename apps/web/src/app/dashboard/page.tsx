@@ -9,8 +9,7 @@ import {
   VideoHistoryItem,
   selectDashboardContent,
 } from '../../features/dashboard/dashboard-state';
-
-const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
+import { userApiResponse } from '../../shared/api/client';
 
 type AssessmentResult = {
   completed: boolean;
@@ -35,10 +34,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${api}/assessment/result`, { credentials: 'include' }),
-      fetch(`${api}/subscription`, { credentials: 'include' }),
-      fetch(`${api}/content/history`, { credentials: 'include' }),
-      fetch(`${api}/content/courses`),
+      userApiResponse('/assessment/result'),
+      userApiResponse('/subscription'),
+      userApiResponse('/content/history'),
+      userApiResponse('/content/courses'),
     ])
       .then(
         async ([assessmentResponse, subscriptionResponse, historyResponse, coursesResponse]) => {

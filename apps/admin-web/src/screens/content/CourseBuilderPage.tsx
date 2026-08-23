@@ -1,5 +1,6 @@
 'use client';
 
+import type { AdminApiPath } from '@matiq/contracts';
 import { FormEvent, useEffect, useState } from 'react';
 import { adminApi } from '../../shared/api/client';
 
@@ -102,7 +103,11 @@ export default function CourseBuilderPage() {
     void load();
   }, []);
 
-  const request = async (path: string, method: 'POST' | 'PATCH' | 'DELETE', body?: unknown) => {
+  const request = async (
+    path: AdminApiPath,
+    method: 'POST' | 'PATCH' | 'DELETE',
+    body?: unknown,
+  ) => {
     setError('');
     const response = await adminApi(path, {
       method,
@@ -119,11 +124,11 @@ export default function CourseBuilderPage() {
     return true;
   };
 
-  const post = (path: string, body: unknown) => request(path, 'POST', body);
+  const post = (path: AdminApiPath, body: unknown) => request(path, 'POST', body);
 
   const saveTitle = async () => {
     if (!editingTitle?.title.trim()) return;
-    const paths = {
+    const paths: Record<EditingTitle['kind'], AdminApiPath> = {
       course: `/admin/content/courses/${editingTitle.id}`,
       module: `/admin/content/modules/${editingTitle.id}`,
       lesson: `/admin/content/lessons/${editingTitle.id}`,
@@ -140,7 +145,7 @@ export default function CourseBuilderPage() {
       lesson: 'Its video is kept and becomes available for another lesson.',
     };
     if (!window.confirm(`Delete ${kind} "${label}"? ${consequences[kind]}`)) return;
-    const paths = {
+    const paths: Record<typeof kind, AdminApiPath> = {
       course: `/admin/content/courses/${id}`,
       module: `/admin/content/modules/${id}`,
       lesson: `/admin/content/lessons/${id}`,
@@ -148,7 +153,7 @@ export default function CourseBuilderPage() {
     if ((await request(paths[kind], 'DELETE')) && selected === id) setSelected('');
   };
 
-  const move = async (path: string, ids: string[], index: number, direction: -1 | 1) => {
+  const move = async (path: AdminApiPath, ids: string[], index: number, direction: -1 | 1) => {
     const target = index + direction;
     if (target < 0 || target >= ids.length) return;
     const reordered = [...ids];

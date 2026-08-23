@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-
-const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
+import { userApiResponse } from '../../shared/api/client';
 
 type RoadmapDetailResult = {
   item: {
@@ -40,12 +39,14 @@ export default function RoadmapDetail({ id }: { id: string }) {
     setError('');
     setUpdating(true);
     try {
-      const response = await fetch(`${api}/assessment/roadmap-items/${encodeURIComponent(id)}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      const response = await userApiResponse(
+        `/assessment/roadmap-items/${encodeURIComponent(id)}`,
+        {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      );
       if (!response.ok) throw new Error('ROADMAP_UPDATE_FAILED');
       if (body.isHidden) return (window.location.href = '/roadmap');
       setResult((current) =>
@@ -68,8 +69,7 @@ export default function RoadmapDetail({ id }: { id: string }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`${api}/assessment/roadmap-items/${encodeURIComponent(id)}`, {
-      credentials: 'include',
+    userApiResponse(`/assessment/roadmap-items/${encodeURIComponent(id)}`, {
       signal: controller.signal,
     })
       .then(async (response) => {

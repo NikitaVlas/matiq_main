@@ -115,10 +115,7 @@ export class RoadmapMetadataService {
         if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
         const option = raw as { skillKey?: unknown };
         if (typeof option.skillKey !== 'string') continue;
-        assessmentMappings.set(
-          option.skillKey,
-          (assessmentMappings.get(option.skillKey) ?? 0) + 1,
-        );
+        assessmentMappings.set(option.skillKey, (assessmentMappings.get(option.skillKey) ?? 0) + 1);
       }
     }
     const enrichedTopics = await Promise.all(

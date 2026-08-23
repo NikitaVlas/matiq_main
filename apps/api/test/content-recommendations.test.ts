@@ -102,7 +102,10 @@ describe('ContentService recommendations', () => {
 
     await expect(
       service.recommendations('athlete-1', UserRole.ATHLETE, 'video-current'),
-    ).resolves.toMatchObject({ primarySource: 'ROADMAP', roadmap: { videoId: 'video-half-guard' } });
+    ).resolves.toMatchObject({
+      primarySource: 'ROADMAP',
+      roadmap: { videoId: 'video-half-guard' },
+    });
     expect(findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({

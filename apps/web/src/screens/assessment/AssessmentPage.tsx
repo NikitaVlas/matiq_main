@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
-
-const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
+import { userApiResponse } from '../../shared/api/client';
 
 type Question = {
   key: string;
@@ -30,10 +29,7 @@ export default function AssessmentPage() {
   >([]);
 
   useEffect(() => {
-    Promise.all([
-      fetch(`${api}/assessment/questions`, { credentials: 'include' }),
-      fetch(`${api}/assessment/answers`, { credentials: 'include' }),
-    ])
+    Promise.all([userApiResponse('/assessment/questions'), userApiResponse('/assessment/answers')])
       .then(async ([questionsResponse, answersResponse]) => {
         if (!questionsResponse.ok || !answersResponse.ok) throw new Error('ASSESSMENT_LOAD_FAILED');
         const loadedQuestions = (await questionsResponse.json()) as Question[];
@@ -105,9 +101,8 @@ export default function AssessmentPage() {
           ...(customText ? [{ questionKey: question.key, customText }] : []),
         ];
       });
-      const response = await fetch(`${api}/assessment/submit`, {
+      const response = await userApiResponse('/assessment/submit', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ answers: payload }),
       });

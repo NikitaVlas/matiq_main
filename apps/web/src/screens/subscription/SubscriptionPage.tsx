@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
+import { userApiResponse } from '../../shared/api/client';
 
 const statusLabels: Record<string, string> = {
   ACTIVE: 'Aktiv',
@@ -23,25 +23,23 @@ export default function SubscriptionPage() {
   const [withdrawalAcknowledgement, setWithdrawalAcknowledgement] = useState(false);
   const [cancellationConfirmationOpen, setCancellationConfirmationOpen] = useState(false);
   async function refresh() {
-    const response = await fetch(`${api}/subscription`, { credentials: 'include' });
+    const response = await userApiResponse('/subscription');
     setSubscription(await response.json());
   }
   useEffect(() => {
     refresh();
   }, []);
-  async function action(path: string, body?: object) {
-    await fetch(`${api}/subscription/${path}`, {
+  async function action(path: 'activate-trial' | 'cancel' | 'resume', body?: object) {
+    await userApiResponse(`/subscription/${path}`, {
       method: 'POST',
-      credentials: 'include',
       headers: body ? { 'content-type': 'application/json' } : undefined,
       body: body ? JSON.stringify(body) : undefined,
     });
     await refresh();
   }
   async function checkout() {
-    const response = await fetch(`${api}/subscription/checkout`, {
+    const response = await userApiResponse('/subscription/checkout', {
       method: 'POST',
-      credentials: 'include',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ immediateAccessConsent, withdrawalAcknowledgement }),
     });
@@ -49,17 +47,15 @@ export default function SubscriptionPage() {
     window.location.assign((await response.json()).url);
   }
   async function paymentUpdatePortal() {
-    const response = await fetch(`${api}/subscription/payment-update-portal`, {
+    const response = await userApiResponse('/subscription/payment-update-portal', {
       method: 'POST',
-      credentials: 'include',
     });
     if (!response.ok) return;
     window.location.assign((await response.json()).url);
   }
   async function billingPortal() {
-    const response = await fetch(`${api}/subscription/billing-portal`, {
+    const response = await userApiResponse('/subscription/billing-portal', {
       method: 'POST',
-      credentials: 'include',
     });
     if (!response.ok) return;
     window.location.assign((await response.json()).url);

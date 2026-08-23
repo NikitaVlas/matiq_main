@@ -1,8 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-
-const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
+import { userApiResponse } from '../../shared/api/client';
 type Account = {
   email: string;
   emailVerified: boolean;
@@ -12,8 +11,7 @@ type Account = {
 type Session = { id: string; createdAt: string; lastSeenAt: string; current: boolean };
 type MfaSetup = { secret: string; otpauthUrl: string };
 
-const request = (path: string, init?: RequestInit) =>
-  fetch(`${api}${path}`, { credentials: 'include', ...init });
+const request = userApiResponse;
 
 async function errorMessage(response: Response, fallback: string) {
   if (response.status === 401) return 'Deine Sitzung ist abgelaufen oder das Passwort ist falsch.';

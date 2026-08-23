@@ -11,8 +11,7 @@ import {
   type CourseContext,
   type LessonVideo,
 } from './lesson-state';
-
-const api = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
+import { userApiResponse } from '../../shared/api/client';
 
 type Recommendation = {
   source: 'ROADMAP' | 'LESSON_PATH' | 'METADATA';
@@ -59,8 +58,7 @@ export default function VideoDetail({ id }: { id: string }) {
 
     async function load() {
       try {
-        const response = await fetch(`${api}/content/videos/${id}/playback`, {
-          credentials: 'include',
+        const response = await userApiResponse(`/content/videos/${id}/playback`, {
           signal: controller.signal,
         });
         if (response.status === 403) {
@@ -75,10 +73,12 @@ export default function VideoDetail({ id }: { id: string }) {
           Boolean(playback.courseContext?.lessons.find((lesson) => lesson.current)?.completed),
         );
 
-        const recommendationResponse = await fetch(`${api}/content/videos/${id}/recommendations`, {
-          credentials: 'include',
-          signal: controller.signal,
-        });
+        const recommendationResponse = await userApiResponse(
+          `/content/videos/${id}/recommendations`,
+          {
+            signal: controller.signal,
+          },
+        );
         if (recommendationResponse.ok) {
           setRecommendations((await recommendationResponse.json()) as Recommendations);
         }
@@ -95,9 +95,8 @@ export default function VideoDetail({ id }: { id: string }) {
 
   async function saveProgress(seconds: number) {
     try {
-      const response = await fetch(`${api}/content/videos/${id}/watch`, {
+      const response = await userApiResponse(`/content/videos/${id}/watch`, {
         method: 'POST',
-        credentials: 'include',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ watchedSeconds: Math.floor(seconds) }),
       });
@@ -123,9 +122,9 @@ export default function VideoDetail({ id }: { id: string }) {
       );
 
       if (progressResult.newlyCompleted) {
-        const recommendationResponse = await fetch(`${api}/content/videos/${id}/recommendations`, {
-          credentials: 'include',
-        });
+        const recommendationResponse = await userApiResponse(
+          `/content/videos/${id}/recommendations`,
+        );
         if (recommendationResponse.ok) {
           setRecommendations((await recommendationResponse.json()) as Recommendations);
         }

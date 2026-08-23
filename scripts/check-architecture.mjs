@@ -16,8 +16,17 @@ for (const file of files(path.join(root, 'apps/web/src'))) {
   const relative = path.relative(path.join(root, 'apps/web/src'), file).replaceAll('\\', '/');
   const source = fs.readFileSync(file, 'utf8');
   const layer = relative.split('/')[0];
+  if (relative !== 'shared/api/client.ts' && /\bfetch\s*\(/.test(source))
+    violations.push(`${relative} bypasses the generated-contract API transport`);
   const forbidden = layer === 'entities' ? ['features/', 'widgets/', 'screens/', 'app/'] : layer === 'features' ? ['screens/', 'app/'] : layer === 'shared' ? ['entities/', 'features/', 'widgets/', 'screens/', 'app/'] : [];
   for (const target of forbidden) if (source.includes(`from '${target}`) || source.includes(`from "${target}`)) violations.push(`${relative} imports ${target}`);
+}
+
+for (const file of files(path.join(root, 'apps/admin-web/src'))) {
+  const relative = path.relative(path.join(root, 'apps/admin-web/src'), file).replaceAll('\\', '/');
+  const source = fs.readFileSync(file, 'utf8');
+  if (relative !== 'shared/api/client.ts' && /\bfetch\s*\(/.test(source))
+    violations.push(`${relative} bypasses the generated-contract API transport`);
 }
 
 for (const file of files(path.join(root, 'apps/api/src/modules'))) {

@@ -1,5 +1,6 @@
 'use client';
 
+import type { AdminApiPath } from '@matiq/contracts';
 import { FormEvent, useEffect, useState } from 'react';
 import { adminApi } from '../../shared/api/client';
 
@@ -71,7 +72,7 @@ export default function AssessmentAdminPage() {
     void load();
   }, []);
 
-  const save = async (path: string, method: 'POST' | 'PATCH', body: unknown) => {
+  const save = async (path: AdminApiPath, method: 'POST' | 'PATCH', body: unknown) => {
     setStatus('Saving...');
     const response = await adminApi(path, {
       method,
@@ -167,7 +168,7 @@ function QuestionEditor({
 }: {
   question: Question;
   roadmapTopics: RoadmapTopic[];
-  save: (path: string, method: 'POST' | 'PATCH', body: unknown) => Promise<boolean>;
+  save: (path: AdminApiPath, method: 'POST' | 'PATCH', body: unknown) => Promise<boolean>;
 }) {
   const [draft, setDraft] = useState(question);
   useEffect(() => setDraft(question), [question]);
@@ -180,12 +181,7 @@ function QuestionEditor({
       style={{ border: '1px solid #ddd', padding: 16, marginTop: 12 }}
     >
       <strong>{question.key}</strong>
-      <QuestionFields
-        value={draft}
-        onChange={setDraft}
-        roadmapTopics={roadmapTopics}
-        hideKey
-      />
+      <QuestionFields value={draft} onChange={setDraft} roadmapTopics={roadmapTopics} hideKey />
       <label>
         <input
           type="checkbox"

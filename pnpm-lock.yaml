@@ -99,6 +99,9 @@ importers:
 
   apps/admin-web:
     dependencies:
+      '@matiq/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       next:
         specifier: 15.3.4
         version: 15.3.4(@playwright/test@1.62.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
