@@ -1,8 +1,22 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { AssessmentContext, Discipline, UserRole } from '@prisma/client';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  AssessmentContext,
+  Discipline,
+  PlaybackMode,
+  PlaybackSessionStatus,
+  UserRole,
+} from '@prisma/client';
 import { Database } from '../../../shared/infrastructure/database';
 import { VideoStorageService } from '../infrastructure/video-storage.service';
 import { SubscriptionService } from '../../subscription/application/subscription.service';
+import { PlaybackHeartbeatDto } from '../dto/playback-heartbeat.dto';
 
 @Injectable()
 export class ContentService {
@@ -13,10 +27,23 @@ export class ContentService {
   ) {}
 
   async courses() {
-    return this.db.course.findMany({
+    const courses = await this.db.course.findMany({
       where: { published: true },
       orderBy: { createdAt: 'asc' },
       include: {
+        trainer: {
+          select: {
+            trainerProfile: {
+              select: {
+                slug: true,
+                displayName: true,
+                photoUrl: true,
+                city: true,
+                published: true,
+              },
+            },
+          },
+        },
         modules: {
           orderBy: { position: 'asc' },
           include: {
@@ -32,6 +59,94 @@ export class ContentService {
         },
       },
     });
+    return courses.map(({ trainer, ...course }) => {
+      const profile = trainer?.trainerProfile;
+      if (!profile?.published) return { ...course, trainer: null };
+      return {
+        ...course,
+        trainer: {
+          slug: profile.slug,
+          displayName: profile.displayName,
+          photoUrl: profile.photoUrl,
+          city: profile.city,
+        },
+      };
+    });
+  }
+
+  trainers() {
+    return this.db.trainerProfile.findMany({
+      where: { published: true, user: { deletedAt: null, role: UserRole.TRAINER } },
+      select: {
+        slug: true,
+        displayName: true,
+        photoUrl: true,
+        biography: true,
+        disciplines: true,
+        belt: true,
+        achievements: true,
+        city: true,
+        countryCode: true,
+        languages: true,
+        localAvailability: true,
+        user: {
+          select: {
+            _count: {
+              select: {
+                authoredCourses: { where: { published: true } },
+                authoredVideos: { where: { published: true } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { displayName: 'asc' },
+    });
+  }
+
+  async trainer(slug: string) {
+    const profile = await this.db.trainerProfile.findFirst({
+      where: {
+        slug,
+        published: true,
+        user: { deletedAt: null, role: UserRole.TRAINER },
+      },
+      select: {
+        slug: true,
+        displayName: true,
+        photoUrl: true,
+        biography: true,
+        athleteJourney: true,
+        disciplines: true,
+        belt: true,
+        qualifications: true,
+        achievements: true,
+        competitionExperience: true,
+        trainingPrinciples: true,
+        city: true,
+        countryCode: true,
+        languages: true,
+        localAvailability: true,
+        socialLinks: true,
+        user: {
+          select: {
+            authoredCourses: {
+              where: { published: true },
+              select: { id: true, key: true, title: true, description: true, discipline: true },
+              orderBy: { createdAt: 'desc' },
+            },
+            authoredVideos: {
+              where: { published: true },
+              select: { id: true, title: true, description: true, durationSec: true },
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        },
+      },
+    });
+    if (!profile) throw new NotFoundException('TRAINER_NOT_FOUND');
+    const { user, ...publicProfile } = profile;
+    return { ...publicProfile, courses: user.authoredCourses, videos: user.authoredVideos };
   }
   async catalog() {
     await this.seed();
@@ -142,14 +257,133 @@ export class ContentService {
             })),
           }
         : null;
+    const playbackUrl = await this.storage.playbackUrl(video.storageKey);
+    const playbackToken = randomBytes(32).toString('base64url');
+    const tokenHash = hashPlaybackToken(playbackToken);
+    const ttlSeconds = playbackSessionTtlSeconds();
+    const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+    const watermarkId = randomUUID().replaceAll('-', '').slice(0, 12);
+    const playbackSession = await this.db.$transaction(async (tx) => {
+      await tx.playbackSession.updateMany({
+        where: { userId, mode: PlaybackMode.FULL, status: PlaybackSessionStatus.ACTIVE },
+        data: { status: PlaybackSessionStatus.REVOKED, closedAt: new Date() },
+      });
+      return tx.playbackSession.create({
+        data: {
+          userId,
+          videoId,
+          mode: PlaybackMode.FULL,
+          tokenHash,
+          watermarkId,
+          expiresAt,
+        },
+      });
+    });
     return {
       video,
-      playbackUrl: await this.storage.playbackUrl(video.storageKey),
-      expiresIn: 300,
+      playbackUrl,
+      playbackSessionId: playbackSession.id,
+      playbackToken,
+      expiresAt: expiresAt.toISOString(),
+      mode: PlaybackMode.FULL,
+      watermarkId,
+      expiresIn: ttlSeconds,
       userId,
       watchedSeconds: video.watchEvents[0]?.watchedSeconds ?? 0,
       courseContext,
     };
+  }
+
+  async heartbeat(userId: string, videoId: string, input: PlaybackHeartbeatDto) {
+    const session = await this.db.playbackSession.findUnique({
+      where: { tokenHash: hashPlaybackToken(input.playbackToken) },
+      include: { video: true },
+    });
+    if (
+      !session ||
+      session.userId !== userId ||
+      session.videoId !== videoId ||
+      !samePlaybackToken(session.tokenHash, input.playbackToken)
+    ) {
+      throw new ForbiddenException('INVALID_PLAYBACK_SESSION');
+    }
+    if (session.status !== PlaybackSessionStatus.ACTIVE || session.expiresAt <= new Date()) {
+      if (session.status === PlaybackSessionStatus.ACTIVE) {
+        await this.db.playbackSession.update({
+          where: { id: session.id },
+          data: { status: PlaybackSessionStatus.EXPIRED, closedAt: new Date() },
+        });
+      }
+      throw new ForbiddenException('PLAYBACK_SESSION_EXPIRED');
+    }
+
+    const duplicate = await this.db.playbackHeartbeat.findFirst({
+      where: {
+        sessionId: session.id,
+        OR: [{ idempotencyKey: input.idempotencyKey }, { sequence: input.sequence }],
+      },
+    });
+    if (duplicate) return heartbeatResult(duplicate, false);
+
+    const boundedCurrent = Math.min(
+      input.currentPositionSec,
+      session.video.durationSec ?? input.currentPositionSec,
+    );
+    const activeSeconds = input.activePlaybackMs / 1000;
+    const serverElapsedSeconds = Math.max(
+      0,
+      (Date.now() - (session.lastHeartbeatAt ?? session.createdAt).getTime()) / 1000,
+    );
+    const positionDelta = boundedCurrent - input.previousPositionSec;
+    const rejectionReason =
+      input.sequence <= session.lastSequence
+        ? 'NON_MONOTONIC_SEQUENCE'
+        : !input.visible || !input.active
+          ? 'INACTIVE_PLAYER'
+          : activeSeconds > serverElapsedSeconds + 3
+            ? 'IMPOSSIBLE_ACTIVE_DURATION'
+            : positionDelta < 0
+              ? 'BACKWARD_SEEK'
+              : positionDelta > activeSeconds * input.playbackRate + 3
+                ? 'IMPOSSIBLE_POSITION_JUMP'
+                : null;
+    const accepted = rejectionReason === null;
+    const creditedPositionSec = accepted
+      ? Math.max(session.creditedPositionSec, Math.floor(boundedCurrent))
+      : session.creditedPositionSec;
+
+    const event = await this.db.$transaction(async (tx) => {
+      const heartbeat = await tx.playbackHeartbeat.create({
+        data: {
+          sessionId: session.id,
+          idempotencyKey: input.idempotencyKey,
+          sequence: input.sequence,
+          previousPositionSec: input.previousPositionSec,
+          currentPositionSec: boundedCurrent,
+          activePlaybackMs: input.activePlaybackMs,
+          playbackRate: input.playbackRate,
+          visible: input.visible,
+          active: input.active,
+          clientAt: new Date(input.clientAt),
+          accepted,
+          creditedPositionSec,
+          rejectionReason,
+        },
+      });
+      await tx.playbackSession.update({
+        where: { id: session.id },
+        data: {
+          lastHeartbeatAt: new Date(),
+          lastSequence: Math.max(session.lastSequence, input.sequence),
+          creditedPositionSec,
+        },
+      });
+      return heartbeat;
+    });
+    const progress = accepted
+      ? await this.applyTrustedProgress(userId, session.video, creditedPositionSec)
+      : null;
+    return heartbeatResult(event, true, progress);
   }
 
   async recommendations(userId: string, role: UserRole | undefined, videoId: string) {
@@ -320,8 +554,9 @@ export class ContentService {
     videoId: string,
     watchedSeconds: number,
   ) {
-    if (role !== UserRole.ADMIN && role !== UserRole.EDITOR)
-      await this.subscriptions.requireAccess(userId);
+    if (role !== UserRole.ADMIN && role !== UserRole.EDITOR) {
+      throw new ForbiddenException('PLAYBACK_HEARTBEAT_REQUIRED');
+    }
     const video = await this.db.video.findUnique({ where: { id: videoId } });
     if (!video || !video.published) throw new Error('VIDEO_NOT_AVAILABLE');
     if (!Number.isFinite(watchedSeconds)) {
@@ -415,6 +650,14 @@ export class ContentService {
     return { ...watchEvent, newlyCompleted, roadmapItemsCompleted };
   }
 
+  private applyTrustedProgress(
+    userId: string,
+    video: { id: string; published: boolean; durationSec: number | null },
+    watchedSeconds: number,
+  ) {
+    return this.recordWatch(userId, UserRole.ADMIN, video.id, watchedSeconds);
+  }
+
   async history(userId: string) {
     return this.db.videoWatch.findMany({
       where: { userId, video: { published: true } },
@@ -491,4 +734,46 @@ function recommendation(
 
 function disciplineMetadataKey(discipline: Discipline) {
   return discipline === Discipline.BJJ_GI ? 'bjj-gi' : 'no-gi';
+}
+
+function hashPlaybackToken(token: string) {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+function samePlaybackToken(expectedHash: string, token: string) {
+  const actual = Buffer.from(hashPlaybackToken(token), 'hex');
+  const expected = Buffer.from(expectedHash, 'hex');
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
+}
+
+function playbackSessionTtlSeconds() {
+  const configured = Number(process.env.PLAYBACK_SESSION_TTL_SECONDS ?? 300);
+  return Number.isInteger(configured) && configured >= 60 && configured <= 900 ? configured : 300;
+}
+
+function heartbeatResult(
+  event: {
+    accepted: boolean;
+    creditedPositionSec: number;
+    rejectionReason: string | null;
+    sequence: number;
+  },
+  processed: boolean,
+  progress?: {
+    watchedSeconds: number;
+    completed: boolean;
+    newlyCompleted: boolean;
+    roadmapItemsCompleted: number;
+  } | null,
+) {
+  return {
+    accepted: event.accepted,
+    processed,
+    sequence: event.sequence,
+    rejectionReason: event.rejectionReason,
+    watchedSeconds: progress?.watchedSeconds ?? event.creditedPositionSec,
+    completed: progress?.completed ?? false,
+    newlyCompleted: progress?.newlyCompleted ?? false,
+    roadmapItemsCompleted: progress?.roadmapItemsCompleted ?? 0,
+  };
 }

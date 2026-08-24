@@ -31,11 +31,17 @@ type Recommendations = {
 type Playback = {
   video: LessonVideo;
   playbackUrl: string;
+  playbackSessionId: string;
+  playbackToken: string;
+  expiresAt: string;
+  watermarkId: string;
   watchedSeconds: number;
   courseContext: CourseContext | null;
 };
 
 type WatchProgress = {
+  accepted: boolean;
+  processed: boolean;
   watchedSeconds: number;
   completed: boolean;
   newlyCompleted: boolean;
@@ -52,6 +58,8 @@ export default function VideoDetail({ id }: { id: string }) {
   const [progressError, setProgressError] = useState('');
   const [sessionResult, setSessionResult] = useState<WatchProgress>();
   const lastCheckpoint = useRef(-1);
+  const lastReportedSeconds = useRef(0);
+  const heartbeatSequence = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -69,6 +77,7 @@ export default function VideoDetail({ id }: { id: string }) {
         const playback = (await response.json()) as Playback;
         setData(playback);
         setCurrentSeconds(playback.watchedSeconds);
+        lastReportedSeconds.current = playback.watchedSeconds;
         setCompleted(
           Boolean(playback.courseContext?.lessons.find((lesson) => lesson.current)?.completed),
         );
@@ -93,15 +102,34 @@ export default function VideoDetail({ id }: { id: string }) {
     return () => controller.abort();
   }, [id]);
 
-  async function saveProgress(seconds: number) {
+  async function saveProgress(seconds: number, playbackRate = 1) {
+    if (!data) return;
+    const previousPositionSec = lastReportedSeconds.current;
+    const currentPositionSec = Math.max(0, seconds);
+    heartbeatSequence.current += 1;
     try {
-      const response = await userApiResponse(`/content/videos/${id}/watch`, {
+      const response = await userApiResponse(`/content/videos/${id}/heartbeat`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ watchedSeconds: Math.floor(seconds) }),
+        body: JSON.stringify({
+          playbackToken: data.playbackToken,
+          idempotencyKey: crypto.randomUUID(),
+          sequence: heartbeatSequence.current,
+          previousPositionSec,
+          currentPositionSec,
+          activePlaybackMs: Math.min(
+            60000,
+            Math.max(0, Math.round((currentPositionSec - previousPositionSec) * 1000)),
+          ),
+          playbackRate,
+          visible: document.visibilityState === 'visible',
+          active: true,
+          clientAt: new Date().toISOString(),
+        }),
       });
       if (!response.ok) throw new Error();
       const progressResult = (await response.json()) as WatchProgress;
+      if (progressResult.accepted) lastReportedSeconds.current = currentPositionSec;
       setSessionResult(progressResult);
       setProgressError('');
       if (!progressResult.completed) return;
@@ -186,11 +214,15 @@ export default function VideoDetail({ id }: { id: string }) {
             const checkpoint = Math.floor(seconds / 15);
             if (seconds > 0 && checkpoint !== lastCheckpoint.current) {
               lastCheckpoint.current = checkpoint;
-              void saveProgress(seconds);
+              void saveProgress(seconds, event.currentTarget.playbackRate);
             }
           }}
-          onPause={(event) => void saveProgress(event.currentTarget.currentTime)}
-          onEnded={(event) => void saveProgress(event.currentTarget.currentTime)}
+          onPause={(event) =>
+            void saveProgress(event.currentTarget.currentTime, event.currentTarget.playbackRate)
+          }
+          onEnded={(event) =>
+            void saveProgress(event.currentTarget.currentTime, event.currentTarget.playbackRate)
+          }
         />
       </section>
 

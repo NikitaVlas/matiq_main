@@ -1,7 +1,20 @@
-import { Body, Controller, Get, Inject, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  ParseEnumPipe,
+  Patch,
+  Post,
+  Put,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { Discipline } from '@prisma/client';
+import { ApiParam, ApiTags } from '@nestjs/swagger';
 import { AuthGuard, AuthenticatedRequest } from '../../identity/infrastructure/auth.guard';
-import { RoadmapItemDto, SubmitAssessmentDto } from '../dto/assessment.dto';
+import { AssessmentDraftDto, RoadmapItemDto, SubmitAssessmentDto } from '../dto/assessment.dto';
 import { AssessmentService } from '../application/assessment.service';
 
 @ApiTags('assessment')
@@ -17,6 +30,17 @@ export class AssessmentController {
   }
   @Get('answers') answers(@Req() req: AuthenticatedRequest) {
     return this.assessment.currentAnswers(req.userId);
+  }
+  @Get('attempt/:discipline')
+  @ApiParam({ name: 'discipline', enum: Discipline })
+  attempt(
+    @Req() req: AuthenticatedRequest,
+    @Param('discipline', new ParseEnumPipe(Discipline)) discipline: Discipline,
+  ) {
+    return this.assessment.currentAttempt(req.userId, discipline);
+  }
+  @Put('draft') draft(@Req() req: AuthenticatedRequest, @Body() dto: AssessmentDraftDto) {
+    return this.assessment.saveDraft(req.userId, dto.discipline, dto.answers);
   }
   @Post('submit') submit(@Req() req: AuthenticatedRequest, @Body() dto: SubmitAssessmentDto) {
     return this.assessment.submit(req.userId, dto.answers);

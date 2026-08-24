@@ -7,7 +7,7 @@
     "dev": "nest start --watch",
     "lint": "eslint src test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run test/admin-auth.guard.test.ts test/role.service.test.ts test/content-management.test.ts test/course-validation.test.ts test/assessment-management.test.ts test/roadmap-metadata.test.ts test/health.test.ts",
+    "test": "vitest run test/admin-auth.guard.test.ts test/role.service.test.ts test/content-management.test.ts test/course-validation.test.ts test/assessment-management.test.ts test/roadmap-metadata.test.ts test/trainer-profile.test.ts test/health.test.ts",
     "test:integration": "vitest run test/admin-auth.integration.test.ts test/dashboard.integration.test.ts",
     "openapi:generate": "tsx src/openapi.ts"
   },

@@ -1,6 +1,8 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
   AssessmentContext,
+  AssessmentAttemptStatus,
+  AssessmentConfidence,
   AssessmentMappingStatus,
   AssessmentQuestionKind,
   Discipline,
@@ -162,6 +164,7 @@ const QUESTION_SEED = [
 
 type SubmissionAnswer = { questionKey: string; optionKey?: string; customText?: string };
 type Recommendation = { skillKey: string; type: RoadmapRecommendationType; score: number };
+const QUESTION_BANK_VERSION = 1;
 
 @Injectable()
 export class AssessmentService {
@@ -214,6 +217,63 @@ export class AssessmentService {
         mappingStatus: response.mappingStatus,
       })),
     };
+  }
+
+  async currentAttempt(userId: string, discipline: Discipline) {
+    return this.db.assessmentAttempt.findFirst({
+      where: { userId, discipline, status: 'DRAFT' },
+      orderBy: { updatedAt: 'desc' },
+      include: { answers: { orderBy: { createdAt: 'asc' } } },
+    });
+  }
+
+  async saveDraft(userId: string, discipline: Discipline, answers: SubmissionAnswer[]) {
+    const profile = await this.db.athleteProfile.findUnique({ where: { userId } });
+    if (!profile) throw new NotFoundException('ATHLETE_PROFILE_REQUIRED');
+    if (!profile.disciplines.includes(discipline))
+      throw new BadRequestException('ASSESSMENT_DISCIPLINE_NOT_SELECTED');
+    const questions = await this.questions();
+    const selected = answers.map((answer) => {
+      const question = questions.find((item) => item.key === answer.questionKey);
+      if (!question) throw new NotFoundException('ASSESSMENT_QUESTION_NOT_FOUND');
+      const customText = answer.customText?.trim();
+      if (customText) {
+        if (!question.allowCustom) throw new BadRequestException('CUSTOM_ANSWER_NOT_ALLOWED');
+        return { questionKey: question.key, optionKey: null, customText };
+      }
+      const option = (question.options as Array<{ key: string }>).find(
+        (item) => item.key === answer.optionKey,
+      );
+      if (!option) throw new NotFoundException('ASSESSMENT_OPTION_NOT_FOUND');
+      return { questionKey: question.key, optionKey: option.key, customText: null };
+    });
+    const duplicate = new Set<string>();
+    for (const answer of selected) {
+      const key = `${answer.questionKey}:${answer.optionKey ?? '__custom__'}`;
+      if (duplicate.has(key)) throw new BadRequestException('ASSESSMENT_DUPLICATE_ANSWER');
+      duplicate.add(key);
+    }
+    const currentAttempt = await this.currentAttempt(userId, discipline);
+    const questionBankSnapshot = this.questionBankSnapshot(questions);
+    const attemptId =
+      currentAttempt?.id ??
+      (
+        await this.db.assessmentAttempt.create({
+          data: {
+            userId,
+            discipline,
+            questionBankVersion: QUESTION_BANK_VERSION,
+            questionBankSnapshot,
+          },
+        })
+      ).id;
+    await this.db.$transaction([
+      this.db.assessmentAttemptAnswer.deleteMany({ where: { attemptId } }),
+      ...selected.map((answer) =>
+        this.db.assessmentAttemptAnswer.create({ data: { attemptId, ...answer } }),
+      ),
+    ]);
+    return this.currentAttempt(userId, discipline);
   }
 
   async submit(userId: string, answers: SubmissionAnswer[]) {
@@ -304,9 +364,107 @@ export class AssessmentService {
         this.db.skillScore.create({ data: { assessmentId: assessment.id, skillKey, score } }),
       ),
     ]);
+    await this.recordCompletedAttempts(
+      userId,
+      profile.disciplines,
+      selected,
+      scores,
+      this.questionBankSnapshot(questions),
+      questions
+        .filter((question) => question.kind === AssessmentQuestionKind.CONFIDENCE)
+        .map((question) => question.skillKey),
+    );
     await this.generateRoadmap(profile.id, profile.disciplines, scores, recommendations);
     if (!previous) await this.subscriptions.startTrial(userId);
     return this.getResult(userId);
+  }
+
+  private async recordCompletedAttempts(
+    userId: string,
+    disciplines: Discipline[],
+    selected: Array<{
+      question: { key: string; kind: AssessmentQuestionKind; skillKey: string };
+      option: { key: string; value: number } | null;
+      customText?: string;
+    }>,
+    scores: Map<string, number>,
+    questionBankSnapshot: Prisma.InputJsonValue,
+    assessedSkillKeys: string[],
+  ) {
+    const completedAt = new Date();
+    await Promise.all(
+      disciplines.map(async (discipline) => {
+        const draft = await this.currentAttempt(userId, discipline);
+        const answers = selected.map((item) => ({
+          questionKey: item.question.key,
+          optionKey: item.option?.key,
+          customText: item.customText,
+        }));
+        const evaluations = [...new Set(assessedSkillKeys)].map((skillKey) => {
+          const score = scores.get(skillKey);
+          return {
+            skillKey,
+            score,
+            confidence:
+              score === undefined
+                ? AssessmentConfidence.INSUFFICIENT_DATA
+                : AssessmentConfidence.SUFFICIENT,
+            reasons: selected
+              .filter((item) => item.question.skillKey === skillKey && item.option)
+              .map((item) => ({ questionKey: item.question.key, optionKey: item.option?.key })),
+          };
+        });
+        if (draft) {
+          return this.db.assessmentAttempt.update({
+            where: { id: draft.id },
+            data: {
+              status: AssessmentAttemptStatus.COMPLETED,
+              completedAt,
+              questionBankVersion: QUESTION_BANK_VERSION,
+              questionBankSnapshot,
+              answers: { deleteMany: {}, create: answers },
+              evaluations: { deleteMany: {}, create: evaluations },
+            },
+          });
+        }
+        return this.db.assessmentAttempt.create({
+          data: {
+            userId,
+            discipline,
+            questionBankVersion: QUESTION_BANK_VERSION,
+            questionBankSnapshot,
+            status: AssessmentAttemptStatus.COMPLETED,
+            completedAt,
+            answers: { create: answers },
+            evaluations: { create: evaluations },
+          },
+        });
+      }),
+    );
+  }
+
+  private questionBankSnapshot(
+    questions: Array<{
+      key: string;
+      text: string;
+      context: AssessmentContext;
+      skillKey: string;
+      kind: AssessmentQuestionKind;
+      multiple: boolean;
+      allowCustom: boolean;
+      options: Prisma.JsonValue;
+    }>,
+  ): Prisma.InputJsonValue {
+    return questions.map((question) => ({
+      key: question.key,
+      text: question.text,
+      context: question.context,
+      skillKey: question.skillKey,
+      kind: question.kind,
+      multiple: question.multiple,
+      allowCustom: question.allowCustom,
+      options: question.options as Prisma.InputJsonValue,
+    }));
   }
 
   async getResult(userId: string) {
@@ -738,6 +896,7 @@ export class AssessmentService {
             lessonId: lesson?.id,
             position: index,
             recommendationType: type,
+            reason: { source: 'ASSESSMENT', skillKey, recommendationType: type },
           };
         }),
       ),
@@ -766,7 +925,7 @@ export class AssessmentService {
         operations.push(
           this.db.roadmapItem.update({
             where: { id: retained.id },
-            data: { title: item.title, lessonId: item.lessonId },
+            data: { title: item.title, lessonId: item.lessonId, reason: item.reason },
           }),
         );
       } else {

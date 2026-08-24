@@ -86,6 +86,20 @@ A public trainer profile contains:
 - social links;
 - published courses and videos.
 
+The profile presents the author as an athlete, not merely as an instructor. It
+also shows:
+
+- their BJJ journey and story, not only titles;
+- competition analysis;
+- personal preparation principles and approach;
+- the training goals connected to their courses and videos;
+- their place in the German-speaking BJJ community and local availability.
+
+The trainer records video materials and submits them to MATIQ. An `Admin`
+reviews the materials, creates and structures the course, uploads the videos,
+and publishes the content; the author does not create the course or use the
+publishing interface.
+
 ### Additional public routes
 
 Preliminary routes are:
@@ -383,6 +397,6 @@ The primary mobile-navigation items are:
 
 - Status: Draft
 - Owner: MATIQ team
-- Last reviewed: 2026-07-19
+- Last reviewed: 2026-08-24
 - Related design: MATIQ Figma, concept not yet created
-- Related code: Product code has not been created
+- Related code: `apps/web`, `apps/admin-web`; screen-map implementation is partial

@@ -56,6 +56,16 @@ enum AssessmentMappingStatus {
   UNMAPPED
 }
 
+enum AssessmentAttemptStatus {
+  DRAFT
+  COMPLETED
+}
+
+enum AssessmentConfidence {
+  SUFFICIENT
+  INSUFFICIENT_DATA
+}
+
 enum RoadmapRecommendationType {
   CORE
   GAP
@@ -83,6 +93,18 @@ enum SubscriptionStatus {
   CANCELED
 }
 
+enum PlaybackMode {
+  FULL
+  PREVIEW
+}
+
+enum PlaybackSessionStatus {
+  ACTIVE
+  CLOSED
+  EXPIRED
+  REVOKED
+}
+
 model User {
   id                      String                   @id @default(cuid())
   email                   String                   @unique
@@ -102,8 +124,56 @@ model User {
   subscriptions           Subscription[]
   athleteProfile          AthleteProfile?
   assessment              Assessment?
+  assessmentAttempts      AssessmentAttempt[]
+  playbackSessions        PlaybackSession[]
+  trainerProfile          TrainerProfile?
+  authoredCourses         Course[]                 @relation("CourseTrainer")
+  authoredVideos          Video[]                  @relation("VideoTrainer")
   deletionRequest         AccountDeletionRequest?
   recoveryCodes           MfaRecoveryCode[]
+}
+
+model AssessmentAttempt {
+  id                   String                    @id @default(cuid())
+  userId               String
+  discipline           Discipline
+  questionBankVersion  Int                       @default(1)
+  questionBankSnapshot Json
+  status               AssessmentAttemptStatus   @default(DRAFT)
+  completedAt          DateTime?
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+  user                 User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers              AssessmentAttemptAnswer[]
+  evaluations          AssessmentEvaluation[]
+
+  @@index([userId, discipline, status])
+}
+
+model AssessmentAttemptAnswer {
+  id          String            @id @default(cuid())
+  attemptId   String
+  questionKey String
+  optionKey   String?
+  customText  String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  attempt     AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionKey, optionKey])
+}
+
+model AssessmentEvaluation {
+  id         String               @id @default(cuid())
+  attemptId  String
+  skillKey   String
+  score      Int?
+  confidence AssessmentConfidence
+  reasons    Json
+  createdAt  DateTime             @default(now())
+  attempt    AssessmentAttempt    @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, skillKey])
 }
 
 model PasswordResetToken {
@@ -227,6 +297,7 @@ model RoadmapItem {
   lessonId           String?
   completedAt        DateTime?
   recommendationType RoadmapRecommendationType @default(GAP)
+  reason             Json                      @default("{}")
   source             RoadmapItemSource         @default(ASSESSMENT)
   foundationStepId   String?
   athleteProfile     AthleteProfile            @relation(fields: [athleteProfileId], references: [id], onDelete: Cascade)
@@ -354,30 +425,106 @@ model Flow {
 }
 
 model Video {
-  id              String                @id @default(cuid())
-  title           String
-  description     String?
-  storageKey      String
-  published       Boolean               @default(false)
-  durationSec     Int?
-  previewStartSec Int?
-  previewEndSec   Int?
-  positionId      String?
-  techniqueId     String?
-  variantId       String?
-  movementId      String?
-  drillId         String?
-  position        Position?             @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  technique       Technique?            @relation(fields: [techniqueId], references: [id], onDelete: SetNull)
-  variant         TechniqueVariant?     @relation(fields: [variantId], references: [id], onDelete: SetNull)
-  movement        Movement?             @relation(fields: [movementId], references: [id], onDelete: SetNull)
-  drill           Drill?                @relation(fields: [drillId], references: [id], onDelete: SetNull)
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  watchEvents     VideoWatch[]
-  revisions       VideoRevision[]
-  metadataValues  VideoMetadataOption[]
-  Lesson          Lesson?
+  id               String                @id @default(cuid())
+  title            String
+  description      String?
+  storageKey       String
+  published        Boolean               @default(false)
+  durationSec      Int?
+  previewStartSec  Int?
+  previewEndSec    Int?
+  positionId       String?
+  techniqueId      String?
+  variantId        String?
+  movementId       String?
+  drillId          String?
+  trainerId        String?
+  position         Position?             @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  technique        Technique?            @relation(fields: [techniqueId], references: [id], onDelete: SetNull)
+  variant          TechniqueVariant?     @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  movement         Movement?             @relation(fields: [movementId], references: [id], onDelete: SetNull)
+  drill            Drill?                @relation(fields: [drillId], references: [id], onDelete: SetNull)
+  trainer          User?                 @relation("VideoTrainer", fields: [trainerId], references: [id], onDelete: SetNull)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  watchEvents      VideoWatch[]
+  playbackSessions PlaybackSession[]
+  revisions        VideoRevision[]
+  metadataValues   VideoMetadataOption[]
+  Lesson           Lesson?
+
+  @@index([trainerId])
+}
+
+model TrainerProfile {
+  id                    String       @id @default(cuid())
+  userId                String       @unique
+  slug                  String       @unique
+  displayName           String
+  photoUrl              String?
+  biography             String
+  athleteJourney        String
+  disciplines           Discipline[]
+  belt                  Belt?
+  qualifications        String[]
+  achievements          String[]
+  competitionExperience String?
+  trainingPrinciples    String
+  city                  String
+  countryCode           String       @default("DE")
+  languages             String[]
+  localAvailability     String?
+  socialLinks           Json         @default("[]")
+  published             Boolean      @default(false)
+  publishedAt           DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PlaybackSession {
+  id                  String                @id @default(cuid())
+  userId              String
+  videoId             String
+  mode                PlaybackMode          @default(FULL)
+  status              PlaybackSessionStatus @default(ACTIVE)
+  tokenHash           String                @unique
+  watermarkId         String
+  expiresAt           DateTime
+  lastHeartbeatAt     DateTime?
+  lastSequence        Int                   @default(0)
+  creditedPositionSec Int                   @default(0)
+  createdAt           DateTime              @default(now())
+  closedAt            DateTime?
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video               Video                 @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  heartbeats          PlaybackHeartbeat[]
+
+  @@index([userId, mode, status])
+  @@index([videoId, createdAt])
+}
+
+model PlaybackHeartbeat {
+  id                  String          @id @default(cuid())
+  sessionId           String
+  idempotencyKey      String
+  sequence            Int
+  previousPositionSec Float
+  currentPositionSec  Float
+  activePlaybackMs    Int
+  playbackRate        Float
+  visible             Boolean
+  active              Boolean
+  clientAt            DateTime
+  receivedAt          DateTime        @default(now())
+  accepted            Boolean
+  creditedPositionSec Int
+  rejectionReason     String?
+  session             PlaybackSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, idempotencyKey])
+  @@unique([sessionId, sequence])
+  @@index([sessionId, receivedAt])
 }
 
 model MetadataField {
@@ -415,10 +562,14 @@ model Course {
   title       String
   description String?
   discipline  Discipline
+  trainerId   String?
   published   Boolean        @default(false)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   modules     CourseModule[]
+  trainer     User?          @relation("CourseTrainer", fields: [trainerId], references: [id], onDelete: SetNull)
+
+  @@index([trainerId])
 }
 
 model CourseModule {

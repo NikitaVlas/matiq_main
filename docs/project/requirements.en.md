@@ -70,6 +70,16 @@
 - `FR-CONT-004`: A public trainer profile shall support a photo, biography,
   disciplines, qualifications, achievements, social links, and published
   materials.
+- `FR-CONT-013`: A public trainer profile shall present the author's journey as
+  an athlete, competition experience, and personal preparation principles
+  rather than reducing the person to titles or an instructor card.
+- `FR-CONT-014`: Videos and courses shall be linked to the concrete training
+  goals they are intended to support.
+- `FR-CONT-015`: The platform shall support competition analysis and content
+  describing an author's personal preparation principles.
+- `FR-CONT-016`: A trainer records video materials outside the platform and
+  submits them to MATIQ. Only an `Admin` reviews those materials, creates and
+  structures the course in the platform, uploads the videos, and publishes the content.
 - `FR-CONT-005`: The system shall store playback position.
 - `FR-CONT-006`: A video shall be considered watched after at least 80 percent
   has been played.
@@ -131,8 +141,9 @@
   assessments, roadmaps, subscriptions, and reports.
 - `FR-ADMIN-002`: An `Editor` shall manage permitted content drafts without
   access to assessments, payments, or user administration.
-- `FR-ADMIN-003`: An `Editor` shall be able to create and edit drafts of
-  trainers, courses, lessons, positions, techniques, Movements, and Drills.
+- `FR-ADMIN-003`: An `Editor` shall be able to edit drafts of trainers, courses,
+  lessons, positions, techniques, Movements, and Drills. Only an `Admin` may
+  create a course.
 - `FR-ADMIN-004`: An `Editor` shall be able to add descriptions, relationships,
   and a primary topic to an uploaded video but shall not upload videos.
 - `FR-ADMIN-005`: Only an `Admin` shall be able to publish, archive, or
@@ -146,6 +157,9 @@
 - `FR-ADMIN-009`: Unpublishing content shall require a reason.
 - `FR-LANG-001`: The user interface, assessments, administration interface,
   trainer area, emails, and payment pages shall be in German.
+- `FR-LANG-002`: The catalogue and author profiles shall highlight the
+  German-speaking BJJ community, local availability, and attainable role
+  models.
 - `FR-NAV-001`: The Roadmap shall be the personal core of the Dashboard without
   displacing courses, videos, or trainers.
 - `FR-NAV-002`: Desktop shall use primary side navigation and mobile web shall
@@ -259,5 +273,5 @@
 
 - Status: Approved product baseline
 - Owner: MATIQ team
-- Last reviewed: 2026-07-19
+- Last reviewed: 2026-08-24
 - Related code: Repository-wide; implementation is partial

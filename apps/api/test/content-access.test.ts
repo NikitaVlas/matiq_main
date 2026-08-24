@@ -59,11 +59,17 @@ const publishedLesson = {
 describe('ContentService access', () => {
   it('allows an administrator to play published content without a subscription', async () => {
     const subscriptions = { requireAccess: vi.fn() };
+    const db = {
+      video: { findUnique: vi.fn().mockResolvedValue(video) },
+      lesson: { findUnique: vi.fn().mockResolvedValue(publishedLesson) },
+      playbackSession: {
+        updateMany: vi.fn(),
+        create: vi.fn().mockResolvedValue({ id: 'playback-1' }),
+      },
+    };
+    Object.assign(db, { $transaction: (run: (tx: typeof db) => unknown) => run(db) });
     const service = new ContentService(
-      {
-        video: { findUnique: vi.fn().mockResolvedValue(video) },
-        lesson: { findUnique: vi.fn().mockResolvedValue(publishedLesson) },
-      } as never,
+      db as never,
       { playbackUrl: vi.fn().mockResolvedValue('http://storage/video.mp4') } as never,
       subscriptions as never,
     );
@@ -95,11 +101,17 @@ describe('ContentService access', () => {
   });
 
   it('keeps standalone playback available without exposing course context', async () => {
+    const db = {
+      video: { findUnique: vi.fn().mockResolvedValue(video) },
+      lesson: { findUnique: vi.fn().mockResolvedValue(null) },
+      playbackSession: {
+        updateMany: vi.fn(),
+        create: vi.fn().mockResolvedValue({ id: 'playback-1' }),
+      },
+    };
+    Object.assign(db, { $transaction: (run: (tx: typeof db) => unknown) => run(db) });
     const service = new ContentService(
-      {
-        video: { findUnique: vi.fn().mockResolvedValue(video) },
-        lesson: { findUnique: vi.fn().mockResolvedValue(null) },
-      } as never,
+      db as never,
       { playbackUrl: vi.fn().mockResolvedValue('http://storage/video.mp4') } as never,
       { requireAccess: vi.fn() } as never,
     );

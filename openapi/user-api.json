@@ -489,6 +489,47 @@
         ]
       }
     },
+    "/assessment/attempt/{discipline}": {
+      "get": {
+        "operationId": "AssessmentController_attempt",
+        "parameters": [
+          {
+            "name": "discipline",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "BJJ_GI",
+                "NO_GI_GRAPPLING"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "assessment"
+        ]
+      }
+    },
+    "/assessment/draft": {
+      "put": {
+        "operationId": "AssessmentController_draft",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "assessment"
+        ]
+      }
+    },
     "/assessment/submit": {
       "post": {
         "operationId": "AssessmentController_submit",
@@ -571,6 +612,34 @@
         ]
       }
     },
+    "/content/trainers": {
+      "get": {
+        "operationId": "ContentController_trainers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/content/trainers/{slug}": {
+      "get": {
+        "operationId": "ContentController_trainer",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
     "/content/videos/{id}/playback": {
       "get": {
         "operationId": "ContentController_playback",
@@ -599,8 +668,23 @@
         ]
       }
     },
+    "/content/videos/{id}/heartbeat": {
+      "post": {
+        "operationId": "ContentController_heartbeat",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
     "/content/videos/{id}/watch": {
       "post": {
+        "deprecated": true,
         "operationId": "ContentController_watch",
         "parameters": [],
         "responses": {
@@ -608,6 +692,7 @@
             "description": ""
           }
         },
+        "summary": "",
         "tags": [
           "content"
         ]

@@ -1,0 +1,2 @@
+ALTER TABLE "RoadmapItem"
+  ADD COLUMN "reason" JSONB NOT NULL DEFAULT '{}';

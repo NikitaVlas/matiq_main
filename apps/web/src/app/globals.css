@@ -1123,3 +1123,75 @@ legend {
     columns: 1;
   }
 }
+
+.trainer-page {
+  margin: 52px auto;
+  max-width: 1180px;
+  padding: 0 24px 72px;
+}
+
+.trainer-page-header {
+  max-width: 760px;
+  padding: 32px 0 48px;
+}
+
+.trainer-grid,
+.trainer-story-grid,
+.trainer-materials {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.trainer-card,
+.trainer-story-grid section,
+.trainer-list-section {
+  background: var(--surface, #fff);
+  border: 1px solid var(--line);
+  padding: 24px;
+}
+
+.trainer-card img,
+.trainer-profile-hero img {
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  width: 100%;
+}
+
+.trainer-card .action-link {
+  margin-top: 18px;
+}
+
+.trainer-profile-hero {
+  align-items: center;
+  display: grid;
+  gap: 42px;
+  grid-template-columns: minmax(240px, 0.7fr) 1.3fr;
+  padding: 42px 0;
+}
+
+.trainer-story-grid,
+.trainer-list-section {
+  margin-top: 28px;
+}
+
+.trainer-materials a {
+  border-top: 2px solid var(--text, #111);
+  display: grid;
+  gap: 8px;
+  padding: 18px 0;
+  text-decoration: none;
+}
+
+.trainer-socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 32px;
+}
+
+@media (max-width: 720px) {
+  .trainer-profile-hero {
+    grid-template-columns: 1fr;
+  }
+}

@@ -25,6 +25,11 @@ expert-curated video content into a personal, editable development path.
 - trainers whose selected content is published on MATIQ;
 - MATIQ editors and administrators.
 
+The `Athlete` role represents a platform user who completes an assessment and
+follows a personal Roadmap. A trainer who recorded materials for a course is nevertheless
+presented in their public profile as an active or experienced athlete with a
+personal journey, competition context, and preparation principles.
+
 ## Primary user journey
 
 1. The user registers and selects one or both disciplines.
@@ -45,7 +50,12 @@ expert-curated video content into a personal, editable development path.
 - AI does not invent methodology or techniques and does not make final
   decisions.
 - Only the MATIQ administration selects and uploads content.
-- Trainers cannot publish or edit content themselves.
+- Trainers record video materials and submit them to MATIQ; they do not create
+  courses, upload, publish, or edit content in the platform.
+- An `Admin` reviews the materials and creates, structures, uploads, and publishes
+  the course in the platform.
+- Only an `Admin` performs the technical upload and publication; an `Editor`
+  may prepare content within their granted permissions.
 - The platform gives recommendations but does not assign mandatory tasks.
 - Watching a video does not prove that a technique has been mastered.
 - There is no separate landing page or marketing website; only the platform
@@ -90,9 +100,22 @@ Primary content types are:
 - technique;
 - discipline-specific technique variant.
 
-The platform provides public trainer profiles containing a photo, biography,
-disciplines, qualifications, achievements, social links, and published
-materials.
+Videos and courses are connected to concrete training goals and explain which
+development step they support. Content may include competition analysis and an
+author's personal preparation principles.
+
+The platform provides public trainer profiles containing a photo,
+biography, disciplines, qualifications, achievements, social links, and
+published materials. An author profile is an athlete page, not merely an
+instructor card. It shows the person's journey, milestones, competition
+context, training goals, and approach to preparation. Titles support
+credibility but do not replace the person's story.
+
+MATIQ highlights the German-speaking BJJ community and the local availability
+of authors, events, and content. Its product ambition is to become more than a
+course library: a platform that develops a local learning culture in which
+German athletes learn from German champions and encounter attainable role
+models.
 
 ## Access and monetisation
 
@@ -149,5 +172,5 @@ materials.
 
 - Status: Approved product baseline
 - Owner: MATIQ team
-- Last reviewed: 2026-07-19
+- Last reviewed: 2026-08-24
 - Related code: Repository-wide; implementation is partial

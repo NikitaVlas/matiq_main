@@ -15,6 +15,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <a href="/roadmap">Roadmap</a>
           <a href="/videos">Videos</a>
           <a href="/courses">Kurse</a>
+          <a href="/trainers">Trainer</a>
           <a href="/history">Verlauf</a>
           <a href="/subscription">Mitgliedschaft</a>
           <a href="/settings">Einstellungen</a>

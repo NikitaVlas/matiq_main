@@ -8,6 +8,7 @@ type Course = {
   id: string;
   title: string;
   description?: string;
+  trainer?: { slug: string; displayName: string; photoUrl?: string; city: string } | null;
   modules: {
     id: string;
     title: string;
@@ -64,6 +65,14 @@ export default function CourseDetailPage({ id }: { id: string }) {
       <p className="eyebrow">Course</p>
       <h1>{course.title}</h1>
       {course.description && <p>{course.description}</p>}
+      {course.trainer ? (
+        <p>
+          Mit{' '}
+          <Link href={`/trainers/${course.trainer.slug}`}>
+            {course.trainer.displayName} aus {course.trainer.city}
+          </Link>
+        </p>
+      ) : null}
 
       {course.modules.map((courseModule, moduleIndex) => (
         <section className="shell course-module" key={courseModule.id}>

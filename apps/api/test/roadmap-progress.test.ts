@@ -34,7 +34,7 @@ describe('Roadmap progress from video viewing', () => {
 
     const result = await service.recordWatch(
       'athlete-1',
-      UserRole.ATHLETE,
+      UserRole.ADMIN,
       'video-1',
       watchedSeconds,
     );
@@ -58,7 +58,7 @@ describe('Roadmap progress from video viewing', () => {
   it('keeps the Roadmap step active below 80 percent', async () => {
     const { service, updateMany, watchedSeconds } = createService(79);
 
-    await service.recordWatch('athlete-1', UserRole.ATHLETE, 'video-1', watchedSeconds);
+    await service.recordWatch('athlete-1', UserRole.ADMIN, 'video-1', watchedSeconds);
 
     expect(updateMany).not.toHaveBeenCalled();
   });
@@ -66,7 +66,7 @@ describe('Roadmap progress from video viewing', () => {
   it('does not repeat the Roadmap mutation after completion', async () => {
     const { service, updateMany } = createService(90, true);
 
-    const result = await service.recordWatch('athlete-1', UserRole.ATHLETE, 'video-1', 90);
+    const result = await service.recordWatch('athlete-1', UserRole.ADMIN, 'video-1', 90);
 
     expect(updateMany).not.toHaveBeenCalled();
     expect(result).toMatchObject({
@@ -80,7 +80,7 @@ describe('Roadmap progress from video viewing', () => {
     const { service } = createService(Number.NaN);
 
     await expect(
-      service.recordWatch('athlete-1', UserRole.ATHLETE, 'video-1', Number.NaN),
+      service.recordWatch('athlete-1', UserRole.ADMIN, 'video-1', Number.NaN),
     ).rejects.toThrow('INVALID_WATCH_PROGRESS');
   });
 });

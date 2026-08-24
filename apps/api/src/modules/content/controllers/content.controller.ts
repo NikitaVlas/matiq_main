@@ -1,8 +1,9 @@
 import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ContentService } from '../application/content.service';
 import { AuthenticatedRequest } from '../../identity/infrastructure/auth.guard';
 import { ContentSessionGuard } from '../../identity/infrastructure/admin-session.guard';
+import { PlaybackHeartbeatDto } from '../dto/playback-heartbeat.dto';
 
 @ApiTags('content')
 @Controller('content')
@@ -14,6 +15,16 @@ export class ContentController {
 
   @Get('catalog') catalog() {
     return this.content.catalog();
+  }
+
+  @Get('trainers')
+  trainers() {
+    return this.content.trainers();
+  }
+
+  @Get('trainers/:slug')
+  trainer(@Param('slug') slug: string) {
+    return this.content.trainer(slug);
   }
 
   @UseGuards(ContentSessionGuard)
@@ -29,6 +40,17 @@ export class ContentController {
   }
 
   @UseGuards(ContentSessionGuard)
+  @Post('videos/:id/heartbeat')
+  heartbeat(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() body: PlaybackHeartbeatDto,
+  ) {
+    return this.content.heartbeat(req.userId, id, body);
+  }
+
+  @UseGuards(ContentSessionGuard)
+  @ApiOperation({ deprecated: true })
   @Post('videos/:id/watch')
   watch(
     @Req() req: AuthenticatedRequest,

@@ -100,25 +100,41 @@ export class ContentController {
     await this.db.video.updateMany({ where: { id: { in: videoIds } }, data: { published: true } });
     return course;
   }
-  @Post('courses') createCourse(
+  @AdminRoles('ADMIN')
+  @Post('courses')
+  async createCourse(
     @Body()
     body: {
       key: string;
       title: string;
       description?: string;
       discipline: 'BJJ_GI' | 'NO_GI_GRAPPLING';
+      trainerId?: string;
     },
   ) {
+    if (body.trainerId) await this.requireTrainer(body.trainerId);
     return this.db.course.create({ data: body });
   }
-  @Patch('courses/:courseId') updateCourse(
+  @Patch('courses/:courseId') async updateCourse(
     @Param('courseId') courseId: string,
-    @Body() body: { title: string },
+    @Body() body: { title?: string; trainerId?: string | null },
   ) {
-    return this.db.course.update({ where: { id: courseId }, data: { title: body.title } });
+    if (body.trainerId) await this.requireTrainer(body.trainerId);
+    return this.db.course.update({
+      where: { id: courseId },
+      data: { title: body.title, trainerId: body.trainerId },
+    });
   }
   @Delete('courses/:courseId') deleteCourse(@Param('courseId') courseId: string) {
     return this.db.course.delete({ where: { id: courseId } });
+  }
+
+  private async requireTrainer(id: string) {
+    const trainer = await this.db.user.findFirst({
+      where: { id, role: 'TRAINER', deletedAt: null },
+      select: { id: true },
+    });
+    if (!trainer) throw new BadRequestException('TRAINER_NOT_FOUND');
   }
   @Post('courses/:courseId/modules') createModule(
     @Param('courseId') courseId: string,

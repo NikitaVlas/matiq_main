@@ -14,6 +14,9 @@ export class VideoStorageService {
     },
   });
   playbackUrl(key: string) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('PRODUCTION_VIDEO_PROVIDER_REQUIRED');
+    }
     return getSignedUrl(
       this.client,
       new GetObjectCommand({ Bucket: process.env.S3_BUCKET ?? 'matiq-local', Key: key }),

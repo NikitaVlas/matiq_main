@@ -29,6 +29,48 @@
         ]
       }
     },
+    "/admin/trainers/{id}/profile": {
+      "put": {
+        "operationId": "TrainerController_saveProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-trainers"
+        ]
+      }
+    },
+    "/admin/trainers/{id}/publish": {
+      "post": {
+        "operationId": "TrainerController_publish",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-trainers"
+        ]
+      }
+    },
+    "/admin/trainers/{id}/unpublish": {
+      "post": {
+        "operationId": "TrainerController_unpublish",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-trainers"
+        ]
+      }
+    },
     "/admin/videos": {
       "get": {
         "operationId": "VideoController_list",
@@ -100,6 +142,20 @@
     "/admin/videos/{id}": {
       "patch": {
         "operationId": "VideoController_update",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-videos"
+        ]
+      }
+    },
+    "/admin/videos/{id}/author": {
+      "patch": {
+        "operationId": "VideoController_assignAuthor",
         "parameters": [],
         "responses": {
           "200": {

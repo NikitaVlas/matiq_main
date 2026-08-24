@@ -101,6 +101,26 @@ export class VideoController {
     await this.audit('VIDEO_UPDATED', id, request.adminUserId, body);
     return video;
   }
+  @Patch(':id/author')
+  async assignAuthor(
+    @Param('id') id: string,
+    @Body() body: { trainerId: string | null },
+    @Req() request: { adminUserId: string },
+  ) {
+    if (body.trainerId) {
+      const trainer = await this.db.user.findFirst({
+        where: { id: body.trainerId, role: 'TRAINER', deletedAt: null },
+        select: { id: true },
+      });
+      if (!trainer) throw new BadRequestException('TRAINER_NOT_FOUND');
+    }
+    const video = await this.db.video.update({
+      where: { id },
+      data: { trainerId: body.trainerId },
+    });
+    await this.audit('VIDEO_AUTHOR_UPDATED', id, request.adminUserId, body);
+    return video;
+  }
   @AdminRoles('ADMIN')
   @Post(':id/publish')
   async publish(@Param('id') id: string, @Req() request: { adminUserId: string }) {

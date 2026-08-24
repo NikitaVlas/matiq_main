@@ -43,6 +43,12 @@ export class SubmitAssessmentDto {
   answers!: AssessmentAnswerDto[];
 }
 
+export class AssessmentDraftDto extends SubmitAssessmentDto {
+  @ApiProperty({ enum: Discipline })
+  @IsEnum(Discipline)
+  discipline!: Discipline;
+}
+
 export class RoadmapItemDto {
   @ApiProperty()
   @IsString()

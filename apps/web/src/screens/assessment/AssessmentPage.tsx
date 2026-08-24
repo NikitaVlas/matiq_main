@@ -19,6 +19,8 @@ export default function AssessmentPage() {
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
   const [previouslyCompleted, setPreviouslyCompleted] = useState(false);
+  const [draftDiscipline, setDraftDiscipline] = useState('');
+  const [hydrated, setHydrated] = useState(false);
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -29,17 +31,32 @@ export default function AssessmentPage() {
   >([]);
 
   useEffect(() => {
-    Promise.all([userApiResponse('/assessment/questions'), userApiResponse('/assessment/answers')])
-      .then(async ([questionsResponse, answersResponse]) => {
-        if (!questionsResponse.ok || !answersResponse.ok) throw new Error('ASSESSMENT_LOAD_FAILED');
+    Promise.all([
+      userApiResponse('/assessment/questions'),
+      userApiResponse('/assessment/answers'),
+      userApiResponse('/athlete-profile'),
+    ])
+      .then(async ([questionsResponse, answersResponse, profileResponse]) => {
+        if (!questionsResponse.ok || !answersResponse.ok || !profileResponse.ok)
+          throw new Error('ASSESSMENT_LOAD_FAILED');
         const loadedQuestions = (await questionsResponse.json()) as Question[];
         const saved = (await answersResponse.json()) as {
           completed: boolean;
           answers: SavedAnswer[];
         };
+        const profile = (await profileResponse.json()) as { disciplines: string[] };
+        const discipline = profile.disciplines[0];
+        const attemptResponse = discipline
+          ? await userApiResponse(`/assessment/attempt/${encodeURIComponent(discipline)}`)
+          : null;
+        if (attemptResponse && !attemptResponse.ok) throw new Error('ASSESSMENT_LOAD_FAILED');
+        const attempt = attemptResponse
+          ? ((await attemptResponse.json()) as { answers?: SavedAnswer[] } | null)
+          : null;
+        const restoredAnswers = attempt?.answers?.length ? attempt.answers : saved.answers;
         const selected: Record<string, string[]> = {};
         const custom: Record<string, string> = {};
-        for (const answer of saved.answers) {
+        for (const answer of restoredAnswers) {
           if (answer.optionKey)
             selected[answer.questionKey] = [
               ...(selected[answer.questionKey] ?? []),
@@ -51,10 +68,30 @@ export default function AssessmentPage() {
         setAnswers(selected);
         setCustomAnswers(custom);
         setPreviouslyCompleted(saved.completed);
+        setDraftDiscipline(discipline ?? '');
+        setHydrated(true);
       })
       .catch(() => setError('Das Assessment konnte nicht geladen werden.'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || !draftDiscipline || done) return;
+    const payload = assessmentPayload(questions, answers, customAnswers);
+    if (!payload.length) return;
+    const timeout = window.setTimeout(() => {
+      void userApiResponse('/assessment/draft', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ discipline: draftDiscipline, answers: payload }),
+      })
+        .then((response) => {
+          if (!response.ok) setError('Der Zwischenstand konnte nicht gespeichert werden.');
+        })
+        .catch(() => setError('Der Zwischenstand konnte nicht gespeichert werden.'));
+    }, 500);
+    return () => window.clearTimeout(timeout);
+  }, [answers, customAnswers, done, draftDiscipline, hydrated, questions]);
 
   const select = (question: Question, optionKey: string, checked: boolean) => {
     setMissingQuestionKey('');
@@ -91,16 +128,7 @@ export default function AssessmentPage() {
     }
     setSaving(true);
     try {
-      const payload = questions.flatMap((question) => {
-        const customText = customAnswers[question.key]?.trim();
-        return [
-          ...(answers[question.key] ?? []).map((optionKey) => ({
-            questionKey: question.key,
-            optionKey,
-          })),
-          ...(customText ? [{ questionKey: question.key, customText }] : []),
-        ];
-      });
+      const payload = assessmentPayload(questions, answers, customAnswers);
       const response = await userApiResponse('/assessment/submit', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -226,6 +254,23 @@ export default function AssessmentPage() {
       </section>
     </main>
   );
+}
+
+function assessmentPayload(
+  questions: Question[],
+  answers: Record<string, string[]>,
+  customAnswers: Record<string, string>,
+) {
+  return questions.flatMap((question) => {
+    const customText = customAnswers[question.key]?.trim();
+    return [
+      ...(answers[question.key] ?? []).map((optionKey) => ({
+        questionKey: question.key,
+        optionKey,
+      })),
+      ...(customText ? [{ questionKey: question.key, customText }] : []),
+    ];
+  });
 }
 
 function recommendationLabel(type: 'CORE' | 'GAP' | 'EXPLORE') {

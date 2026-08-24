@@ -3,6 +3,66 @@ import { describe, expect, it, vi } from 'vitest';
 import { AssessmentService } from '../src/modules/assessment/application/assessment.service';
 
 describe('assessment roadmap lesson matching', () => {
+  it('stores a partial assessment as a discipline-scoped draft', async () => {
+    const db = {
+      athleteProfile: {
+        findUnique: vi.fn().mockResolvedValue({ disciplines: [Discipline.BJJ_GI] }),
+      },
+      assessmentQuestion: {
+        upsert: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            key: 'standing-confidence',
+            text: 'Standing?',
+            context: 'STANDING',
+            skillKey: 'standing',
+            kind: 'CONFIDENCE',
+            multiple: false,
+            allowCustom: false,
+            options: [{ key: 'rarely', value: 2 }],
+          },
+        ]),
+      },
+      assessmentAttempt: {
+        findFirst: vi
+          .fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce({
+            id: 'attempt-1',
+            answers: [{ questionKey: 'standing-confidence', optionKey: 'rarely' }],
+          }),
+        create: vi.fn().mockResolvedValue({ id: 'attempt-1' }),
+      },
+      assessmentAttemptAnswer: { deleteMany: vi.fn(), create: vi.fn() },
+      $transaction: vi.fn().mockResolvedValue([]),
+    };
+    const service = new AssessmentService(db as never, {} as never);
+
+    await expect(
+      service.saveDraft('user-1', Discipline.BJJ_GI, [
+        { questionKey: 'standing-confidence', optionKey: 'rarely' },
+      ]),
+    ).resolves.toEqual(expect.objectContaining({ id: 'attempt-1' }));
+    expect(db.assessmentAttempt.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'user-1',
+        discipline: Discipline.BJJ_GI,
+        questionBankVersion: 1,
+        questionBankSnapshot: expect.arrayContaining([
+          expect.objectContaining({ key: 'standing-confidence', skillKey: 'standing' }),
+        ]),
+      }),
+    });
+    expect(db.assessmentAttemptAnswer.create).toHaveBeenCalledWith({
+      data: {
+        attemptId: 'attempt-1',
+        questionKey: 'standing-confidence',
+        optionKey: 'rarely',
+        customText: null,
+      },
+    });
+  });
+
   it('calculates Roadmap progress only from the authenticated user watch history', async () => {
     const findMany = vi.fn().mockResolvedValue([
       { id: 'video-1', watchEvents: [{ completed: true }], metadataValues: [] },
