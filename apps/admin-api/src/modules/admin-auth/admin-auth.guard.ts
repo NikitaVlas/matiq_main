@@ -28,9 +28,11 @@ export class AdminAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext) {
-    const request = context
-      .switchToHttp()
-      .getRequest<{ headers: Record<string, string | undefined>; adminUserId?: string }>();
+    const request = context.switchToHttp().getRequest<{
+      headers: Record<string, string | undefined>;
+      adminUserId?: string;
+      reauthenticatedAt?: Date | null;
+    }>();
     const token = cookieValue(
       request.headers.cookie,
       process.env.ADMIN_SESSION_COOKIE_NAME ?? 'matiq_admin_session',
@@ -57,6 +59,7 @@ export class AdminAuthGuard implements CanActivate {
     ]) ?? ['ADMIN'];
     if (!permittedRoles.includes(session.user.role)) throw new UnauthorizedException();
     request.adminUserId = session.userId;
+    request.reauthenticatedAt = session.reauthenticatedAt;
     return true;
   }
 }

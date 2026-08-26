@@ -102,12 +102,10 @@ playback tokens, email, payment data, and full IP addresses unless justified.
 
 - Video provider, DRM level, and CDN.
 - Playback-token TTL and heartbeat interval after load testing.
-- Trial time is provisionally included in trainer accounting, but the financial
-  formula must be approved before the first payout.
 
 ## Document status
 
 - Status: Approved product baseline; technical parameters pending
 - Owner: MATIQ team
-- Last reviewed: 2026-07-19
+- Last reviewed: 2026-08-26
 - Related code: Video, entitlement, viewing analytics, worker

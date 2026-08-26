@@ -211,6 +211,20 @@
         ]
       }
     },
+    "/auth/admin-reauthenticate": {
+      "post": {
+        "operationId": "AuthController_adminReauthenticate",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
     "/auth/change-password": {
       "post": {
         "operationId": "AuthController_changePassword",
@@ -709,6 +723,20 @@
         },
         "tags": [
           "content"
+        ]
+      }
+    },
+    "/trainer-finance/overview": {
+      "get": {
+        "operationId": "TrainerFinanceController_overview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "trainer-finance"
         ]
       }
     }

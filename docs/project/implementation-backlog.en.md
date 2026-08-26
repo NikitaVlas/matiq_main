@@ -78,8 +78,10 @@ Exit: redirects do not grant access, redelivery is safe, cancellation is clear.
 
 ## Phase 8 — Trainer finance
 
-Gate: pool percentage, net revenue, trial weight, minimum payout, retention.
-Then versioned agreements/policies; immutable monthly snapshots; paid/trial
+Gate: the financial reference is approved: a 30% pool after VAT, refunds,
+chargebacks, and PSP fees; 0% trial weight; EUR 50 minimum payout with balance
+carry-forward. Retention remains to be approved before production. Then
+versioned agreements/policies; immutable monthly snapshots; paid/trial
 split; reproducible allocation; anomaly/adjustment flow; report lifecycle and
 separation of duties; own-only reports; manual payment reference and audit.
 
@@ -111,5 +113,5 @@ safe logs/metrics/audit; reviewed diff and current Document status.
 
 - Status: Approved implementation sequence
 - Owner: MATIQ team
-- Last reviewed: 2026-07-19
+- Last reviewed: 2026-08-26
 - Related code: Repository-wide

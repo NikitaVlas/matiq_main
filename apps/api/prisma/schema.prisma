@@ -110,6 +110,21 @@ enum ViewingAccessClass {
   PAID
 }
 
+enum TrainerAgreementStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  VOID
+}
+
+enum TrainerPayoutStatus {
+  DRAFT
+  REVIEWED
+  APPROVED
+  PAID
+  VOID
+}
+
 model User {
   id                      String                   @id @default(cuid())
   email                   String                   @unique
@@ -135,6 +150,8 @@ model User {
   trainerProfile          TrainerProfile?
   authoredCourses         Course[]                 @relation("CourseTrainer")
   authoredVideos          Video[]                  @relation("VideoTrainer")
+  trainerAgreements       TrainerAgreement[]       @relation("AgreementTrainer")
+  trainerPayoutReports    TrainerPayoutReport[]    @relation("PayoutTrainer")
   deletionRequest         AccountDeletionRequest?
   recoveryCodes           MfaRecoveryCode[]
 }
@@ -557,6 +574,100 @@ model VerifiedWatchInterval {
   @@index([userId, videoId, startMs, endMs])
   @@index([trainerId, accessClass, createdAt])
   @@index([videoId, accessClass, createdAt])
+}
+
+model TrainerAgreement {
+  id                     String                 @id @default(cuid())
+  trainerId              String
+  version                Int
+  status                 TrainerAgreementStatus @default(DRAFT)
+  validFrom              DateTime
+  validUntil             DateTime?
+  participatesInPool     Boolean                @default(true)
+  fixedFeeCents          Int                    @default(0)
+  currency               String                 @default("EUR")
+  specialTerms           String?
+  documentStorageKey     String?
+  documentChecksumSha256 String?
+  documentFileName       String?
+  documentUploadedAt     DateTime?
+  supersedesAgreementId  String?
+  createdByAdminId       String
+  approvedByAdminId      String?
+  approvedAt             DateTime?
+  voidReason             String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  trainer                User                   @relation("AgreementTrainer", fields: [trainerId], references: [id], onDelete: Restrict)
+  supersedes             TrainerAgreement?      @relation("AgreementVersions", fields: [supersedesAgreementId], references: [id], onDelete: Restrict)
+  supersededBy           TrainerAgreement[]     @relation("AgreementVersions")
+  reports                TrainerPayoutReport[]
+
+  @@unique([trainerId, version])
+  @@index([trainerId, status, validFrom])
+}
+
+model TrainerSettlementPeriod {
+  id                      String                @id @default(cuid())
+  month                   String                @unique
+  periodStart             DateTime
+  periodEnd               DateTime
+  currency                String                @default("EUR")
+  grossRevenueCents       Int
+  vatCents                Int
+  refundsCents            Int
+  chargebacksCents        Int
+  providerFeesCents       Int
+  netRevenueCents         Int
+  poolBasisPoints         Int                   @default(3000)
+  distributablePoolCents  Int
+  totalPaidWatchMs        BigInt
+  totalTrialWatchMs       BigInt
+  policySnapshot          Json
+  createdByAdminId        String
+  createdAt               DateTime              @default(now())
+  reports                 TrainerPayoutReport[]
+
+  @@unique([periodStart, periodEnd])
+  @@index([createdAt])
+}
+
+model TrainerPayoutReport {
+  id                       String                  @id @default(cuid())
+  settlementPeriodId       String
+  trainerId                String
+  agreementId              String?
+  status                   TrainerPayoutStatus     @default(DRAFT)
+  paidWatchMs              BigInt
+  trialWatchMs             BigInt
+  trainerWeightNumerator   BigInt
+  trainerWeightDenominator BigInt
+  poolShareCents           Int
+  fixedFeeCents            Int
+  adjustmentCents          Int                     @default(0)
+  adjustmentReason         String?
+  carriedInCents           Int                     @default(0)
+  payableCents             Int                     @default(0)
+  carriedOutCents          Int                     @default(0)
+  currency                 String                  @default("EUR")
+  reviewedByAdminId        String?
+  reviewedAt               DateTime?
+  approvedByAdminId        String?
+  approvedAt               DateTime?
+  paidByAdminId            String?
+  paidAt                   DateTime?
+  externalPaymentReference String?
+  voidedByAdminId          String?
+  voidedAt                 DateTime?
+  voidReason               String?
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  settlementPeriod         TrainerSettlementPeriod @relation(fields: [settlementPeriodId], references: [id], onDelete: Restrict)
+  trainer                  User                    @relation("PayoutTrainer", fields: [trainerId], references: [id], onDelete: Restrict)
+  agreement                TrainerAgreement?       @relation(fields: [agreementId], references: [id], onDelete: Restrict)
+
+  @@unique([settlementPeriodId, trainerId])
+  @@index([trainerId, status, createdAt])
 }
 
 model MetadataField {

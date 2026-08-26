@@ -10,6 +10,7 @@ import {
   selectDashboardContent,
 } from '../../features/dashboard/dashboard-state';
 import { userApiResponse } from '../../shared/api/client';
+import { TrainerFinanceDashboard } from '../../features/trainer-finance/TrainerFinanceDashboard';
 
 type AssessmentResult = {
   completed: boolean;
@@ -25,6 +26,7 @@ type Subscription = {
 };
 
 export default function DashboardPage() {
+  const [account, setAccount] = useState<{ role: string }>();
   const [assessment, setAssessment] = useState<AssessmentResult>();
   const [subscription, setSubscription] = useState<Subscription>();
   const [history, setHistory] = useState<VideoHistoryItem[]>([]);
@@ -33,29 +35,35 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    Promise.all([
-      userApiResponse('/assessment/result'),
-      userApiResponse('/subscription'),
-      userApiResponse('/content/history'),
-      userApiResponse('/content/courses'),
-    ])
-      .then(
-        async ([assessmentResponse, subscriptionResponse, historyResponse, coursesResponse]) => {
-          if (!assessmentResponse.ok) throw new Error('AUTH_REQUIRED');
-          const assessmentValue = (await assessmentResponse.json()) as AssessmentResult;
-          setAssessment(assessmentValue);
-          setSelectedDiscipline(assessmentValue.roadmaps[0]?.discipline);
-          setSubscription(
-            subscriptionResponse.ok
-              ? ((await subscriptionResponse.json()) as Subscription)
-              : { status: 'NONE', hasAccess: false },
-          );
-          setHistory(
-            historyResponse.ok ? ((await historyResponse.json()) as VideoHistoryItem[]) : [],
-          );
-          setCourses(coursesResponse.ok ? ((await coursesResponse.json()) as Course[]) : []);
-        },
-      )
+    userApiResponse('/auth/me')
+      .then(async (accountResponse) => {
+        if (!accountResponse.ok) throw new Error('AUTH_REQUIRED');
+        const accountValue = (await accountResponse.json()) as { role: string };
+        setAccount(accountValue);
+        if (accountValue.role === 'TRAINER') return;
+        return Promise.all([
+          userApiResponse('/assessment/result'),
+          userApiResponse('/subscription'),
+          userApiResponse('/content/history'),
+          userApiResponse('/content/courses'),
+        ]).then(
+          async ([assessmentResponse, subscriptionResponse, historyResponse, coursesResponse]) => {
+            if (!assessmentResponse.ok) throw new Error('AUTH_REQUIRED');
+            const assessmentValue = (await assessmentResponse.json()) as AssessmentResult;
+            setAssessment(assessmentValue);
+            setSelectedDiscipline(assessmentValue.roadmaps[0]?.discipline);
+            setSubscription(
+              subscriptionResponse.ok
+                ? ((await subscriptionResponse.json()) as Subscription)
+                : { status: 'NONE', hasAccess: false },
+            );
+            setHistory(
+              historyResponse.ok ? ((await historyResponse.json()) as VideoHistoryItem[]) : [],
+            );
+            setCourses(coursesResponse.ok ? ((await coursesResponse.json()) as Course[]) : []);
+          },
+        );
+      })
       .catch(() =>
         setError('Dein Dashboard konnte nicht geladen werden. Bitte melde dich erneut an.'),
       );
@@ -65,6 +73,8 @@ export default function DashboardPage() {
     () => selectDashboardContent(assessment?.roadmaps ?? [], selectedDiscipline, history, courses),
     [assessment?.roadmaps, selectedDiscipline, history, courses],
   );
+
+  if (account?.role === 'TRAINER') return <TrainerFinanceDashboard />;
 
   if (error) {
     return (
@@ -79,7 +89,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!assessment || !subscription) return <DashboardSkeleton />;
+  if (!account || !assessment || !subscription) return <DashboardSkeleton />;
 
   return (
     <main className="dashboard-page">

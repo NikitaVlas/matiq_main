@@ -90,8 +90,10 @@ renewal/past-due; cancel-at-period-end, resume, invoices; audited Admin support.
 
 ## Этап 8 — Trainer finance
 
-Gate: утвердить pool percentage, net revenue, trial weight, minimum payout и
-retention. Затем versioned agreements/policies; immutable monthly snapshot;
+Gate: финансовый ориентир утверждён: фонд 30% после НДС, refunds, chargeback и
+PSP fees; trial weight 0%; minimum payout 50 EUR с переносом остатка. До
+production остаётся утвердить retention. Затем versioned agreements/policies;
+immutable monthly snapshot;
 paid/trial split; reproducible allocation; anomaly review и adjustments;
 report lifecycle/separation of duties; own-only Trainer reports; manual payment
 reference и audit.
@@ -127,5 +129,5 @@ logs/metrics/audit без чувствительных данных; reviewed di
 
 - Status: Approved implementation sequence
 - Owner: Команда MATIQ
-- Last reviewed: 2026-07-19
+- Last reviewed: 2026-08-26
 - Related code: Весь репозиторий

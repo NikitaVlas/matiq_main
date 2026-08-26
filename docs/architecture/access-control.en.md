@@ -189,6 +189,8 @@ Critical actions are:
 - changing assessment questions, branching, or rules;
 - unpublishing content;
 - performing an administrative subscription action.
+- activating a trainer agreement, approving a settlement report, or recording
+  a payout.
 
 ## Constraints
 
@@ -219,5 +221,5 @@ Critical actions are:
 
 - Status: Approved permission baseline
 - Owner: MATIQ team
-- Last reviewed: 2026-07-19
+- Last reviewed: 2026-08-26
 - Related code: Identity, Admin API, editorial workflow; implementation partial

@@ -851,6 +851,90 @@
         ]
       }
     },
+    "/admin/trainer-finance": {
+      "get": {
+        "operationId": "TrainerFinanceController_overview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "trainer-finance"
+        ]
+      }
+    },
+    "/admin/trainer-finance/agreements": {
+      "post": {
+        "operationId": "TrainerFinanceController_createAgreement",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "trainer-finance"
+        ]
+      }
+    },
+    "/admin/trainer-finance/agreements/{id}/activate": {
+      "post": {
+        "operationId": "TrainerFinanceController_activateAgreement",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "trainer-finance"
+        ]
+      }
+    },
+    "/admin/trainer-finance/periods": {
+      "post": {
+        "operationId": "TrainerFinanceController_createPeriod",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "trainer-finance"
+        ]
+      }
+    },
+    "/admin/trainer-finance/reports/{id}/status": {
+      "post": {
+        "operationId": "TrainerFinanceController_transitionReport",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "trainer-finance"
+        ]
+      }
+    },
+    "/admin/trainer-finance/reports/{id}/adjustment": {
+      "post": {
+        "operationId": "TrainerFinanceController_adjustReport",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "trainer-finance"
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "HealthController_get",

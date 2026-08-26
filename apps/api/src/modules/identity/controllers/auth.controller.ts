@@ -145,6 +145,12 @@ export class AuthController {
     return this.auth.reauthenticate(request.userId, request.sessionId, dto.password);
   }
 
+  @UseGuards(AdminSessionGuard)
+  @Post('admin-reauthenticate')
+  adminReauthenticate(@Body() dto: PasswordDto, @Req() request: AuthenticatedRequest) {
+    return this.auth.reauthenticate(request.userId, request.sessionId, dto.password);
+  }
+
   @UseGuards(AuthGuard)
   @Post('change-password')
   async changePassword(

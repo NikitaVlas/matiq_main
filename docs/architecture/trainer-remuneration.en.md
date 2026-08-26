@@ -2,19 +2,23 @@
 
 ## MVP model
 
-MATIQ creates a distributable pool from net subscription revenue for a
-settlement period. The pool share and net-revenue definition are versioned
-financial policy and contract parameters. The pool is allocated in proportion
-to verified watch time for each trainer's published videos.
+MATIQ creates a distributable pool equal to 30% of net subscription revenue for
+each calendar month. This is the approved MVP reference and is captured by a
+versioned financial policy. The pool is allocated in proportion to verified
+paid watch time for each trainer's published videos.
 
 ```text
-trainer weight = trainer verified time / all-trainer verified time
+net revenue = subscriber payments - VAT - refunds - chargebacks - PSP fees
+distributable pool = net revenue x 30%
+trainer weight = trainer paid time / all-trainer paid time
 trainer share = distributable pool × trainer weight
-total = trainer share + fixed fee + manual adjustments
+amount due = trainer share + fixed fee + adjustments + carried balance
 ```
 
-If the period has zero verified time, the pool is not automatically allocated
-and requires an Admin decision.
+MATIQ salaries, marketing, hosting, video infrastructure, and other operating
+costs do not reduce the base before the pool is calculated; they are covered
+from the remaining 70%. If the period has zero paid time, the pool is neither
+allocated nor carried automatically and requires an Admin decision.
 
 ## Inputs
 
@@ -23,10 +27,12 @@ and requires an Admin decision.
 - the financial policy and trainer agreement effective in the period;
 - refunds, chargebacks, tax, and provider fees under the approved net-revenue
   definition;
-- trial time provisionally reported as a separate statistic.
+- trial time reported separately with an economic weight of 0% and excluded
+  from pool allocation.
 
-Until its economic weight is approved, trial time is not irreversibly mixed
-with paid watch time.
+Gross revenue is retained separately from the calculation base. Net revenue in
+this model is not MATIQ accounting profit: only VAT, refunds, chargebacks, and
+payment-provider fees are deducted from gross subscription revenue.
 
 ## Trainer agreement
 
@@ -42,10 +48,17 @@ A versioned agreement supports:
 Changing an agreement does not recalculate closed periods without an explicit
 adjustment.
 
+Calculation terms and every agreement version are stored in PostgreSQL. An
+activated version is immutable, and each report retains its `agreementId`. A
+signed PDF will be stored in private EU object storage; PostgreSQL keeps only
+its storage key, SHA-256 checksum, original name, and upload timestamp. Bank,
+identity-document, and tax secrets are not stored in the agreement record.
+
 ## Settlement period and report
 
 The Worker closes a calendar month only after payment, refund, and viewing
-aggregates are imported. A report contains:
+aggregates are imported. Period boundaries use `Europe/Berlin`, while
+timestamps are stored in UTC. A report contains:
 
 - period and policy version;
 - gross and net subscription revenue;
@@ -55,6 +68,10 @@ aggregates are imported. A report contains:
 - fixed fee, adjustments, and total;
 - excluded anomalies;
 - `DRAFT`, `REVIEWED`, `APPROVED`, `PAID`, or `VOID` status.
+
+The minimum manual payout is EUR 50. A smaller accrued amount carries forward
+without expiry until the accumulated balance reaches the threshold. Monetary
+amounts are stored in euro cents with currency `EUR`.
 
 A Trainer sees only their own report and aggregated statistics.
 
@@ -88,14 +105,11 @@ disabled until a separate commercial specification is approved.
 
 ## Open questions
 
-- Pool percentage and exact net-revenue definition.
-- Trial-time weight.
-- Minimum payout and balance carry-forward.
 - Tax documents and applicable retention periods.
 
 ## Document status
 
-- Status: Approved operating model; formula parameters pending
+- Status: Approved MVP reference model; legal parameters pending
 - Owner: MATIQ team
-- Last reviewed: 2026-07-19
+- Last reviewed: 2026-08-26
 - Related code: Viewing analytics, trainer agreements, payout reports

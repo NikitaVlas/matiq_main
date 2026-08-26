@@ -135,7 +135,12 @@ models.
 - A trainer can access only their own statistics and financial reports.
 - The primary remuneration model uses a distributable pool funded from net
   subscription revenue.
-- Distribution is based on verified watch time with anti-abuse controls.
+- The MVP reference pool is 30% of subscription payments after VAT, refunds,
+  chargebacks, and payment-provider fees.
+- Distribution is based on verified watch time with anti-abuse controls; trial
+  viewing is reported separately and has a 0% remuneration weight.
+- The minimum manual payout is EUR 50; a smaller balance carries forward
+  without expiry into subsequent calendar months.
 - An individual agreement may combine a fixed payment with a revenue share.
 - In the first version, the platform collects statistics and produces reports,
   while payouts are performed manually.
@@ -162,8 +167,6 @@ models.
 
 ## Open questions
 
-- The exact trainer pool size and remuneration formula.
-- Whether and how trial viewing contributes to trainer remuneration.
 - Video-stream protection requirements and provider selection.
 - Subscription price, currency, taxes, refunds, and cancellation rules.
 - The exact list of general physical limitations available to users.
@@ -172,5 +175,5 @@ models.
 
 - Status: Approved product baseline
 - Owner: MATIQ team
-- Last reviewed: 2026-08-24
+- Last reviewed: 2026-08-26
 - Related code: Repository-wide; implementation is partial

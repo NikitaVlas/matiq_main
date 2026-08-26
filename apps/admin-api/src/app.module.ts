@@ -9,6 +9,7 @@ import { ContentModule } from './modules/content/content.module';
 import { AssessmentModule } from './modules/assessment/assessment.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { RoleModule } from './modules/roles/role.module';
+import { TrainerFinanceModule } from './modules/trainer-finance/trainer-finance.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { RoleModule } from './modules/roles/role.module';
     AssessmentModule,
     AuditModule,
     RoleModule,
+    TrainerFinanceModule,
     AdminModule,
   ],
 })

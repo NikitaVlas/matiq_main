@@ -108,12 +108,10 @@ IP-адрес и device signals используются только в мин�
 
 - Конкретный video provider, DRM-уровень и CDN.
 - Длина playback token и heartbeat-интервал после нагрузочного теста.
-- Засчитывается ли trial-время в фонд тренеров: продуктово предполагается да,
-  но финансовая формула должна быть утверждена до первой выплаты.
 
 ## Document status
 
 - Status: Approved product baseline; technical parameters pending
 - Owner: MATIQ team
-- Last reviewed: 2026-07-19
+- Last reviewed: 2026-08-26
 - Related code: Video, entitlement, viewing analytics, worker

@@ -5,6 +5,7 @@ import { SubscriptionModule } from './modules/subscription';
 import { AthleteProfileModule } from './modules/athlete-profile';
 import { AssessmentModule } from './modules/assessment';
 import { ContentModule } from './modules/content';
+import { TrainerFinanceModule } from './modules/trainer-finance/trainer-finance.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ContentModule } from './modules/content';
     AthleteProfileModule,
     AssessmentModule,
     ContentModule,
+    TrainerFinanceModule,
   ],
 })
 export class AppModule {}

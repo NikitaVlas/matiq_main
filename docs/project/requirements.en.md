@@ -134,6 +134,16 @@
   distributable pool, or a combination of both.
 - `FR-PAY-005`: Automated trainer payouts are out of scope for the first
   version.
+- `FR-PAY-006`: The MVP reference distributable pool shall be 30% of
+  subscription payments after VAT, refunds, chargebacks, and payment-provider
+  fees; MATIQ operating costs shall not reduce this calculation base.
+- `FR-PAY-007`: Trial viewing shall be reported separately and have a 0%
+  weight in pool allocation.
+- `FR-PAY-008`: The minimum manual payout shall be EUR 50, and a smaller
+  accrued balance shall carry forward without expiry.
+- `FR-PAY-009`: The settlement period shall be a calendar month in
+  `Europe/Berlin`; monetary amounts shall be stored in euro cents with EUR as
+  the currency.
 
 ### Administration and languages
 
@@ -261,8 +271,6 @@
 
 ## Open questions
 
-- `OQ-001`: What are the distributable pool size and exact payout formula?
-- `OQ-002`: How does trial watch time contribute to remuneration?
 - `OQ-003`: Which video provider and protection level are required?
 - `OQ-004`: What are the subscription price, currency, tax, refund, and
   cancellation rules?
@@ -273,5 +281,5 @@
 
 - Status: Approved product baseline
 - Owner: MATIQ team
-- Last reviewed: 2026-08-24
+- Last reviewed: 2026-08-26
 - Related code: Repository-wide; implementation is partial

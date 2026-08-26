@@ -3,6 +3,7 @@
 import type { AdminApiPath } from '@matiq/contracts';
 import { FormEvent, useEffect, useState } from 'react';
 import { adminApi } from '../../shared/api/client';
+import { TrainerFinancePanel } from '../../widgets/trainer-finance/ui/TrainerFinancePanel';
 
 type Profile = {
   slug: string;
@@ -244,6 +245,7 @@ export default function TrainerManagementPage() {
         <p>Es gibt noch keinen Benutzer mit der Rolle Trainer.</p>
       )}
       {message ? <p role="status">{message}</p> : null}
+      <TrainerFinancePanel trainers={trainers} />
     </main>
   );
 }
