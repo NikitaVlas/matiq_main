@@ -187,6 +187,7 @@ describe('registration to athlete profile', () => {
         storageKey: 'private/integration-playback.mp4',
         durationSec: 100,
         published: true,
+        trainerId: publicTrainer.id,
       },
     });
     playbackVideoId = playbackVideo.id;
@@ -228,6 +229,67 @@ describe('registration to athlete profile', () => {
         where: { videoId_userId: { videoId: playbackVideo.id, userId: registeredUser.id } },
       }),
     ).toMatchObject({ watchedSeconds: 0, completed: false });
+
+    await db.playbackSession.update({
+      where: { id: storedSession.id },
+      data: { lastHeartbeatAt: new Date(Date.now() - 6000) },
+    });
+    await request(app.getHttpServer())
+      .post(`/content/videos/${playbackVideo.id}/heartbeat`)
+      .set('Cookie', cookie)
+      .send({
+        ...heartbeat,
+        idempotencyKey: 'integration-heartbeat-0002',
+        sequence: 2,
+        currentPositionSec: 5,
+        activePlaybackMs: 5000,
+      })
+      .expect(201)
+      .expect(({ body }) => expect(body).toMatchObject({ accepted: true, processed: true }));
+    await db.playbackSession.update({
+      where: { id: storedSession.id },
+      data: { lastHeartbeatAt: new Date(Date.now() - 6000) },
+    });
+    await request(app.getHttpServer())
+      .post(`/content/videos/${playbackVideo.id}/heartbeat`)
+      .set('Cookie', cookie)
+      .send({
+        ...heartbeat,
+        idempotencyKey: 'integration-heartbeat-0003',
+        sequence: 3,
+        previousPositionSec: 2,
+        currentPositionSec: 7,
+        activePlaybackMs: 5000,
+      })
+      .expect(201);
+    const verifiedIntervals = await db.verifiedWatchInterval.findMany({
+      where: { userId: registeredUser.id, videoId: playbackVideo.id },
+      orderBy: { startMs: 'asc' },
+    });
+    expect(
+      verifiedIntervals.map(({ startMs, endMs, durationMs, accessClass, trainerId }) => ({
+        startMs,
+        endMs,
+        durationMs,
+        accessClass,
+        trainerId,
+      })),
+    ).toEqual([
+      {
+        startMs: 0,
+        endMs: 5000,
+        durationMs: 5000,
+        accessClass: 'TRIAL',
+        trainerId: publicTrainer.id,
+      },
+      {
+        startMs: 5000,
+        endMs: 7000,
+        durationMs: 2000,
+        accessClass: 'TRIAL',
+        trainerId: publicTrainer.id,
+      },
+    ]);
 
     await request(app.getHttpServer()).post('/auth/logout-all').set('Cookie', cookie).expect(201);
     await request(app.getHttpServer()).get('/auth/me').set('Cookie', cookie).expect(401);

@@ -48,8 +48,10 @@ The client sends ordered heartbeat events containing at least:
 - playback rate and player activity/visibility;
 - client time and server receipt time.
 
-Raw events are immutable. The Worker builds derived aggregates. Redelivery must
-not increase the result.
+Raw events are immutable. In the MVP, the API synchronously records non-overlapping
+verified intervals under an advisory lock and the Admin API builds a read-only ledger
+aggregate. The Worker will close periodic financial snapshots. Redelivery must not
+increase the result.
 
 ## Verified watch time
 

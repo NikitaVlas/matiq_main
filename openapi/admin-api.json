@@ -15,6 +15,20 @@
         ]
       }
     },
+    "/admin/viewing-analytics": {
+      "get": {
+        "operationId": "DashboardController_viewingAnalytics",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-dashboard"
+        ]
+      }
+    },
     "/admin/trainers": {
       "get": {
         "operationId": "TrainerController_trainers",

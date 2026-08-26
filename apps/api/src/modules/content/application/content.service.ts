@@ -11,7 +11,9 @@ import {
   Discipline,
   PlaybackMode,
   PlaybackSessionStatus,
+  SubscriptionStatus,
   UserRole,
+  ViewingAccessClass,
 } from '@prisma/client';
 import { Database } from '../../../shared/infrastructure/database';
 import { VideoStorageService } from '../infrastructure/video-storage.service';
@@ -167,8 +169,10 @@ export class ContentService {
   }
 
   async playback(userId: string, role: UserRole | undefined, videoId: string) {
-    if (role !== UserRole.ADMIN && role !== UserRole.EDITOR)
-      await this.subscriptions.requireAccess(userId);
+    const subscription =
+      role !== UserRole.ADMIN && role !== UserRole.EDITOR
+        ? await this.subscriptions.requireAccess(userId)
+        : null;
     const video = await this.db.video.findUnique({
       where: { id: videoId },
       include: {
@@ -276,6 +280,12 @@ export class ContentService {
           tokenHash,
           watermarkId,
           expiresAt,
+          accessClass:
+            subscription?.status === SubscriptionStatus.TRIAL
+              ? ViewingAccessClass.TRIAL
+              : subscription
+                ? ViewingAccessClass.PAID
+                : null,
         },
       });
     });
@@ -378,6 +388,42 @@ export class ContentService {
           creditedPositionSec,
         },
       });
+      if (
+        accepted &&
+        session.mode === PlaybackMode.FULL &&
+        session.accessClass != null &&
+        boundedCurrent > input.previousPositionSec
+      ) {
+        const startMs = Math.max(0, Math.floor(input.previousPositionSec * 1000));
+        const endMs = Math.max(startMs, Math.floor(boundedCurrent * 1000));
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}), hashtext(${videoId}))`;
+        const existing = await tx.verifiedWatchInterval.findMany({
+          where: {
+            userId,
+            videoId,
+            startMs: { lt: endMs },
+            endMs: { gt: startMs },
+          },
+          select: { startMs: true, endMs: true },
+          orderBy: { startMs: 'asc' },
+        });
+        const uncovered = subtractCoveredInterval(startMs, endMs, existing);
+        if (uncovered.length) {
+          await tx.verifiedWatchInterval.createMany({
+            data: uncovered.map(([rangeStartMs, rangeEndMs]) => ({
+              userId,
+              videoId,
+              trainerId: session.video.trainerId,
+              sessionId: session.id,
+              heartbeatId: heartbeat.id,
+              accessClass: session.accessClass!,
+              startMs: rangeStartMs,
+              endMs: rangeEndMs,
+              durationMs: rangeEndMs - rangeStartMs,
+            })),
+          });
+        }
+      }
       return heartbeat;
     });
     const progress = accepted
@@ -749,6 +795,25 @@ function samePlaybackToken(expectedHash: string, token: string) {
 function playbackSessionTtlSeconds() {
   const configured = Number(process.env.PLAYBACK_SESSION_TTL_SECONDS ?? 300);
   return Number.isInteger(configured) && configured >= 60 && configured <= 900 ? configured : 300;
+}
+
+export function subtractCoveredInterval(
+  startMs: number,
+  endMs: number,
+  covered: { startMs: number; endMs: number }[],
+) {
+  if (endMs <= startMs) return [] as [number, number][];
+  const result: [number, number][] = [];
+  let cursor = startMs;
+  for (const interval of covered) {
+    if (interval.endMs <= cursor) continue;
+    if (interval.startMs >= endMs) break;
+    if (interval.startMs > cursor) result.push([cursor, Math.min(interval.startMs, endMs)]);
+    cursor = Math.max(cursor, interval.endMs);
+    if (cursor >= endMs) break;
+  }
+  if (cursor < endMs) result.push([cursor, endMs]);
+  return result;
 }
 
 function heartbeatResult(

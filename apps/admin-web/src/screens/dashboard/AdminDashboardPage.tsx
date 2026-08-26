@@ -4,6 +4,10 @@ import type { UserApiPath } from '@matiq/contracts';
 import { FormEvent, useState } from 'react';
 import { adminApi, adminIdentityApi } from '../../shared/api/client';
 import { AdminStats } from '../../widgets/admin-stats/ui/AdminStats';
+import {
+  ViewingAnalytics,
+  ViewingAnalyticsData,
+} from '../../widgets/viewing-analytics/ui/ViewingAnalytics';
 
 async function request(path: UserApiPath, init: RequestInit) {
   const controller = new AbortController();
@@ -36,12 +40,15 @@ export default function AdminHome() {
     videos: number;
     activeAssessmentQuestions: number;
   } | null>(null);
+  const [viewingAnalytics, setViewingAnalytics] = useState<ViewingAnalyticsData | null>(null);
+  const [analyticsLoaded, setAnalyticsLoaded] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function load(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
+    setAnalyticsLoaded(false);
     setIsSubmitting(true);
     const data = new FormData(event.currentTarget);
     const mfaCode = String(data.get('mfaCode') ?? '').trim();
@@ -77,8 +84,12 @@ export default function AdminHome() {
       }
 
       let response: Response;
+      let analyticsResponse: Response;
       try {
-        response = await adminApi('/admin/stats');
+        [response, analyticsResponse] = await Promise.all([
+          adminApi('/admin/stats'),
+          adminApi('/admin/viewing-analytics'),
+        ]);
       } catch {
         setError('Admin API ist nicht erreichbar. Bitte Port 4001 prüfen.');
         return;
@@ -88,6 +99,13 @@ export default function AdminHome() {
         return;
       }
       setStats(await response.json());
+      if (!analyticsResponse.ok) {
+        setAnalyticsLoaded(true);
+        setError(await responseError(analyticsResponse, 'Wiedergabestatistik nicht verfügbar'));
+        return;
+      }
+      setViewingAnalytics(await analyticsResponse.json());
+      setAnalyticsLoaded(true);
     } catch (caught) {
       setError(
         caught instanceof DOMException && caught.name === 'AbortError'
@@ -188,6 +206,8 @@ export default function AdminHome() {
       )}
       {error && <p style={{ color: '#a5221a' }}>{error}</p>}
       {stats && <AdminStats stats={stats} />}
+      {stats && !analyticsLoaded && <p>Wiedergabestatistik wird geladen…</p>}
+      {viewingAnalytics && <ViewingAnalytics data={viewingAnalytics} />}
     </main>
   );
 }

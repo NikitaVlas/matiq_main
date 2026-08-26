@@ -147,14 +147,16 @@ export class VideoController {
     @Body() body: { startSec: number; endSec: number },
     @Req() request: { adminUserId: string },
   ) {
+    const current = await this.db.video.findUniqueOrThrow({ where: { id } });
     if (
       !Number.isInteger(body.startSec) ||
       !Number.isInteger(body.endSec) ||
       body.startSec < 0 ||
       body.endSec <= body.startSec ||
-      body.endSec - body.startSec > 60
+      body.endSec - body.startSec > 60 ||
+      (current.durationSec !== null && body.endSec > current.durationSec)
     )
-      throw new UnauthorizedException('INVALID_PREVIEW_RANGE');
+      throw new BadRequestException('INVALID_PREVIEW_RANGE');
     const video = await this.db.video.update({
       where: { id },
       data: { previewStartSec: body.startSec, previewEndSec: body.endSec },
