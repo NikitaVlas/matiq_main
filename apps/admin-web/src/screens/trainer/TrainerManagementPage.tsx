@@ -69,7 +69,7 @@ export default function TrainerManagementPage() {
     setCourses((await coursesResponse.json()) as AuthoredContent[]);
     setVideos((await videosResponse.json()) as AuthoredContent[]);
     setTrainers(result);
-    const id = preferredId ?? selectedId ?? result[0]?.id ?? '';
+    const id = preferredId || selectedId || result[0]?.id || '';
     setSelectedId(id);
     setProfile(result.find((trainer) => trainer.id === id)?.trainerProfile ?? emptyProfile);
   }

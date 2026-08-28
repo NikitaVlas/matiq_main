@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   Param,
   Post,
   Req,
@@ -27,7 +28,7 @@ const reauthenticationWindowMs = 15 * 60 * 1000;
 @UseGuards(AdminAuthGuard)
 @AdminRoles('ADMIN')
 export class TrainerFinanceController {
-  constructor(private readonly finance: TrainerFinanceService) {}
+  constructor(@Inject(TrainerFinanceService) private readonly finance: TrainerFinanceService) {}
 
   @Get()
   overview() {

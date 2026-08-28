@@ -109,7 +109,13 @@ export class TrainerFinanceService {
     let netRevenueCents: number;
     try {
       bounds = berlinMonthBounds(body.month);
-      netRevenueCents = calculateNetRevenue(body);
+      netRevenueCents = calculateNetRevenue({
+        grossRevenueCents: body.grossRevenueCents,
+        vatCents: body.vatCents,
+        refundsCents: body.refundsCents,
+        chargebacksCents: body.chargebacksCents,
+        providerFeesCents: body.providerFeesCents,
+      });
     } catch (error) {
       throw new BadRequestException((error as Error).message);
     }
