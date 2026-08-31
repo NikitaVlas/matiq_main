@@ -1,6 +1,6 @@
 # Аудит реализации MATIQ
 
-## Состояние репозитория на 2026-08-23
+## Состояние репозитория на 2026-08-31
 
 Репозиторий содержит рабочий TypeScript-монорепозиторий с пятью процессами:
 `web`, `admin-web`, `api`, `admin-api` и `worker`. Присутствуют Prisma schema и
@@ -25,6 +25,11 @@ browser E2E tests.
 - локальный S3-compatible upload/playback adapter и preview metadata;
 - trial и базовый Stripe checkout/webhook/cancellation flow;
 - OpenAPI generation и frontend route types, выводимые из generated contracts.
+- versioned assessment attempts, детерминированные reasons и foundation Roadmap;
+- защищённые playback sessions, immutable heartbeats и verified watch intervals;
+- публичные страницы тренеров, own-only Trainer cabinet и авторство контента;
+- версионируемые договоры тренеров и ручные payout reports с dual control;
+- PostgreSQL outbox/inbox, bounded retry и dead-letter foundation для Worker.
 
 ## Частично реализовано
 
@@ -43,21 +48,22 @@ PostgreSQL и EU deployment skeleton.
 
 ### Assessment и Roadmap
 
-Рабочий flow реализован, но backlog ещё требует versioned attempts/question
-bank, полного per-discipline resume, confidence/insufficient-data semantics,
-golden expert profiles и формализованных machine-readable versions/reasons.
+Versioned attempts, per-discipline resume, confidence/insufficient-data и
+machine-readable reasons реализованы. Golden expert profiles и AI explanation
+adapter с graceful fallback ещё не завершены.
 
 ### Video и просмотр
 
-Есть short-lived signed object URL, preview range, history и progress. Нет
-provider processing lifecycle, playback sessions/watermark, immutable
-heartbeats, interval aggregation/deduplication, anti-abuse и Trainer analytics.
+Есть short-lived signed object URL, preview range, playback sessions/watermark,
+immutable heartbeats, interval deduplication, history, progress и Trainer
+analytics. Не завершены provider processing lifecycle и расширенная anomaly
+detection против координированной накрутки.
 
 ### Worker
 
-BullMQ process запускается, но пока является generic consumer. Outbox/inbox,
-domain-specific jobs, retries/dead-letter workflow и фоновые lifecycle jobs не
-реализованы.
+BullMQ process использует PostgreSQL outbox/inbox, стабильные idempotency keys,
+ограниченные retry и dead-letter записи. Domain-specific email, provider,
+reconciliation, GDPR и retention jobs ещё не подключены.
 
 ### Subscription
 
@@ -67,8 +73,6 @@ VAT/invoices, refund/cancellation policy, grace/reconciliation и Admin support
 
 ## Не реализовано
 
-- полноценный публичный Trainer profile и own-only Trainer cabinet;
-- verified viewing time, trainer agreements и payout reports;
 - AI explanation adapter с graceful fallback;
 - processor-wide GDPR deletion/export orchestration и retention jobs;
 - production observability, backup-restore evidence и launch/security review.
@@ -79,24 +83,26 @@ VAT/invoices, refund/cancellation policy, grace/reconciliation и Admin support
 - цена, VAT, refunds и юридический retention schedule не утверждены;
 - generated OpenAPI route enforcement действует в shared frontend transports,
   а architecture check запрещает прямые frontend `fetch` calls вне них;
-- часть спецификаций имеет статус `Implemented`, хотя полная required
-  verification не зафиксирована;
-- полный локальный `pnpm verify` прошёл 2026-08-23; database-backed integration
-  и browser E2E требуют disposable infrastructure и остаются CI gates.
+- SPEC-0002 — SPEC-0004 всё ещё требуют выравнивания статуса и verification
+  evidence;
+- database-backed integration и browser E2E требуют disposable infrastructure
+  и остаются CI gates.
 
 ## Следующий порядок реализации
 
-1. Закрыть полностью определённые gaps Identity/Profile и Assessment.
-2. Добавить metrics и оставшиеся provider-neutral observability checks.
-3. Довести deterministic Roadmap versioning/explainability.
-4. Реализовать provider-neutral video entitlement и viewing event model.
-5. Реализовать Worker outbox/idempotency foundation.
-6. Добавить Trainer analytics/reporting без автоматических выплат.
-7. После утверждения provider/legal gates завершить payments и production/GDPR.
+1. Добавить metrics и оставшиеся provider-neutral observability checks.
+2. Подключить первый domain-specific Worker job в отдельной спецификации.
+3. Реализовать processor-wide GDPR deletion/export orchestration после
+   утверждения retention policy.
+4. Добавить AI explanation adapter с deterministic graceful fallback после
+   выбора provider boundary.
+5. Подготовить backup-restore evidence и launch/security review.
+6. После утверждения provider/legal gates завершить production payments,
+   VAT/invoices и reconciliation.
 
 ## Document status
 
 - Status: Active implementation audit
 - Owner: Команда MATIQ
-- Last reviewed: 2026-08-23
+- Last reviewed: 2026-08-31
 - Related code: Repository-wide; реализация MVP частичная

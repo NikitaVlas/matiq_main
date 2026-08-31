@@ -1,6 +1,6 @@
 # MATIQ implementation audit
 
-## Repository state on 2026-08-23
+## Repository state on 2026-08-31
 
 The repository contains a working TypeScript monorepo with five processes:
 `web`, `admin-web`, `api`, `admin-api`, and `worker`. It includes a Prisma schema
@@ -24,6 +24,11 @@ also checked against source because the index may lag behind uncommitted work.
 - local S3-compatible upload/playback adapter and preview metadata;
 - trial and basic Stripe checkout/webhook/cancellation flow;
 - OpenAPI generation and frontend route types derived from generated contracts.
+- versioned assessment attempts, deterministic reasons, and foundation Roadmap;
+- secure playback sessions, immutable heartbeats, and verified watch intervals;
+- public Trainer pages, an own-only Trainer cabinet, and content authorship;
+- versioned Trainer agreements and manual payout reports with dual control;
+- PostgreSQL outbox/inbox, bounded retries, and a Worker dead-letter foundation.
 
 ## Partially implemented
 
@@ -42,21 +47,22 @@ target shared-module model is only partially achieved.
 
 ### Assessment and Roadmap
 
-The working flow exists, but the backlog still requires versioned attempts and
-question banks, complete per-discipline resume, confidence/insufficient-data
-semantics, golden expert profiles, and machine-readable versions and reasons.
+Versioned attempts, per-discipline resume, confidence/insufficient-data
+semantics, and machine-readable reasons are implemented. Golden expert profiles
+and the AI explanation adapter with graceful fallback remain incomplete.
 
 ### Video and viewing
 
-Short-lived signed object URLs, preview ranges, history, and progress exist.
-Provider processing lifecycle, playback sessions/watermarks, immutable
-heartbeats, interval aggregation/deduplication, anti-abuse, and Trainer
-analytics do not.
+Short-lived signed object URLs, preview ranges, playback sessions/watermarks,
+immutable heartbeats, interval deduplication, history, progress, and Trainer
+analytics exist. Provider processing lifecycle and advanced coordinated-abuse
+detection remain incomplete.
 
 ### Worker
 
-The BullMQ process runs as a generic consumer. Outbox/inbox, domain-specific
-jobs, retries/dead-letter handling, and lifecycle jobs are not implemented.
+The BullMQ process uses PostgreSQL outbox/inbox records, stable idempotency keys,
+bounded retries, and dead-letter records. Domain-specific email, provider,
+reconciliation, GDPR, and retention jobs are not connected yet.
 
 ### Subscription
 
@@ -66,8 +72,6 @@ support cannot be completed before their product and legal gates pass.
 
 ## Not implemented
 
-- complete public Trainer profiles and an own-only Trainer cabinet;
-- verified viewing time, Trainer agreements, and payout reports;
 - AI explanation adapter with graceful fallback;
 - processor-wide GDPR deletion/export orchestration and retention jobs;
 - production observability, backup-restore evidence, and launch/security review.
@@ -78,24 +82,26 @@ support cannot be completed before their product and legal gates pass.
 - price, VAT, refunds, and the legal retention schedule are not approved;
 - generated OpenAPI route enforcement covers shared frontend transports, and an
   architecture check prevents direct frontend `fetch` calls outside them;
-- some specifications say `Implemented` without recorded full verification;
-- the full local `pnpm verify` passed on 2026-08-23; database-backed integration
-  and browser E2E still require their disposable infrastructure and remain CI
-  gates.
+- SPEC-0002 through SPEC-0004 still require status alignment and recorded
+  verification evidence;
+- database-backed integration and browser E2E require disposable infrastructure
+  and remain CI gates.
 
 ## Next implementation order
 
-1. Close fully specified Identity/Profile and Assessment gaps.
-2. Add metrics and the remaining provider-neutral observability checks.
-3. Complete deterministic Roadmap versioning and explainability.
-4. Build the provider-neutral video entitlement and viewing-event model.
-5. Build the Worker outbox/idempotency foundation.
-6. Add Trainer analytics/reporting without automated payouts.
-7. Complete payments and production/GDPR after provider and legal gates pass.
+1. Add metrics and the remaining provider-neutral observability checks.
+2. Connect the first domain-specific Worker job under a separate specification.
+3. Implement processor-wide GDPR deletion/export orchestration after the
+   retention policy is approved.
+4. Add the AI explanation adapter with deterministic graceful fallback after
+   the provider boundary is selected.
+5. Produce backup-restore evidence and complete launch/security review.
+6. Complete production payments, VAT/invoices, and reconciliation after the
+   provider and legal gates pass.
 
 ## Document status
 
 - Status: Active implementation audit
 - Owner: MATIQ team
-- Last reviewed: 2026-08-23
+- Last reviewed: 2026-08-31
 - Related code: Repository-wide; MVP implementation is partial

@@ -125,6 +125,18 @@ enum TrainerPayoutStatus {
   VOID
 }
 
+enum OutboxEventStatus {
+  PENDING
+  PUBLISHED
+}
+
+enum InboxJobStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+  DEAD_LETTER
+}
+
 model User {
   id                      String                   @id @default(cuid())
   email                   String                   @unique
@@ -608,25 +620,25 @@ model TrainerAgreement {
 }
 
 model TrainerSettlementPeriod {
-  id                      String                @id @default(cuid())
-  month                   String                @unique
-  periodStart             DateTime
-  periodEnd               DateTime
-  currency                String                @default("EUR")
-  grossRevenueCents       Int
-  vatCents                Int
-  refundsCents            Int
-  chargebacksCents        Int
-  providerFeesCents       Int
-  netRevenueCents         Int
-  poolBasisPoints         Int                   @default(3000)
-  distributablePoolCents  Int
-  totalPaidWatchMs        BigInt
-  totalTrialWatchMs       BigInt
-  policySnapshot          Json
-  createdByAdminId        String
-  createdAt               DateTime              @default(now())
-  reports                 TrainerPayoutReport[]
+  id                     String                @id @default(cuid())
+  month                  String                @unique
+  periodStart            DateTime
+  periodEnd              DateTime
+  currency               String                @default("EUR")
+  grossRevenueCents      Int
+  vatCents               Int
+  refundsCents           Int
+  chargebacksCents       Int
+  providerFeesCents      Int
+  netRevenueCents        Int
+  poolBasisPoints        Int                   @default(3000)
+  distributablePoolCents Int
+  totalPaidWatchMs       BigInt
+  totalTrialWatchMs      BigInt
+  policySnapshot         Json
+  createdByAdminId       String
+  createdAt              DateTime              @default(now())
+  reports                TrainerPayoutReport[]
 
   @@unique([periodStart, periodEnd])
   @@index([createdAt])
@@ -847,6 +859,51 @@ model AccountDeletionRequest {
   requestedAt DateTime  @default(now())
   completedAt DateTime?
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OutboxEvent {
+  id              String            @id @default(cuid())
+  topic           String
+  payload         Json
+  idempotencyKey  String            @unique
+  status          OutboxEventStatus @default(PENDING)
+  availableAt     DateTime          @default(now())
+  publishedAt     DateTime?
+  publishAttempts Int               @default(0)
+  lastError       String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  inboxJob        InboxJob?
+
+  @@index([status, availableAt, createdAt])
+}
+
+model InboxJob {
+  id            String         @id @default(cuid())
+  outboxEventId String         @unique
+  topic         String
+  status        InboxJobStatus @default(PROCESSING)
+  attempts      Int            @default(0)
+  lastError     String?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  outboxEvent   OutboxEvent    @relation(fields: [outboxEventId], references: [id], onDelete: Restrict)
+  deadLetter    DeadLetterJob?
+
+  @@index([status, updatedAt])
+}
+
+model DeadLetterJob {
+  id         String   @id @default(cuid())
+  inboxJobId String   @unique
+  topic      String
+  error      String
+  createdAt  DateTime @default(now())
+  inboxJob   InboxJob @relation(fields: [inboxJobId], references: [id], onDelete: Restrict)
+
+  @@index([createdAt])
 }
 
 model MfaRecoveryCode {
