@@ -962,6 +962,20 @@
           "health"
         ]
       }
+    },
+    "/metrics": {
+      "get": {
+        "operationId": "HealthController_metrics",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
     }
   },
   "info": {

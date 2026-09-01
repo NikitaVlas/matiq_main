@@ -1,4 +1,5 @@
 import type { OutboxEvent, PrismaClient } from '@prisma/client';
+import type { MetricsRegistry } from '@matiq/backend';
 import type { Queue } from 'bullmq';
 import type { WorkerEvent } from './types.js';
 
@@ -10,6 +11,7 @@ export class OutboxDispatcher {
     private readonly db: PrismaClient,
     private readonly queue: Pick<Queue<WorkerEvent>, 'add'>,
     private readonly batchSize = 25,
+    private readonly metrics?: MetricsRegistry,
   ) {}
 
   async dispatchBatch() {
@@ -49,6 +51,7 @@ export class OutboxDispatcher {
           lastError: null,
         },
       });
+      this.metrics?.increment('matiq_worker_outbox_publish_total', { result: 'published' });
       console.info(
         JSON.stringify({ message: 'outbox_published', eventId: event.id, topic: event.topic }),
       );
@@ -61,6 +64,7 @@ export class OutboxDispatcher {
           availableAt: new Date(Date.now() + 30_000),
         },
       });
+      this.metrics?.increment('matiq_worker_outbox_publish_total', { result: 'failed' });
       console.error(
         JSON.stringify({ message: 'outbox_publish_failed', eventId: event.id, topic: event.topic }),
       );

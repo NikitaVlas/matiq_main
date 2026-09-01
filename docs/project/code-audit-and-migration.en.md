@@ -36,8 +36,9 @@ also checked against source because the index may lag behind uncommitted work.
 
 Workspace, CI, architecture checks, correlation IDs, structured HTTP completion
 logs, and process/database health/readiness endpoints exist. Metrics,
-accessibility/visual harness, external dependency probes beyond PostgreSQL, and
-an EU deployment skeleton are not complete.
+production scraping/dashboards/alerts, the accessibility/visual harness, and an
+EU deployment skeleton are not complete. User API, Admin API, and Worker export
+provider-neutral metrics; Worker readiness checks PostgreSQL and Redis.
 
 ### Shared backend modules
 
@@ -62,7 +63,8 @@ detection remain incomplete.
 
 The BullMQ process uses PostgreSQL outbox/inbox records, stable idempotency keys,
 bounded retries, and dead-letter records. Domain-specific email, provider,
-reconciliation, GDPR, and retention jobs are not connected yet.
+reconciliation, GDPR, and retention jobs are not connected yet. Health,
+PostgreSQL/Redis readiness, and queue/outbox/job lifecycle metrics are present.
 
 ### Subscription
 
@@ -89,14 +91,14 @@ support cannot be completed before their product and legal gates pass.
 
 ## Next implementation order
 
-1. Add metrics and the remaining provider-neutral observability checks.
-2. Connect the first domain-specific Worker job under a separate specification.
-3. Implement processor-wide GDPR deletion/export orchestration after the
+1. Connect the first domain-specific Worker job under a separate specification.
+2. Implement processor-wide GDPR deletion/export orchestration after the
    retention policy is approved.
-4. Add the AI explanation adapter with deterministic graceful fallback after
+3. Add the AI explanation adapter with deterministic graceful fallback after
    the provider boundary is selected.
-5. Produce backup-restore evidence and complete launch/security review.
-6. Complete production payments, VAT/invoices, and reconciliation after the
+4. Add production scraping/dashboards/alerts, produce backup-restore evidence,
+   and complete launch/security review.
+5. Complete production payments, VAT/invoices, and reconciliation after the
    provider and legal gates pass.
 
 ## Document status

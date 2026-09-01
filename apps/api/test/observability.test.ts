@@ -50,4 +50,15 @@ describe('User API observability', () => {
       service: 'user-api',
     });
   });
+
+  it('exports Prometheus-compatible HTTP metrics', async () => {
+    app = (await createApp()).app;
+    await app.init();
+    await request(app.getHttpServer()).get('/health').expect(200);
+
+    const response = await request(app.getHttpServer()).get('/metrics').expect(200);
+    expect(response.text).toContain('matiq_http_requests_total');
+    expect(response.text).toContain('route="/health"');
+    expect(response.headers['content-type']).toContain('text/plain');
+  });
 });

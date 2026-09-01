@@ -37,8 +37,9 @@ browser E2E tests.
 
 Реализованы workspace/CI/architecture checks, correlation IDs, structured HTTP
 completion logs и process/database health/readiness endpoints. Не завершены
-metrics, accessibility/visual harness, проверки внешних зависимостей помимо
-PostgreSQL и EU deployment skeleton.
+production scraping/dashboards/alerts, accessibility/visual harness и EU
+deployment skeleton. User API, Admin API и Worker экспортируют provider-neutral
+метрики; Worker readiness проверяет PostgreSQL и Redis.
 
 ### Общие backend-модули
 
@@ -63,7 +64,8 @@ detection против координированной накрутки.
 
 BullMQ process использует PostgreSQL outbox/inbox, стабильные idempotency keys,
 ограниченные retry и dead-letter записи. Domain-specific email, provider,
-reconciliation, GDPR и retention jobs ещё не подключены.
+reconciliation, GDPR и retention jobs ещё не подключены. Добавлены health,
+PostgreSQL/Redis readiness и метрики queue/outbox/job lifecycle.
 
 ### Subscription
 
@@ -90,14 +92,14 @@ VAT/invoices, refund/cancellation policy, grace/reconciliation и Admin support
 
 ## Следующий порядок реализации
 
-1. Добавить metrics и оставшиеся provider-neutral observability checks.
-2. Подключить первый domain-specific Worker job в отдельной спецификации.
-3. Реализовать processor-wide GDPR deletion/export orchestration после
+1. Подключить первый domain-specific Worker job в отдельной спецификации.
+2. Реализовать processor-wide GDPR deletion/export orchestration после
    утверждения retention policy.
-4. Добавить AI explanation adapter с deterministic graceful fallback после
+3. Добавить AI explanation adapter с deterministic graceful fallback после
    выбора provider boundary.
-5. Подготовить backup-restore evidence и launch/security review.
-6. После утверждения provider/legal gates завершить production payments,
+4. Подготовить production scraping/dashboards/alerts, backup-restore evidence и
+   launch/security review.
+5. После утверждения provider/legal gates завершить production payments,
    VAT/invoices и reconciliation.
 
 ## Document status

@@ -1,10 +1,12 @@
 import { PrismaClient } from '@prisma/client';
+import { MetricsRegistry } from '@matiq/backend';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { IdempotentConsumer } from '../src/idempotent-consumer.js';
 import { OutboxDispatcher } from '../src/outbox-dispatcher.js';
 import type { HandlerRegistry, WorkerEvent } from '../src/types.js';
+import { WorkerObservabilityServer } from '../src/observability-server.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl?.includes('/matiq_test')) {
@@ -31,12 +33,16 @@ describe('Worker outbox lifecycle', () => {
   const consumer = new IdempotentConsumer(db, handlers);
   const worker = new Worker<WorkerEvent>(queueName, (job) => consumer.process(job), { connection });
   const dispatcher = new OutboxDispatcher(db, queue);
+  const observability = new WorkerObservabilityServer(db, connection, queue, new MetricsRegistry());
+  let observabilityPort: number;
 
   beforeAll(async () => {
     await worker.waitUntilReady();
+    observabilityPort = await observability.listen(0, '127.0.0.1');
   });
 
   afterAll(async () => {
+    await observability.close();
     await worker.close();
     await queue.obliterate({ force: true });
     await queue.close();
@@ -102,6 +108,16 @@ describe('Worker outbox lifecycle', () => {
     await expect(
       db.deadLetterJob.findFirstOrThrow({ where: { inboxJob: { outboxEventId: event.id } } }),
     ).resolves.toMatchObject({ topic: event.topic, error: 'UNSUPPORTED_WORKER_TOPIC' });
+  });
+
+  it('reports real PostgreSQL and Redis readiness', async () => {
+    const readiness = await fetch(`http://127.0.0.1:${observabilityPort}/ready`);
+    expect(readiness.status).toBe(200);
+    await expect(readiness.json()).resolves.toEqual({ status: 'ok', service: 'worker' });
+
+    const metrics = await fetch(`http://127.0.0.1:${observabilityPort}/metrics`);
+    expect(metrics.status).toBe(200);
+    expect(await metrics.text()).toContain('matiq_worker_queue_jobs');
   });
 });
 

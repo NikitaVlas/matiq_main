@@ -1,4 +1,5 @@
 import { Prisma, type InboxJob, type PrismaClient } from '@prisma/client';
+import type { MetricsRegistry } from '@matiq/backend';
 import type { Job } from 'bullmq';
 import type { HandlerRegistry, WorkerEvent } from './types.js';
 
@@ -9,6 +10,7 @@ export class IdempotentConsumer {
   constructor(
     private readonly db: PrismaClient,
     private readonly handlers: HandlerRegistry,
+    private readonly metrics?: MetricsRegistry,
   ) {}
 
   async process(job: Job<WorkerEvent>) {
@@ -17,6 +19,7 @@ export class IdempotentConsumer {
       where: { outboxEventId: event.outboxEventId },
     });
     if (existing?.status === 'COMPLETED') {
+      this.metrics?.increment('matiq_worker_jobs_total', { result: 'deduplicated' });
       console.info(
         JSON.stringify({
           message: 'job_deduplicated',
@@ -29,6 +32,7 @@ export class IdempotentConsumer {
 
     const inbox = await this.startAttempt(existing, event);
     if (!inbox || inbox.status === 'COMPLETED') {
+      this.metrics?.increment('matiq_worker_jobs_total', { result: 'deduplicated' });
       console.info(
         JSON.stringify({
           message: 'job_deduplicated',
@@ -46,6 +50,7 @@ export class IdempotentConsumer {
         where: { id: inbox.id },
         data: { status: 'COMPLETED', completedAt: new Date(), lastError: null },
       });
+      this.metrics?.increment('matiq_worker_jobs_total', { result: 'completed' });
       console.info(
         JSON.stringify({
           message: 'job_processed',
@@ -67,11 +72,13 @@ export class IdempotentConsumer {
             update: { error: message },
           });
         });
+        this.metrics?.increment('matiq_worker_jobs_total', { result: 'dead_letter' });
       } else {
         await this.db.inboxJob.update({
           where: { id: inbox.id },
           data: { status: 'FAILED', lastError: message },
         });
+        this.metrics?.increment('matiq_worker_jobs_total', { result: 'retry' });
       }
       throw error;
     }
