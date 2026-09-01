@@ -1,5 +1,9 @@
 import { PrismaClient } from '@prisma/client';
-import { MetricsRegistry } from '@matiq/backend';
+import {
+  createTransactionalEmail,
+  encryptTransactionalEmail,
+  MetricsRegistry,
+} from '@matiq/backend';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -7,6 +11,7 @@ import { IdempotentConsumer } from '../src/idempotent-consumer.js';
 import { OutboxDispatcher } from '../src/outbox-dispatcher.js';
 import type { HandlerRegistry, WorkerEvent } from '../src/types.js';
 import { WorkerObservabilityServer } from '../src/observability-server.js';
+import { createEmailHandler, type EmailProvider } from '../src/email-provider.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl?.includes('/matiq_test')) {
@@ -22,6 +27,12 @@ describe('Worker outbox lifecycle', () => {
   });
   const queue = new Queue<WorkerEvent>(queueName, { connection });
   const handled: string[] = [];
+  const deliveredEmails: string[] = [];
+  const emailProvider: EmailProvider = {
+    send: async (message) => {
+      deliveredEmails.push(message.to);
+    },
+  };
   const handlers: HandlerRegistry = new Map([
     [
       'system.noop',
@@ -29,6 +40,7 @@ describe('Worker outbox lifecycle', () => {
         handled.push(JSON.stringify(payload));
       },
     ],
+    ['email.send.v1', createEmailHandler(emailProvider)],
   ]);
   const consumer = new IdempotentConsumer(db, handlers);
   const worker = new Worker<WorkerEvent>(queueName, (job) => consumer.process(job), { connection });
@@ -118,6 +130,52 @@ describe('Worker outbox lifecycle', () => {
     const metrics = await fetch(`http://127.0.0.1:${observabilityPort}/metrics`);
     expect(metrics.status).toBe(200);
     expect(await metrics.text()).toContain('matiq_worker_queue_jobs');
+  });
+
+  it('delivers one encrypted email event through the real queue', async () => {
+    const recipient = `worker-${runId}@example.de`;
+    const event = await db.outboxEvent.create({
+      data: {
+        topic: 'email.send.v1',
+        payload: encryptTransactionalEmail(
+          createTransactionalEmail('VERIFY_EMAIL', recipient, 'secret-token'),
+        ),
+        idempotencyKey: `${runId}:email`,
+      },
+    });
+    await dispatcher.dispatchBatch();
+    await waitFor(
+      async () =>
+        (await db.inboxJob.findUnique({ where: { outboxEventId: event.id } }))?.status ===
+        'COMPLETED',
+    );
+    expect(deliveredEmails).toEqual([recipient]);
+  });
+
+  it('dead-letters a damaged email envelope without calling the provider', async () => {
+    const event = await db.outboxEvent.create({
+      data: {
+        topic: 'email.send.v1',
+        payload: { version: 1, iv: 'invalid', ciphertext: 'invalid', authTag: 'invalid' },
+        idempotencyKey: `${runId}:damaged-email`,
+        status: 'PUBLISHED',
+        publishedAt: new Date(),
+      },
+    });
+    await queue.add(
+      event.topic,
+      { outboxEventId: event.id, topic: event.topic, payload: event.payload },
+      { jobId: event.id, attempts: 1, removeOnFail: false },
+    );
+    await waitFor(
+      async () =>
+        (await db.inboxJob.findUnique({ where: { outboxEventId: event.id } }))?.status ===
+        'DEAD_LETTER',
+    );
+    expect(deliveredEmails).toHaveLength(1);
+    await expect(
+      db.deadLetterJob.findFirstOrThrow({ where: { inboxJob: { outboxEventId: event.id } } }),
+    ).resolves.toMatchObject({ error: 'INVALID_EMAIL_ENVELOPE' });
   });
 });
 

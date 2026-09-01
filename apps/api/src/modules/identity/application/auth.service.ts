@@ -5,11 +5,16 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { validatePassword } from '@matiq/backend';
+import {
+  createTransactionalEmail,
+  encryptTransactionalEmail,
+  validatePassword,
+  type TransactionalEmailKind,
+} from '@matiq/backend';
+import type { Prisma } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'node:crypto';
 import { Database } from '../../../shared/infrastructure/database';
-import { EmailService } from '../infrastructure/email.service';
 import { RateLimitService } from '../../../shared/infrastructure/rate-limit.service';
 import {
   createTotpSecret,
@@ -25,7 +30,6 @@ const reauthenticationWindowMs = 15 * 60 * 1000;
 export class AuthService {
   constructor(
     @Inject(Database) private readonly db: Database,
-    @Inject(EmailService) private readonly email: EmailService,
     @Inject(RateLimitService) private readonly rateLimit: RateLimitService,
   ) {}
 
@@ -37,19 +41,19 @@ export class AuthService {
     if (await this.db.user.findUnique({ where: { email } }))
       throw new ConflictException('EMAIL_EXISTS');
     const rawToken = randomBytes(32).toString('base64url');
-    const user = await this.db.user.create({
-      data: {
-        email,
-        passwordHash: await bcrypt.hash(password, 12),
-        emailVerificationTokens: {
-          create: {
-            tokenHash: tokenHash(rawToken),
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-          },
+    const passwordHash = await bcrypt.hash(password, 12);
+    const user = await this.db.$transaction(async (tx) => {
+      const created = await tx.user.create({ data: { email, passwordHash } });
+      const token = await tx.emailVerificationToken.create({
+        data: {
+          userId: created.id,
+          tokenHash: tokenHash(rawToken),
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         },
-      },
+      });
+      await this.enqueueEmail(tx, 'VERIFY_EMAIL', email, rawToken, token.id);
+      return created;
     });
-    await this.email.sendVerification(email, rawToken);
     return {
       userId: user.id,
       verificationRequired: true,
@@ -63,17 +67,17 @@ export class AuthService {
     const user = await this.db.user.findUnique({ where: { email } });
     if (!user || user.emailVerifiedAt) return { accepted: true };
     const rawToken = randomBytes(32).toString('base64url');
-    await this.db.$transaction([
-      this.db.emailVerificationToken.deleteMany({ where: { userId: user.id, usedAt: null } }),
-      this.db.emailVerificationToken.create({
+    await this.db.$transaction(async (tx) => {
+      await tx.emailVerificationToken.deleteMany({ where: { userId: user.id, usedAt: null } });
+      const token = await tx.emailVerificationToken.create({
         data: {
           userId: user.id,
           tokenHash: tokenHash(rawToken),
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         },
-      }),
-    ]);
-    await this.email.sendVerification(email, rawToken);
+      });
+      await this.enqueueEmail(tx, 'VERIFY_EMAIL', email, rawToken, token.id);
+    });
     return {
       accepted: true,
       developmentToken: process.env.NODE_ENV === 'production' ? undefined : rawToken,
@@ -140,17 +144,17 @@ export class AuthService {
     const user = await this.db.user.findUnique({ where: { email } });
     if (!user) return { accepted: true };
     const rawToken = randomBytes(32).toString('base64url');
-    await this.db.$transaction([
-      this.db.passwordResetToken.deleteMany({ where: { userId: user.id, usedAt: null } }),
-      this.db.passwordResetToken.create({
+    await this.db.$transaction(async (tx) => {
+      await tx.passwordResetToken.deleteMany({ where: { userId: user.id, usedAt: null } });
+      const token = await tx.passwordResetToken.create({
         data: {
           userId: user.id,
           tokenHash: tokenHash(rawToken),
           expiresAt: new Date(Date.now() + 60 * 60 * 1000),
         },
-      }),
-    ]);
-    await this.email.sendPasswordReset(email, rawToken);
+      });
+      await this.enqueueEmail(tx, 'RESET_PASSWORD', email, rawToken, token.id);
+    });
     return {
       accepted: true,
       developmentToken: process.env.NODE_ENV === 'production' ? undefined : rawToken,
@@ -177,6 +181,28 @@ export class AuthService {
       this.db.session.deleteMany({ where: { userId: record.userId } }),
     ]);
     return { changed: true };
+  }
+
+  private async enqueueEmail(
+    tx: Prisma.TransactionClient,
+    kind: TransactionalEmailKind,
+    to: string,
+    rawToken: string,
+    tokenId: string,
+  ) {
+    const message = createTransactionalEmail(
+      kind,
+      to,
+      rawToken,
+      process.env.WEB_URL ?? 'http://localhost:3000',
+    );
+    await tx.outboxEvent.create({
+      data: {
+        topic: 'email.send.v1',
+        idempotencyKey: `email:${kind.toLowerCase()}:${tokenId}`,
+        payload: encryptTransactionalEmail(message),
+      },
+    });
   }
 
   async logout(rawToken?: string) {

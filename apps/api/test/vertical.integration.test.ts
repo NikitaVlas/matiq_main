@@ -20,6 +20,27 @@ describe('registration to athlete profile', () => {
   });
 
   afterAll(async () => {
+    const identity = await db.user.findUnique({
+      where: { email },
+      select: {
+        emailVerificationTokens: { select: { id: true } },
+        passwordResetTokens: { select: { id: true } },
+      },
+    });
+    const emailKeys = [
+      ...(identity?.emailVerificationTokens.map(({ id }) => `email:verify_email:${id}`) ?? []),
+      ...(identity?.passwordResetTokens.map(({ id }) => `email:reset_password:${id}`) ?? []),
+    ];
+    const emailEvents = await db.outboxEvent.findMany({
+      where: { idempotencyKey: { in: emailKeys } },
+      select: { id: true },
+    });
+    const emailEventIds = emailEvents.map(({ id }) => id);
+    await db.deadLetterJob.deleteMany({
+      where: { inboxJob: { outboxEventId: { in: emailEventIds } } },
+    });
+    await db.inboxJob.deleteMany({ where: { outboxEventId: { in: emailEventIds } } });
+    await db.outboxEvent.deleteMany({ where: { id: { in: emailEventIds } } });
     await db.user.deleteMany({ where: { email } });
     if (playbackVideoId) await db.video.deleteMany({ where: { id: playbackVideoId } });
     if (publicTrainerCourseId) await db.course.deleteMany({ where: { id: publicTrainerCourseId } });

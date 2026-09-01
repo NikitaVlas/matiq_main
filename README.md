@@ -47,18 +47,18 @@ pnpm test:integration
 
 Подробные требования и архитектурные решения находятся в каталоге `docs/`.
 
-## Локальная отправка через Gmail
+## Локальная обработка писем
 
-По умолчанию ссылки подтверждения и восстановления выводятся в консоль API.
-Для отправки реальных писем создайте локальный `.env` и задайте:
+API атомарно сохраняет verification/reset token и зашифрованное outbox-событие.
+Запущенный Worker обрабатывает его через локальный console adapter. Адрес,
+ссылка и token в логи не выводятся. Для локальной разработки достаточно:
 
 ```dotenv
-EMAIL_PROVIDER=gmail
-GMAIL_USER=your-address@gmail.com
-GMAIL_APP_PASSWORD=your-google-app-password
-EMAIL_FROM_NAME=MATIQ
-EMAIL_FROM_ADDRESS=your-address@gmail.com
+EMAIL_PROVIDER=console
+EMAIL_ENCRYPTION_KEY=
 ```
 
-Используйте Google App Password, а не основной пароль аккаунта. Файл `.env`
-игнорируется Git.
+Пустой ключ разрешён только вне production и включает локальный deterministic
+fallback. В production `EMAIL_ENCRYPTION_KEY` обязателен: это общий для API и
+Worker случайный 32-byte ключ в base64. Реальный email provider подключается
+отдельным решением после DPA/GDPR review. Файл `.env` игнорируется Git.

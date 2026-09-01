@@ -4,20 +4,22 @@
 
 После подтверждения email спортсмен может войти, повторно запросить письмо,
 восстановить забытый пароль и завершить текущую либо все активные сессии.
-Локальная разработка отправляет немецкие письма через Gmail SMTP, когда он
-настроен, иначе используется console-адаптер.
+API атомарно сохраняет зашифрованное email-событие вместе с verification/reset
+token. Worker асинхронно обрабатывает немецкое письмо через provider-neutral
+adapter; локальная разработка использует console-адаптер без реальной доставки.
 
 ## Безопасность
 
 - ответы не раскрывают существование аккаунта;
-- reset- и verification-токены одноразовые и хранятся только как SHA-256 hash;
+- reset- и verification-token records одноразовые и хранят только SHA-256 hash;
 - сброс пароля завершает все существующие сессии;
 - login и email endpoints ограничены по частоте для нормализованного email;
-- Gmail credentials находятся только в незакоммиченном локальном `.env`.
+- raw token и email message хранятся в outbox только в AES-256-GCM envelope;
+- production encryption key поступает только из deployment environment.
 
 ## Document status
 
-- Status: Implemented
+- Status: Verified
 - Owner: MATIQ team
-- Last reviewed: 2026-07-20
-- Related code: `apps/api/src/auth*`, `apps/api/src/email.service.ts`, `apps/web/src/app`
+- Last reviewed: 2026-09-01
+- Related code: `apps/api/src/modules/identity`, `apps/worker`, `packages/backend/src/email`

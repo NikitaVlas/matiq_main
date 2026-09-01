@@ -1,21 +1,26 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import { MetricsRegistry } from '@matiq/backend';
+import { MetricsRegistry, validateEmailEncryptionConfiguration } from '@matiq/backend';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { IdempotentConsumer } from './idempotent-consumer.js';
 import { OutboxDispatcher } from './outbox-dispatcher.js';
 import type { HandlerRegistry, WorkerEvent } from './types.js';
 import { WorkerObservabilityServer } from './observability-server.js';
+import { configuredEmailProvider, createEmailHandler } from './email-provider.js';
 
 const queueName = process.env.WORKER_QUEUE_NAME ?? 'matiq';
+validateEmailEncryptionConfiguration();
 const connection = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
   maxRetriesPerRequest: null,
 });
 const db = new PrismaClient();
 const metrics = new MetricsRegistry();
 const queue = new Queue<WorkerEvent>(queueName, { connection });
-const handlers: HandlerRegistry = new Map([['system.noop', async () => Promise.resolve()]]);
+const handlers: HandlerRegistry = new Map([
+  ['system.noop', async () => Promise.resolve()],
+  ['email.send.v1', createEmailHandler(configuredEmailProvider())],
+]);
 const consumer = new IdempotentConsumer(db, handlers, metrics);
 const dispatcher = new OutboxDispatcher(db, queue, 25, metrics);
 const worker = new Worker<WorkerEvent>(queueName, (job) => consumer.process(job), { connection });

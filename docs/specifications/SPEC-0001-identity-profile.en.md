@@ -17,7 +17,8 @@ German-language athlete profile.
 ## Security
 
 Email is normalised and unique; passwords use a 12-character complexity policy
-and bcrypt; only SHA-256 token hashes are stored; verification expires after 24
+and bcrypt; authoritative token records store only SHA-256 hashes, while the
+temporary email outbox contains only an encrypted delivery envelope; verification expires after 24
 hours; cookies are HTTP-only, SameSite=Lax, and Secure in production; profile
 routes require a verified session; development tokens are never returned in
 production.

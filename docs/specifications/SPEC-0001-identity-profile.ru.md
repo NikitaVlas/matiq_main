@@ -18,8 +18,9 @@
 
 - email нормализуется и уникален;
 - пароль минимум 12 символов, upper/lowercase и digit, хранится bcrypt hash;
-- verification/session tokens генерируются криптографически, в БД хранится
-  только SHA-256 hash;
+- verification/session tokens генерируются криптографически; token records
+  хранят только SHA-256 hash, а временный email outbox — только зашифрованный
+  delivery envelope;
 - verification token одноразовый и истекает через 24 часа;
 - session cookie HTTP-only, SameSite=Lax, Secure в production;
 - Athlete profile endpoints требуют подтверждённую session;

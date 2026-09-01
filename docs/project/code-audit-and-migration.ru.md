@@ -63,9 +63,10 @@ detection против координированной накрутки.
 ### Worker
 
 BullMQ process использует PostgreSQL outbox/inbox, стабильные idempotency keys,
-ограниченные retry и dead-letter записи. Domain-specific email, provider,
-reconciliation, GDPR и retention jobs ещё не подключены. Добавлены health,
-PostgreSQL/Redis readiness и метрики queue/outbox/job lifecycle.
+ограниченные retry и dead-letter записи. Verification/password-reset email job
+подключён через зашифрованный outbox и provider-neutral adapter. Production
+email provider, reconciliation, GDPR и retention jobs ещё не подключены.
+Добавлены health, PostgreSQL/Redis readiness и метрики queue/outbox/job lifecycle.
 
 ### Subscription
 
@@ -85,21 +86,20 @@ VAT/invoices, refund/cancellation policy, grace/reconciliation и Admin support
 - цена, VAT, refunds и юридический retention schedule не утверждены;
 - generated OpenAPI route enforcement действует в shared frontend transports,
   а architecture check запрещает прямые frontend `fetch` calls вне них;
-- SPEC-0002 — SPEC-0004 всё ещё требуют выравнивания статуса и verification
+- SPEC-0003 — SPEC-0004 всё ещё требуют выравнивания статуса и verification
   evidence;
 - database-backed integration и browser E2E требуют disposable infrastructure
   и остаются CI gates.
 
 ## Следующий порядок реализации
 
-1. Подключить первый domain-specific Worker job в отдельной спецификации.
-2. Реализовать processor-wide GDPR deletion/export orchestration после
+1. Реализовать processor-wide GDPR deletion/export orchestration после
    утверждения retention policy.
-3. Добавить AI explanation adapter с deterministic graceful fallback после
+2. Добавить AI explanation adapter с deterministic graceful fallback после
    выбора provider boundary.
-4. Подготовить production scraping/dashboards/alerts, backup-restore evidence и
+3. Подготовить production scraping/dashboards/alerts, backup-restore evidence и
    launch/security review.
-5. После утверждения provider/legal gates завершить production payments,
+4. После утверждения provider/legal gates завершить production email, payments,
    VAT/invoices и reconciliation.
 
 ## Document status

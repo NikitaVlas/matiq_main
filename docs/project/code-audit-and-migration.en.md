@@ -62,9 +62,10 @@ detection remain incomplete.
 ### Worker
 
 The BullMQ process uses PostgreSQL outbox/inbox records, stable idempotency keys,
-bounded retries, and dead-letter records. Domain-specific email, provider,
-reconciliation, GDPR, and retention jobs are not connected yet. Health,
-PostgreSQL/Redis readiness, and queue/outbox/job lifecycle metrics are present.
+bounded retries, and dead-letter records. Verification/password-reset email is
+connected through encrypted outbox events and a provider-neutral adapter.
+Production email, reconciliation, GDPR, and retention jobs are not connected.
+Health, PostgreSQL/Redis readiness, and queue/outbox/job lifecycle metrics exist.
 
 ### Subscription
 
@@ -84,22 +85,21 @@ support cannot be completed before their product and legal gates pass.
 - price, VAT, refunds, and the legal retention schedule are not approved;
 - generated OpenAPI route enforcement covers shared frontend transports, and an
   architecture check prevents direct frontend `fetch` calls outside them;
-- SPEC-0002 through SPEC-0004 still require status alignment and recorded
+- SPEC-0003 through SPEC-0004 still require status alignment and recorded
   verification evidence;
 - database-backed integration and browser E2E require disposable infrastructure
   and remain CI gates.
 
 ## Next implementation order
 
-1. Connect the first domain-specific Worker job under a separate specification.
-2. Implement processor-wide GDPR deletion/export orchestration after the
+1. Implement processor-wide GDPR deletion/export orchestration after the
    retention policy is approved.
-3. Add the AI explanation adapter with deterministic graceful fallback after
+2. Add the AI explanation adapter with deterministic graceful fallback after
    the provider boundary is selected.
-4. Add production scraping/dashboards/alerts, produce backup-restore evidence,
+3. Add production scraping/dashboards/alerts, produce backup-restore evidence,
    and complete launch/security review.
-5. Complete production payments, VAT/invoices, and reconciliation after the
-   provider and legal gates pass.
+4. Complete production email, payments, VAT/invoices, and reconciliation after
+   the provider and legal gates pass.
 
 ## Document status
 

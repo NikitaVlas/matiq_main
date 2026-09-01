@@ -1,12 +1,17 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { httpMetricsMiddleware, safeCorrelationId } from '@matiq/backend';
+import {
+  httpMetricsMiddleware,
+  safeCorrelationId,
+  validateEmailEncryptionConfiguration,
+} from '@matiq/backend';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { apiMetrics } from './shared/infrastructure/metrics';
 
 export async function createApp() {
+  validateEmailEncryptionConfiguration();
   const app = await NestFactory.create(AppModule, { rawBody: true });
   app.use(httpMetricsMiddleware('user-api', apiMetrics, safeCorrelationId));
   app.use(cookieParser());
