@@ -571,8 +571,8 @@ model VerifiedWatchInterval {
   userId      String
   videoId     String
   trainerId   String?
-  sessionId   String
-  heartbeatId String
+  sessionId   String?
+  heartbeatId String?
   accessClass ViewingAccessClass
   startMs     Int
   endMs       Int
@@ -580,8 +580,8 @@ model VerifiedWatchInterval {
   createdAt   DateTime           @default(now())
   user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   video       Video              @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  session     PlaybackSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  heartbeat   PlaybackHeartbeat  @relation(fields: [heartbeatId], references: [id], onDelete: Cascade)
+  session     PlaybackSession?   @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  heartbeat   PlaybackHeartbeat? @relation(fields: [heartbeatId], references: [id], onDelete: SetNull)
 
   @@index([userId, videoId, startMs, endMs])
   @@index([trainerId, accessClass, createdAt])
@@ -855,10 +855,14 @@ model AuditLog {
 
 model AccountDeletionRequest {
   id          String    @id @default(cuid())
-  userId      String    @unique
+  userId      String?   @unique
+  subjectRef  String    @unique
   requestedAt DateTime  @default(now())
   completedAt DateTime?
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  retainUntil DateTime
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([completedAt, retainUntil])
 }
 
 model OutboxEvent {

@@ -281,28 +281,51 @@ export class AuthService {
     if (!reauthenticatedAt || reauthenticatedAt.getTime() < Date.now() - reauthenticationWindowMs)
       throw new UnauthorizedException('REAUTHENTICATION_REQUIRED');
     const now = new Date();
+    const subjectRef = randomBytes(24).toString('base64url');
+    const replacementPasswordHash = await bcrypt.hash(randomBytes(32).toString('base64url'), 12);
     await this.db.$transaction(async (tx) => {
-      await tx.accountDeletionRequest.upsert({ where: { userId }, create: { userId }, update: {} });
+      const existing = await tx.accountDeletionRequest.findUnique({ where: { userId } });
+      if (existing) return;
+      const request = await tx.accountDeletionRequest.create({
+        data: {
+          userId,
+          subjectRef,
+          requestedAt: now,
+          retainUntil: deletionReceiptRetainUntil(now),
+        },
+      });
       await tx.auditLog.create({
-        data: { actor: userId, action: 'ACCOUNT_DELETE', entity: 'User', entityId: userId },
+        data: {
+          actor: `subject:${subjectRef}`,
+          action: 'ACCOUNT_DELETE_REQUESTED',
+          entity: 'AccountDeletionRequest',
+          entityId: request.id,
+        },
       });
       await tx.session.deleteMany({ where: { userId } });
-      await tx.videoWatch.deleteMany({ where: { userId } });
-      await tx.assessment.deleteMany({ where: { userId } });
-      await tx.athleteProfile.deleteMany({ where: { userId } });
       await tx.emailVerificationToken.deleteMany({ where: { userId } });
       await tx.passwordResetToken.deleteMany({ where: { userId } });
+      await tx.mfaRecoveryCode.deleteMany({ where: { userId } });
       await tx.user.update({
         where: { id: userId },
         data: {
-          email: `deleted-${userId}@deleted.invalid`,
-          passwordHash: await bcrypt.hash(randomBytes(32).toString('base64url'), 12),
+          email: `deleted-${subjectRef}@deleted.invalid`,
+          passwordHash: replacementPasswordHash,
+          role: 'ATHLETE',
           emailVerifiedAt: null,
+          mfaSecretEncrypted: null,
+          mfaEnabledAt: null,
           deletionRequestedAt: now,
           deletedAt: now,
         },
       });
-      await tx.accountDeletionRequest.update({ where: { userId }, data: { completedAt: now } });
+      await tx.outboxEvent.create({
+        data: {
+          topic: 'privacy.account-delete.v1',
+          payload: { requestId: request.id, userId },
+          idempotencyKey: `privacy.account-delete.v1:${request.id}`,
+        },
+      });
     });
     return { accepted: true };
   }
@@ -355,4 +378,8 @@ export class AuthService {
   async userForToken(rawToken?: string) {
     return (await this.sessionForToken(rawToken)).user;
   }
+}
+
+function deletionReceiptRetainUntil(requestedAt: Date) {
+  return new Date(Date.UTC(requestedAt.getUTCFullYear() + 4, 0, 1));
 }

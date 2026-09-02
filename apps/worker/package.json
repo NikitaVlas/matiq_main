@@ -8,7 +8,7 @@
     "dev": "tsx watch src/main.ts",
     "lint": "eslint src test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run test/outbox-dispatcher.test.ts test/idempotent-consumer.test.ts test/observability-server.test.ts test/email-provider.test.ts",
+    "test": "vitest run test/outbox-dispatcher.test.ts test/idempotent-consumer.test.ts test/observability-server.test.ts test/email-provider.test.ts test/privacy.test.ts test/retention-service.test.ts",
     "test:integration": "vitest run test/worker.integration.test.ts"
   },
   "dependencies": {

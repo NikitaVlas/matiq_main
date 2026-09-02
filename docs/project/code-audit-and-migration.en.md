@@ -64,7 +64,9 @@ detection remain incomplete.
 The BullMQ process uses PostgreSQL outbox/inbox records, stable idempotency keys,
 bounded retries, and dead-letter records. Verification/password-reset email is
 connected through encrypted outbox events and a provider-neutral adapter.
-Production email, reconciliation, GDPR, and retention jobs are not connected.
+Production email and reconciliation are not connected. Worker-based GDPR
+account-deletion orchestration and local retention jobs are connected;
+production processor adapters and backup deletion remain production gates.
 Health, PostgreSQL/Redis readiness, and queue/outbox/job lifecycle metrics exist.
 
 ### Subscription
@@ -76,7 +78,8 @@ support cannot be completed before their product and legal gates pass.
 ## Not implemented
 
 - AI explanation adapter with graceful fallback;
-- processor-wide GDPR deletion/export orchestration and retention jobs;
+- production processor adapters, backup-deletion verification, and external
+  processor coverage for GDPR exports;
 - production observability, backup-restore evidence, and launch/security review.
 
 ## Current risks and mismatches
@@ -93,8 +96,8 @@ support cannot be completed before their product and legal gates pass.
 
 ## Next implementation order
 
-1. Implement processor-wide GDPR deletion/export orchestration and retention
-   jobs against the approved engineering retention policy.
+1. Connect production processor adapters, verify active/backup-copy deletion,
+   and extend GDPR export to external processors.
 2. Add the AI explanation adapter with deterministic graceful fallback after
    the provider boundary is selected.
 3. Add production scraping/dashboards/alerts, produce backup-restore evidence,

@@ -8,6 +8,8 @@ import { OutboxDispatcher } from './outbox-dispatcher.js';
 import type { HandlerRegistry, WorkerEvent } from './types.js';
 import { WorkerObservabilityServer } from './observability-server.js';
 import { configuredEmailProvider, createEmailHandler } from './email-provider.js';
+import { createAccountDeletionHandler } from './privacy.js';
+import { RetentionService } from './retention-service.js';
 
 const queueName = process.env.WORKER_QUEUE_NAME ?? 'matiq';
 validateEmailEncryptionConfiguration();
@@ -20,6 +22,7 @@ const queue = new Queue<WorkerEvent>(queueName, { connection });
 const handlers: HandlerRegistry = new Map([
   ['system.noop', async () => Promise.resolve()],
   ['email.send.v1', createEmailHandler(configuredEmailProvider())],
+  ['privacy.account-delete.v1', createAccountDeletionHandler(db)],
 ]);
 const consumer = new IdempotentConsumer(db, handlers, metrics);
 const dispatcher = new OutboxDispatcher(db, queue, 25, metrics);
@@ -27,6 +30,8 @@ const worker = new Worker<WorkerEvent>(queueName, (job) => consumer.process(job)
 const observability = new WorkerObservabilityServer(db, connection, queue, metrics);
 const pollingIntervalMs = Number(process.env.OUTBOX_POLL_INTERVAL_MS ?? 1_000);
 let dispatching = false;
+let applyingRetention = false;
+const retention = new RetentionService(db);
 
 const timer = setInterval(
   () => {
@@ -42,6 +47,24 @@ const timer = setInterval(
   Number.isFinite(pollingIntervalMs) && pollingIntervalMs >= 100 ? pollingIntervalMs : 1_000,
 );
 
+const retentionIntervalMs = Number(process.env.RETENTION_INTERVAL_MS ?? 24 * 60 * 60 * 1_000);
+const retentionTimer = setInterval(
+  () => {
+    if (applyingRetention) return;
+    applyingRetention = true;
+    void retention
+      .runOnce()
+      .then((result) => console.info(JSON.stringify({ message: 'retention_completed', ...result })))
+      .catch(() => console.error(JSON.stringify({ message: 'retention_failed' })))
+      .finally(() => {
+        applyingRetention = false;
+      });
+  },
+  Number.isFinite(retentionIntervalMs) && retentionIntervalMs >= 60_000
+    ? retentionIntervalMs
+    : 24 * 60 * 60 * 1_000,
+);
+
 worker.on('failed', (job) => {
   console.error(
     JSON.stringify({
@@ -55,6 +78,7 @@ worker.on('failed', (job) => {
 
 async function shutdown() {
   clearInterval(timer);
+  clearInterval(retentionTimer);
   await observability.close();
   await worker.close();
   await queue.close();
@@ -68,6 +92,11 @@ process.on('SIGTERM', () => void shutdown());
 void dispatcher
   .dispatchBatch()
   .catch(() => console.error(JSON.stringify({ message: 'outbox_initial_dispatch_failed' })));
+
+void retention
+  .runOnce()
+  .then((result) => console.info(JSON.stringify({ message: 'retention_completed', ...result })))
+  .catch(() => console.error(JSON.stringify({ message: 'retention_initial_failed' })));
 
 void observability
   .listen(Number(process.env.WORKER_OBSERVABILITY_PORT ?? 9464))

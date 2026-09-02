@@ -18,6 +18,7 @@ describe('account export and deletion', () => {
   let app: INestApplication;
   let cookie: string[];
   let userId: string;
+  let deletionRequestId: string | undefined;
 
   beforeAll(async () => {
     const user = await db.user.create({
@@ -35,6 +36,18 @@ describe('account export and deletion', () => {
   });
 
   afterAll(async () => {
+    if (deletionRequestId) {
+      const event = await db.outboxEvent.findUnique({
+        where: { idempotencyKey: `privacy.account-delete.v1:${deletionRequestId}` },
+        include: { inboxJob: { include: { deadLetter: true } } },
+      });
+      if (event?.inboxJob?.deadLetter) {
+        await db.deadLetterJob.delete({ where: { id: event.inboxJob.deadLetter.id } });
+      }
+      if (event?.inboxJob) await db.inboxJob.delete({ where: { id: event.inboxJob.id } });
+      if (event) await db.outboxEvent.delete({ where: { id: event.id } });
+      await db.accountDeletionRequest.deleteMany({ where: { id: deletionRequestId } });
+    }
     await db.user.deleteMany({ where: { id: userId } });
     await db.$disconnect();
     await app.close();
@@ -67,10 +80,17 @@ describe('account export and deletion', () => {
 
     await request(app.getHttpServer()).get('/auth/me').set('Cookie', cookie).expect(401);
     const deleted = await db.user.findUniqueOrThrow({ where: { id: userId } });
-    expect(deleted.email).toBe(`deleted-${userId}@deleted.invalid`);
+    expect(deleted.email).toMatch(/^deleted-.+@deleted\.invalid$/);
     expect(deleted.deletedAt).toBeTruthy();
     await expect(
-      db.auditLog.findFirst({ where: { action: 'ACCOUNT_DELETE', entityId: userId } }),
+      db.auditLog.findFirst({ where: { action: 'ACCOUNT_DELETE_REQUESTED' } }),
     ).resolves.toBeTruthy();
+    deletionRequestId = (await db.accountDeletionRequest.findFirstOrThrow({ where: { userId } }))
+      .id;
+    await expect(
+      db.outboxEvent.findUnique({
+        where: { idempotencyKey: `privacy.account-delete.v1:${deletionRequestId}` },
+      }),
+    ).resolves.toMatchObject({ topic: 'privacy.account-delete.v1' });
   });
 });

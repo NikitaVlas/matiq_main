@@ -12,6 +12,7 @@ import { OutboxDispatcher } from '../src/outbox-dispatcher.js';
 import type { HandlerRegistry, WorkerEvent } from '../src/types.js';
 import { WorkerObservabilityServer } from '../src/observability-server.js';
 import { createEmailHandler, type EmailProvider } from '../src/email-provider.js';
+import { createAccountDeletionHandler } from '../src/privacy.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl?.includes('/matiq_test')) {
@@ -41,6 +42,7 @@ describe('Worker outbox lifecycle', () => {
       },
     ],
     ['email.send.v1', createEmailHandler(emailProvider)],
+    ['privacy.account-delete.v1', createAccountDeletionHandler(db)],
   ]);
   const consumer = new IdempotentConsumer(db, handlers);
   const worker = new Worker<WorkerEvent>(queueName, (job) => consumer.process(job), { connection });
@@ -66,6 +68,18 @@ describe('Worker outbox lifecycle', () => {
       where: { outboxEvent: { idempotencyKey: { startsWith: runId } } },
     });
     await db.outboxEvent.deleteMany({ where: { idempotencyKey: { startsWith: runId } } });
+    const deletionRequests = await db.accountDeletionRequest.findMany({
+      where: { subjectRef: { startsWith: runId } },
+      select: { id: true },
+    });
+    await db.auditLog.deleteMany({
+      where: {
+        entity: 'AccountDeletionRequest',
+        entityId: { in: deletionRequests.map(({ id }) => id) },
+      },
+    });
+    await db.accountDeletionRequest.deleteMany({ where: { subjectRef: { startsWith: runId } } });
+    await db.user.deleteMany({ where: { email: { startsWith: `deleted-${runId}` } } });
     await db.$disconnect();
   });
 
@@ -176,6 +190,52 @@ describe('Worker outbox lifecycle', () => {
     await expect(
       db.deadLetterJob.findFirstOrThrow({ where: { inboxJob: { outboxEventId: event.id } } }),
     ).resolves.toMatchObject({ error: 'INVALID_EMAIL_ENVELOPE' });
+  });
+
+  it('orchestrates product-data deletion and unlinks the retained receipt', async () => {
+    const user = await db.user.create({
+      data: {
+        email: `deleted-${runId}@deleted.invalid`,
+        passwordHash: 'irreversible-placeholder',
+        deletedAt: new Date(),
+        deletionRequestedAt: new Date(),
+        athleteProfile: {
+          create: {
+            disciplines: ['BJJ_GI'],
+            experienceYears: 1,
+            trainingSessionsPerWeek: 2,
+            competitionExperience: false,
+            goals: ['GENERAL_DEVELOPMENT'],
+          },
+        },
+      },
+    });
+    const deletionRequest = await db.accountDeletionRequest.create({
+      data: {
+        userId: user.id,
+        subjectRef: `${runId}-subject`,
+        retainUntil: new Date('2030-01-01T00:00:00.000Z'),
+      },
+    });
+    const event = await db.outboxEvent.create({
+      data: {
+        topic: 'privacy.account-delete.v1',
+        payload: { requestId: deletionRequest.id, userId: user.id },
+        idempotencyKey: `${runId}:privacy`,
+      },
+    });
+
+    await dispatcher.dispatchBatch();
+    await waitFor(
+      async () =>
+        (await db.inboxJob.findUnique({ where: { outboxEventId: event.id } }))?.status ===
+        'COMPLETED',
+    );
+
+    await expect(db.athleteProfile.findUnique({ where: { userId: user.id } })).resolves.toBeNull();
+    await expect(
+      db.accountDeletionRequest.findUniqueOrThrow({ where: { id: deletionRequest.id } }),
+    ).resolves.toMatchObject({ userId: null, completedAt: expect.any(Date) });
   });
 });
 

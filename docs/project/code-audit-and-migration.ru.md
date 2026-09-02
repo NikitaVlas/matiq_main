@@ -65,7 +65,9 @@ detection против координированной накрутки.
 BullMQ process использует PostgreSQL outbox/inbox, стабильные idempotency keys,
 ограниченные retry и dead-letter записи. Verification/password-reset email job
 подключён через зашифрованный outbox и provider-neutral adapter. Production
-email provider, reconciliation, GDPR и retention jobs ещё не подключены.
+email provider и reconciliation ещё не подключены. GDPR account-deletion
+orchestration и локальные retention jobs подключены через Worker; production
+processor adapters и backup deletion остаются production gate.
 Добавлены health, PostgreSQL/Redis readiness и метрики queue/outbox/job lifecycle.
 
 ### Subscription
@@ -77,7 +79,8 @@ VAT/invoices, refund/cancellation policy, grace/reconciliation и Admin support
 ## Не реализовано
 
 - AI explanation adapter с graceful fallback;
-- processor-wide GDPR deletion/export orchestration и retention jobs;
+- production processor adapters, backup deletion verification и расширение
+  GDPR export на внешние processors;
 - production observability, backup-restore evidence и launch/security review.
 
 ## Текущие риски и расхождения
@@ -94,8 +97,8 @@ VAT/invoices, refund/cancellation policy, grace/reconciliation и Admin support
 
 ## Следующий порядок реализации
 
-1. Реализовать processor-wide GDPR deletion/export orchestration и retention
-   jobs по утверждённой инженерной retention policy.
+1. Подключить production processor adapters и проверить удаление активных и
+   backup-копий; расширить GDPR export на внешние processors.
 2. Добавить AI explanation adapter с deterministic graceful fallback после
    выбора provider boundary.
 3. Подготовить production scraping/dashboards/alerts, backup-restore evidence и
