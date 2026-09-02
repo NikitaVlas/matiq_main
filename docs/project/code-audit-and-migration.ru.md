@@ -83,7 +83,8 @@ VAT/invoices, refund/cancellation policy, grace/reconciliation и Admin support
 ## Текущие риски и расхождения
 
 - production email, video, AI и hosting providers не утверждены;
-- цена, VAT, refunds и юридический retention schedule не утверждены;
+- цена, VAT и refunds не утверждены; retention schedule утверждён как
+  инженерный baseline, но требует юридической проверки до production;
 - generated OpenAPI route enforcement действует в shared frontend transports,
   а architecture check запрещает прямые frontend `fetch` calls вне них;
 - SPEC-0003 — SPEC-0004 всё ещё требуют выравнивания статуса и verification
@@ -93,8 +94,8 @@ VAT/invoices, refund/cancellation policy, grace/reconciliation и Admin support
 
 ## Следующий порядок реализации
 
-1. Реализовать processor-wide GDPR deletion/export orchestration после
-   утверждения retention policy.
+1. Реализовать processor-wide GDPR deletion/export orchestration и retention
+   jobs по утверждённой инженерной retention policy.
 2. Добавить AI explanation adapter с deterministic graceful fallback после
    выбора provider boundary.
 3. Подготовить production scraping/dashboards/alerts, backup-restore evidence и
@@ -106,5 +107,5 @@ VAT/invoices, refund/cancellation policy, grace/reconciliation и Admin support
 
 - Status: Active implementation audit
 - Owner: Команда MATIQ
-- Last reviewed: 2026-08-31
+- Last reviewed: 2026-09-02
 - Related code: Repository-wide; реализация MVP частичная

@@ -166,7 +166,9 @@ empty, error и success состояниями. Trainer dashboard показыв
 - PDF-файл договора пока загружается в закрытое EU object storage вне этого
   среза; модель хранит только storage key, checksum, имя и дату.
 - Выплата выполняется вручную вне MATIQ.
-- Финансовые сроки хранения требуют юридического решения до production.
+- Финансовые сроки хранения утверждены как инженерный baseline в
+  `docs/architecture/privacy-data-lifecycle.ru.md` и требуют юридической
+  проверки до production.
 - Автоматическое закрытие через Worker не включено: Admin явно создаёт месяц,
   а advisory lock и возрастающий порядок месяцев защищают перенос остатка.
 
@@ -174,5 +176,5 @@ empty, error и success состояниями. Trainer dashboard показыв
 
 - Status: Verified
 - Owner: MATIQ team
-- Last reviewed: 2026-08-26
+- Last reviewed: 2026-09-02
 - Related code: Trainer finance modules, Prisma schema, Admin Web, User Web

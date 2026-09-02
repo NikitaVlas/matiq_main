@@ -82,7 +82,8 @@ support cannot be completed before their product and legal gates pass.
 ## Current risks and mismatches
 
 - production email, video, AI, and hosting providers are not approved;
-- price, VAT, refunds, and the legal retention schedule are not approved;
+- price, VAT, and refunds are not approved; the retention schedule is approved
+  as an engineering baseline but requires legal review before production;
 - generated OpenAPI route enforcement covers shared frontend transports, and an
   architecture check prevents direct frontend `fetch` calls outside them;
 - SPEC-0003 through SPEC-0004 still require status alignment and recorded
@@ -92,8 +93,8 @@ support cannot be completed before their product and legal gates pass.
 
 ## Next implementation order
 
-1. Implement processor-wide GDPR deletion/export orchestration after the
-   retention policy is approved.
+1. Implement processor-wide GDPR deletion/export orchestration and retention
+   jobs against the approved engineering retention policy.
 2. Add the AI explanation adapter with deterministic graceful fallback after
    the provider boundary is selected.
 3. Add production scraping/dashboards/alerts, produce backup-restore evidence,
@@ -105,5 +106,5 @@ support cannot be completed before their product and legal gates pass.
 
 - Status: Active implementation audit
 - Owner: MATIQ team
-- Last reviewed: 2026-08-31
+- Last reviewed: 2026-09-02
 - Related code: Repository-wide; MVP implementation is partial

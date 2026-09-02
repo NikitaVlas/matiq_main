@@ -58,20 +58,73 @@ other users' data.
 Viewing and assessment history must no longer identify the user. Financial and
 audit records remain only on a documented legal basis.
 
-## Preliminary retention matrix
+## Approved retention matrix
 
-| Data                           | Working rule                                                |
-| ------------------------------ | ----------------------------------------------------------- |
-| Used verification/reset tokens | Remove after a short TTL                                    |
-| Sessions                       | Remove on expiry or revocation                              |
-| Raw viewing heartbeats         | Short anti-fraud/reconciliation period, then aggregate      |
-| Viewing aggregates             | While needed for account/reporting, then erase or anonymise |
-| Assessment versions            | Active-account life plus limited audit period               |
-| Payment/invoice records        | German tax and commercial requirements                      |
-| Audit log                      | Preliminary five years, finalised by legal review           |
-| Backups                        | Rolling retention approved before production                |
+The periods below are the approved engineering baseline. They do not permit
+indefinite retention and require confirmation by German counsel or a data
+protection officer before production.
 
-Exact periods are a production gate and must not default to indefinite.
+| Data | Retention | End-of-period action |
+| --- | --- | --- |
+| Account, profile, assessment, and Roadmap | Active-account lifetime | Block immediately after a confirmed request; erase or irreversibly pseudonymise product data within 30 days |
+| Viewing history and progress | Active-account lifetime | Erase within 30 days after confirmed account deletion |
+| Playback sessions and raw heartbeats | 90 days from creation | Irreversibly erase |
+| Verified watch intervals | 180 days after the accounting month closes | Erase viewer-level records; retain only an anonymised monthly aggregate |
+| Auth events and security logs | 90 days | Erase unless covered by a documented incident/legal hold |
+| Technical application logs | 30 days | Irreversibly erase |
+| Admin audit log | 5 years | Erase; if the subject account is deleted earlier, irreversibly replace its identifiers while retaining the minimum evidentiary event |
+| Evidence that a GDPR request was completed | 3 years from the end of the completion calendar year | Erase; during retention keep only request ID, dates, status, and processed systems without email, name, or original user ID |
+| Used/expired verification and reset tokens | Until use or expiry plus 7 days | Erase the record and token hash |
+| Expired or revoked sessions | No more than 24 hours after expiry/revocation | Erase |
+| Successful Outbox | Encrypted payload: 24 hours after processing; safe technical metadata: 30 days | Purge payload first, then erase the record |
+| Completed Inbox | 30 days | Erase |
+| Dead letter | 30 days; no more than 90 days while an investigation remains open | Erase after closure or the maximum period; never copy the payload |
+| Accounting vouchers: invoices, refunds, chargebacks, payout reports | 8 years from the end of the relevant calendar year | Erase after the mandatory period unless covered by a legal hold |
+| Books, annual accounts, and related records | 10 years from the end of the relevant calendar year | Erase after the mandatory period unless covered by a legal hold |
+| Commercial correspondence and trainer agreements | 6 years from the end of the year in which the agreement ended or the document was received/sent | Erase unless a longer category applies to a particular financial document |
+| MATIQ backups | Rolling 35-day window | Expire through rotation; after restore, reapply the deletion ledger before ordinary processing resumes |
+| Active processor/provider copies | No more than 30 days after the deletion command | Obtain confirmation or record an exception and escalation |
+| Processor/provider backup copies | No more than 90 days | Require this in the DPA/contract and verify it before onboarding |
+
+Unless a calendar-year rule is stated, a period runs from the triggering event
+through the end of the applicable day. Retention jobs must be idempotent,
+auditable, and must not copy erased payloads into logs.
+
+## Erasure, pseudonymisation, and legal holds
+
+Direct identifiers, credentials/MFA data, assessment answers, personal Roadmaps,
+viewing history, playback records, auth tokens, and completed delivery payloads
+are irreversibly erased. A plain hash of a predictable user ID is not considered
+irreversible pseudonymisation.
+
+Only records supported by a separate documented basis are pseudonymised: audit
+events, anonymised viewing aggregates, and finance totals without viewer data.
+Mandatory accounting records retain only legally required attributes, remain
+segregated from the product profile, and are unavailable to product analytics.
+
+A legal hold pauses deletion only for a specific category and period. It needs a
+documented basis, owner, expiry date, and review at least every 90 days. An
+indefinite whole-account hold is prohibited.
+
+## External provider requirements
+
+MATIQ sends a deletion command to each processor/provider no later than 24 hours
+after the corresponding local deletion phase starts. A new provider may be
+onboarded only when its contract or DPA requires active-copy deletion within 30
+days, backup-copy deletion within 90 days, assistance with data-subject requests,
+a subprocessor list, and verifiable deletion confirmation. A longer period is a
+production blocker requiring a documented legal decision.
+
+## Legal basis references
+
+- [GDPR Articles 5 and 17](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016R0679):
+  data minimisation, storage limitation, erasure rights, and lawful exceptions.
+- [HGB section 257](https://www.gesetze-im-internet.de/hgb/__257.html) and
+  [AO section 147](https://www.gesetze-im-internet.de/ao_1977/__147.html): ten years for books/annual accounts, eight
+  years for accounting vouchers, and six years for commercial correspondence.
+- [BGB section 195](https://www.gesetze-im-internet.de/bgb/__195.html) and
+  [section 199](https://www.gesetze-im-internet.de/bgb/__199.html): the general
+  three-year limitation period and its commencement rule.
 
 ## Security and incident response
 
@@ -93,7 +146,7 @@ remains available without an explanation.
 ## Production gates
 
 - legally reviewed privacy notice, terms, and processor agreements;
-- approved retention schedule;
+- legal confirmation of the approved engineering retention schedule;
 - implemented export and deletion workflows;
 - tested processor and restored-backup deletion behavior;
 - DPIA decision;
@@ -103,5 +156,5 @@ remains available without an explanation.
 
 - Status: Approved engineering baseline; legal review required before production
 - Owner: MATIQ team
-- Last reviewed: 2026-07-19
+- Last reviewed: 2026-09-02
 - Related code: Identity, profiles, assessment, analytics, billing, audit

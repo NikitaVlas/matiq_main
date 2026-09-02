@@ -168,9 +168,10 @@ Audited operations include:
 - administrative subscription actions;
 - sensitive-report viewing or export where required.
 
-The preliminary audit-log retention period is at least five years. The final
-period and deletion rules must be reviewed against GDPR, contractual, and legal
-requirements before production.
+The approved engineering retention period for the audit log is five years. If
+an account is deleted earlier, subject identifiers are irreversibly replaced
+while the minimum evidentiary event remains. The period and legal basis require
+legal review before production.
 
 ## Strong authentication
 
@@ -208,18 +209,19 @@ Critical actions are:
 - `ACL-012`: Unpublishing content requires a reason.
 - `ACL-013`: MFA is mandatory for `Admin` and `Editor`.
 - `ACL-014`: Critical actions require re-authentication.
-- `ACL-015`: The audit log is preliminarily retained for at least five years;
-  the period requires legal review before production.
+- `ACL-015`: The audit log is retained for five years under the approved
+  engineering baseline; the period and basis require legal review before
+  production.
 
 ## Open questions
 
 - Which MFA factors are supported?
 - What period qualifies as recent re-authentication?
-- Which GDPR rules and legal basis apply to five-year audit-log retention?
+- Legal confirmation of the basis for five-year audit-log retention.
 
 ## Document status
 
 - Status: Approved permission baseline
 - Owner: MATIQ team
-- Last reviewed: 2026-08-26
+- Last reviewed: 2026-09-02
 - Related code: Identity, Admin API, editorial workflow; implementation partial

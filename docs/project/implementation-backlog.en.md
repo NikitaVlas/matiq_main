@@ -3,7 +3,8 @@
 ## Delivery rules
 
 This backlog defines order; it does not approve production providers, pricing,
-tax, or legal retention. Every epic receives an approved feature specification
+tax, or final legal sign-off for retention. Engineering periods are approved in
+the privacy data lifecycle. Every epic receives an approved feature specification
 and acceptance criteria before code. A phase includes negative tests,
 observability, and current documentation.
 
@@ -80,7 +81,8 @@ Exit: redirects do not grant access, redelivery is safe, cancellation is clear.
 
 Gate: the financial reference is approved: a 30% pool after VAT, refunds,
 chargebacks, and PSP fees; 0% trial weight; EUR 50 minimum payout with balance
-carry-forward. Retention remains to be approved before production. Then
+carry-forward. The approved engineering retention baseline requires legal
+review before production. Then
 versioned agreements/policies; immutable monthly snapshots; paid/trial
 split; reproducible allocation; anomaly/adjustment flow; report lifecycle and
 separation of duties; own-only reports; manual payment reference and audit.
@@ -113,5 +115,5 @@ safe logs/metrics/audit; reviewed diff and current Document status.
 
 - Status: Approved implementation sequence
 - Owner: MATIQ team
-- Last reviewed: 2026-08-26
+- Last reviewed: 2026-09-02
 - Related code: Repository-wide

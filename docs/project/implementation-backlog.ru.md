@@ -3,7 +3,8 @@
 ## Правила выполнения
 
 Backlog задаёт порядок, но не утверждает production providers, цены, налоги или
-юридические сроки. Каждый epic до кода получает feature specification и
+окончательное юридическое заключение по retention. Инженерные сроки утверждены
+в privacy data lifecycle. Каждый epic до кода получает feature specification и
 acceptance criteria. Этап завершается вместе с negative tests, observability и
 актуальной документацией.
 
@@ -92,7 +93,7 @@ renewal/past-due; cancel-at-period-end, resume, invoices; audited Admin support.
 
 Gate: финансовый ориентир утверждён: фонд 30% после НДС, refunds, chargeback и
 PSP fees; trial weight 0%; minimum payout 50 EUR с переносом остатка. До
-production остаётся утвердить retention. Затем versioned agreements/policies;
+production retention baseline требует юридической проверки. Затем versioned agreements/policies;
 immutable monthly snapshot;
 paid/trial split; reproducible allocation; anomaly review и adjustments;
 report lifecycle/separation of duties; own-only Trainer reports; manual payment
@@ -129,5 +130,5 @@ logs/metrics/audit без чувствительных данных; reviewed di
 
 - Status: Approved implementation sequence
 - Owner: Команда MATIQ
-- Last reviewed: 2026-08-26
+- Last reviewed: 2026-09-02
 - Related code: Весь репозиторий
