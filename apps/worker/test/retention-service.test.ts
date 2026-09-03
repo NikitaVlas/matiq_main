@@ -16,7 +16,8 @@ describe('RetentionService', () => {
       deadLetterJob: { findMany: vi.fn().mockResolvedValue([]), deleteMany: deleted },
       inboxJob: { findMany: vi.fn().mockResolvedValue([]), deleteMany: deleted },
       auditLog: { deleteMany: deleted },
-      accountDeletionRequest: { deleteMany: deleted },
+      accountDeletionRequest: { deleteMany: deleted, updateMany: updated },
+      deletionTombstone: { deleteMany: deleted },
       $transaction: vi.fn(),
     } as unknown as PrismaClient;
     const now = new Date('2026-09-02T12:00:00.000Z');

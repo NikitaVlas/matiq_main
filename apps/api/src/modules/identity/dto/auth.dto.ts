@@ -51,6 +51,18 @@ export class ConfirmDeletionDto {
   confirmation!: 'DELETE';
 }
 
+export class AccountDeletionStatusDto {
+  @ApiProperty()
+  @IsString()
+  @Length(1, 128)
+  requestId!: string;
+
+  @ApiProperty()
+  @IsString()
+  @Length(32, 256)
+  statusToken!: string;
+}
+
 export class MfaCodeDto {
   @ApiProperty({ example: '123456' })
   @IsString()

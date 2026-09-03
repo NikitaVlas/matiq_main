@@ -3,6 +3,18 @@ import type { EventHandler } from './types.js';
 
 type AccountDeletionPayload = { requestId: string; userId: string };
 
+export async function eraseLocalAccountData(tx: Prisma.TransactionClient, userId: string) {
+  await tx.verifiedWatchInterval.deleteMany({ where: { userId } });
+  await tx.playbackSession.deleteMany({ where: { userId } });
+  await tx.videoWatch.deleteMany({ where: { userId } });
+  await tx.assessmentAttempt.deleteMany({ where: { userId } });
+  await tx.assessment.deleteMany({ where: { userId } });
+  await tx.athleteProfile.deleteMany({ where: { userId } });
+  await tx.trainerProfile.deleteMany({ where: { userId } });
+  await tx.course.updateMany({ where: { trainerId: userId }, data: { trainerId: null } });
+  await tx.video.updateMany({ where: { trainerId: userId }, data: { trainerId: null } });
+}
+
 export type ExternalDeletionProcessor = {
   name: string;
   eraseAccount(request: {
@@ -35,21 +47,7 @@ export function createAccountDeletionHandler(
     ];
 
     await db.$transaction(async (tx) => {
-      await tx.verifiedWatchInterval.deleteMany({ where: { userId: payload.userId } });
-      await tx.playbackSession.deleteMany({ where: { userId: payload.userId } });
-      await tx.videoWatch.deleteMany({ where: { userId: payload.userId } });
-      await tx.assessmentAttempt.deleteMany({ where: { userId: payload.userId } });
-      await tx.assessment.deleteMany({ where: { userId: payload.userId } });
-      await tx.athleteProfile.deleteMany({ where: { userId: payload.userId } });
-      await tx.trainerProfile.deleteMany({ where: { userId: payload.userId } });
-      await tx.course.updateMany({
-        where: { trainerId: payload.userId },
-        data: { trainerId: null },
-      });
-      await tx.video.updateMany({
-        where: { trainerId: payload.userId },
-        data: { trainerId: null },
-      });
+      await eraseLocalAccountData(tx, payload.userId);
     });
 
     for (const processor of processors) {

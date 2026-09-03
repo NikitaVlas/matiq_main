@@ -56,6 +56,30 @@ MATIQ проектируется по принципам минимизации,
    восстанавливаются в активную систему и исчезают по backup-retention cycle.
 8. Пользователь получает подтверждение завершения.
 
+Статус подтверждения доступен 30 дней по отдельному случайному secret, который
+возвращается только один раз при создании запроса. В базе хранится только его
+SHA-256 hash; status endpoint не раскрывает email, исходный user ID или состав
+сохранённых по закону записей.
+
+## Защита восстановления из backup
+
+Перед созданием каждого backup оператор экспортирует актуальный deletion ledger
+в хранилище, независимое от backup основной PostgreSQL:
+
+`pnpm --filter @matiq/worker privacy:ledger:export -- <ledger-path>`
+
+Ledger содержит только случайный `privacySubjectId` и даты запроса/хранения — без
+email и внутреннего user ID. После восстановления backup и **до открытия API и
+Worker для обычного трафика** оператор применяет сохранённый ledger:
+
+`pnpm --filter @matiq/worker privacy:ledger:reapply -- <ledger-path>`
+
+Команда идемпотентно восстанавливает tombstones и повторно удаляет либо
+псевдонимизирует вернувшиеся записи. Backup/restore runbook обязан считать
+неуспешное применение ledger блокером запуска. Tombstones хранятся 35 дней,
+соответственно rolling backup window; доказательство GDPR-запроса продолжает
+храниться по отдельному трёхлетнему сроку.
+
 История просмотра и assessment после удаления не должна позволять восстановить
 личность. Финансовые и audit-записи могут сохраняться только на
 документированном основании.
@@ -160,5 +184,5 @@ AI получает минимальный структурированный pa
 
 - Status: Approved engineering baseline; legal review required before production
 - Owner: MATIQ team
-- Last reviewed: 2026-09-02
+- Last reviewed: 2026-09-03
 - Related code: Identity, profiles, assessment, analytics, billing, audit

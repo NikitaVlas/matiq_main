@@ -114,14 +114,20 @@ export class RetentionService {
       ]);
     }
 
-    const [auditLogs, deletionReceipts] = await Promise.all([
-      this.db.auditLog.deleteMany({
-        where: { createdAt: { lt: fiveYearsAgo } },
-      }),
-      this.db.accountDeletionRequest.deleteMany({
-        where: { completedAt: { not: null }, retainUntil: { lte: now } },
-      }),
-    ]);
+    const [auditLogs, deletionReceipts, expiredStatusTokens, deletionTombstones] =
+      await Promise.all([
+        this.db.auditLog.deleteMany({
+          where: { createdAt: { lt: fiveYearsAgo } },
+        }),
+        this.db.accountDeletionRequest.deleteMany({
+          where: { completedAt: { not: null }, retainUntil: { lte: now } },
+        }),
+        this.db.accountDeletionRequest.updateMany({
+          where: { statusTokenExpiresAt: { lte: now } },
+          data: { statusTokenHash: null, statusTokenExpiresAt: null },
+        }),
+        this.db.deletionTombstone.deleteMany({ where: { retainUntil: { lte: now } } }),
+      ]);
 
     return {
       verificationTokens: verificationTokens.count,
@@ -134,6 +140,8 @@ export class RetentionService {
       completedJobs: completedJobs.length,
       auditLogs: auditLogs.count,
       deletionReceipts: deletionReceipts.count,
+      expiredStatusTokens: expiredStatusTokens.count,
+      deletionTombstones: deletionTombstones.count,
     };
   }
 }

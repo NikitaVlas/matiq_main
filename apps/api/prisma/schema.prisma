@@ -139,6 +139,7 @@ enum InboxJobStatus {
 
 model User {
   id                      String                   @id @default(cuid())
+  privacySubjectId        String                   @unique @default(cuid())
   email                   String                   @unique
   passwordHash            String
   role                    UserRole                 @default(ATHLETE)
@@ -854,15 +855,27 @@ model AuditLog {
 }
 
 model AccountDeletionRequest {
-  id          String    @id @default(cuid())
-  userId      String?   @unique
-  subjectRef  String    @unique
-  requestedAt DateTime  @default(now())
-  completedAt DateTime?
-  retainUntil DateTime
-  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id                   String    @id @default(cuid())
+  userId               String?   @unique
+  subjectRef           String    @unique
+  statusTokenHash      String?
+  statusTokenExpiresAt DateTime?
+  requestedAt          DateTime  @default(now())
+  completedAt          DateTime?
+  retainUntil          DateTime
+  user                 User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([completedAt, retainUntil])
+}
+
+model DeletionTombstone {
+  id          String   @id @default(cuid())
+  subjectRef  String   @unique
+  requestedAt DateTime
+  retainUntil DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([retainUntil])
 }
 
 model OutboxEvent {

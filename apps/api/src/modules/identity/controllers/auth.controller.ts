@@ -16,6 +16,7 @@ import type { Response } from 'express';
 import { AuthGuard, AuthenticatedRequest } from '../infrastructure/auth.guard';
 import {
   ChangePasswordDto,
+  AccountDeletionStatusDto,
   ConfirmDeletionDto,
   EmailDto,
   LoginDto,
@@ -186,6 +187,11 @@ export class AuthController {
     );
     response.clearCookie(this.cookieName());
     return result;
+  }
+
+  @Post('account-deletion/status')
+  accountDeletionStatus(@Body() dto: AccountDeletionStatusDto) {
+    return this.auth.accountDeletionStatus(dto.requestId, dto.statusToken);
   }
 
   @UseGuards(AuthGuard)

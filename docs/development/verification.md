@@ -22,6 +22,12 @@ On Windows with restricted PowerShell scripts, use `pnpm.cmd`.
 | Build                | `pnpm build`                                | Yes                 |
 | Full verification    | `pnpm verify`                               | Yes                 |
 
+Для проверки восстановления после удаления экспортируйте ledger перед backup,
+восстановите disposable test database и примените ledger командами из
+`docs/architecture/privacy-data-lifecycle.ru.md`. Worker integration test
+автоматически воспроизводит возврат удалённого профиля из backup и проверяет его
+повторное удаление.
+
 `DATABASE_URL` must point to a disposable test/local PostgreSQL for migration
 and integration tests. Never run these commands against production.
 
@@ -44,5 +50,5 @@ Report every command, outcome, skipped check, manual check, and residual risk.
 
 - Status: Active
 - Owner: MATIQ team
-- Last reviewed: 2026-07-29
+- Last reviewed: 2026-09-03
 - Related code: Root scripts, CI, all workspace packages

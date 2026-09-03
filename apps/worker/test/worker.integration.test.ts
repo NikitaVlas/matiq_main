@@ -13,6 +13,7 @@ import type { HandlerRegistry, WorkerEvent } from '../src/types.js';
 import { WorkerObservabilityServer } from '../src/observability-server.js';
 import { createEmailHandler, type EmailProvider } from '../src/email-provider.js';
 import { createAccountDeletionHandler } from '../src/privacy.js';
+import { exportDeletionLedger, reapplyDeletionLedger } from '../src/deletion-ledger.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl?.includes('/matiq_test')) {
@@ -79,6 +80,7 @@ describe('Worker outbox lifecycle', () => {
       },
     });
     await db.accountDeletionRequest.deleteMany({ where: { subjectRef: { startsWith: runId } } });
+    await db.deletionTombstone.deleteMany({ where: { subjectRef: { startsWith: runId } } });
     await db.user.deleteMany({ where: { email: { startsWith: `deleted-${runId}` } } });
     await db.$disconnect();
   });
@@ -235,6 +237,48 @@ describe('Worker outbox lifecycle', () => {
     await expect(db.athleteProfile.findUnique({ where: { userId: user.id } })).resolves.toBeNull();
     await expect(
       db.accountDeletionRequest.findUniqueOrThrow({ where: { id: deletionRequest.id } }),
+    ).resolves.toMatchObject({ userId: null, completedAt: expect.any(Date) });
+  });
+
+  it('reapplies deletion tombstones after a database restore', async () => {
+    const subjectRef = `${runId}-restored-subject`;
+    const requestedAt = new Date('2026-08-01T00:00:00.000Z');
+    const retainUntil = new Date('2030-01-01T00:00:00.000Z');
+    await db.deletionTombstone.create({ data: { subjectRef, requestedAt, retainUntil } });
+    const snapshot = await exportDeletionLedger(db, new Date('2026-09-01T00:00:00.000Z'));
+
+    await db.deletionTombstone.delete({ where: { subjectRef } });
+    const restoredUser = await db.user.create({
+      data: {
+        email: `restored-${runId}@example.de`,
+        passwordHash: 'restored-secret-hash',
+        privacySubjectId: subjectRef,
+        athleteProfile: {
+          create: {
+            disciplines: ['BJJ_GI'],
+            experienceYears: 2,
+            trainingSessionsPerWeek: 3,
+            competitionExperience: false,
+            goals: ['GENERAL_DEVELOPMENT'],
+          },
+        },
+      },
+    });
+
+    await expect(
+      reapplyDeletionLedger(db, snapshot, new Date('2026-09-02T00:00:00.000Z')),
+    ).resolves.toEqual({ reapplied: 1 });
+    await expect(
+      db.athleteProfile.findUnique({ where: { userId: restoredUser.id } }),
+    ).resolves.toBeNull();
+    await expect(
+      db.user.findUniqueOrThrow({ where: { id: restoredUser.id } }),
+    ).resolves.toMatchObject({
+      email: `deleted-${subjectRef}@deleted.invalid`,
+      deletedAt: expect.any(Date),
+    });
+    await expect(
+      db.accountDeletionRequest.findUnique({ where: { subjectRef } }),
     ).resolves.toMatchObject({ userId: null, completedAt: expect.any(Date) });
   });
 });

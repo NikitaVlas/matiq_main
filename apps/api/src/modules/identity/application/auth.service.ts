@@ -3,6 +3,7 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
@@ -13,7 +14,7 @@ import {
 } from '@matiq/backend';
 import type { Prisma } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { Database } from '../../../shared/infrastructure/database';
 import { RateLimitService } from '../../../shared/infrastructure/rate-limit.service';
 import {
@@ -258,22 +259,121 @@ export class AuthService {
   }
 
   async exportAccount(userId: string) {
+    this.rateLimit.check(`account-export:${userId}`, 3, 60 * 60 * 1000);
     const user = await this.db.user.findUniqueOrThrow({
       where: { id: userId },
-      include: {
-        athleteProfile: { include: { roadmapItems: true } },
-        assessment: { include: { responses: true, scores: true } },
-        subscriptions: true,
-        videoWatches: true,
+      select: {
+        email: true,
+        role: true,
+        emailVerifiedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        athleteProfile: {
+          include: { roadmapItems: true },
+        },
+        assessment: {
+          include: { responses: true, scores: true },
+        },
+        assessmentAttempts: {
+          include: { answers: true, evaluations: true },
+          orderBy: { createdAt: 'asc' },
+        },
+        subscriptions: { orderBy: { createdAt: 'asc' } },
+        videoWatches: { orderBy: { createdAt: 'asc' } },
+        playbackSessions: {
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            videoId: true,
+            mode: true,
+            status: true,
+            expiresAt: true,
+            lastHeartbeatAt: true,
+            creditedPositionSec: true,
+            accessClass: true,
+            createdAt: true,
+            closedAt: true,
+            heartbeats: {
+              orderBy: { receivedAt: 'asc' },
+              select: {
+                sequence: true,
+                previousPositionSec: true,
+                currentPositionSec: true,
+                activePlaybackMs: true,
+                playbackRate: true,
+                visible: true,
+                active: true,
+                clientAt: true,
+                receivedAt: true,
+                accepted: true,
+                creditedPositionSec: true,
+                rejectionReason: true,
+              },
+            },
+          },
+        },
+        verifiedWatchIntervals: {
+          orderBy: { createdAt: 'asc' },
+          select: {
+            videoId: true,
+            trainerId: true,
+            accessClass: true,
+            startMs: true,
+            endMs: true,
+            durationMs: true,
+            createdAt: true,
+          },
+        },
+        trainerProfile: true,
+        authoredCourses: { select: { id: true, title: true, published: true } },
+        authoredVideos: { select: { id: true, title: true, published: true } },
+        trainerAgreements: { orderBy: { version: 'asc' } },
+        trainerPayoutReports: { orderBy: { createdAt: 'asc' } },
       },
     });
+    await this.db.auditLog.create({
+      data: { actor: userId, action: 'ACCOUNT_EXPORT', entity: 'User', entityId: userId },
+    });
     return {
+      schemaVersion: 1,
       exportedAt: new Date().toISOString(),
-      account: { email: user.email, role: user.role, createdAt: user.createdAt },
+      account: {
+        email: user.email,
+        role: user.role,
+        emailVerifiedAt: user.emailVerifiedAt,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
       athleteProfile: user.athleteProfile,
       assessment: user.assessment,
+      assessmentAttempts: user.assessmentAttempts,
       subscriptions: user.subscriptions,
-      videoWatches: user.videoWatches,
+      viewing: {
+        history: user.videoWatches,
+        playbackSessions: user.playbackSessions,
+        verifiedIntervals: user.verifiedWatchIntervals,
+      },
+      trainer: {
+        profile: user.trainerProfile,
+        courses: user.authoredCourses,
+        videos: user.authoredVideos,
+        agreements: user.trainerAgreements,
+        payoutReports: user.trainerPayoutReports.map(
+          ({
+            paidWatchMs,
+            trialWatchMs,
+            trainerWeightNumerator,
+            trainerWeightDenominator,
+            ...report
+          }) => ({
+            ...report,
+            paidWatchMs: paidWatchMs.toString(),
+            trialWatchMs: trialWatchMs.toString(),
+            trainerWeightNumerator: trainerWeightNumerator.toString(),
+            trainerWeightDenominator: trainerWeightDenominator.toString(),
+          }),
+        ),
+      },
     };
   }
 
@@ -281,17 +381,32 @@ export class AuthService {
     if (!reauthenticatedAt || reauthenticatedAt.getTime() < Date.now() - reauthenticationWindowMs)
       throw new UnauthorizedException('REAUTHENTICATION_REQUIRED');
     const now = new Date();
-    const subjectRef = randomBytes(24).toString('base64url');
+    const statusToken = randomBytes(32).toString('base64url');
+    const statusTokenExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     const replacementPasswordHash = await bcrypt.hash(randomBytes(32).toString('base64url'), 12);
-    await this.db.$transaction(async (tx) => {
+    const deletion = await this.db.$transaction(async (tx) => {
       const existing = await tx.accountDeletionRequest.findUnique({ where: { userId } });
-      if (existing) return;
+      if (existing) throw new ConflictException('ACCOUNT_DELETION_ALREADY_REQUESTED');
+      const user = await tx.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { privacySubjectId: true },
+      });
+      const subjectRef = user.privacySubjectId;
       const request = await tx.accountDeletionRequest.create({
         data: {
           userId,
           subjectRef,
+          statusTokenHash: tokenHash(statusToken),
+          statusTokenExpiresAt,
           requestedAt: now,
           retainUntil: deletionReceiptRetainUntil(now),
+        },
+      });
+      await tx.deletionTombstone.create({
+        data: {
+          subjectRef,
+          requestedAt: now,
+          retainUntil: new Date(now.getTime() + 35 * 24 * 60 * 60 * 1000),
         },
       });
       await tx.auditLog.create({
@@ -326,8 +441,38 @@ export class AuthService {
           idempotencyKey: `privacy.account-delete.v1:${request.id}`,
         },
       });
+      return { requestId: request.id };
     });
-    return { accepted: true };
+    return {
+      accepted: true,
+      requestId: deletion.requestId,
+      statusToken,
+      statusTokenExpiresAt,
+    };
+  }
+
+  async accountDeletionStatus(requestId: string, statusToken: string) {
+    this.rateLimit.check(`account-deletion-status:${requestId}`, 20, 60 * 60 * 1000);
+    const request = await this.db.accountDeletionRequest.findUnique({ where: { id: requestId } });
+    const presentedHash = Buffer.from(tokenHash(statusToken), 'hex');
+    const storedHash = request?.statusTokenHash
+      ? Buffer.from(request.statusTokenHash, 'hex')
+      : Buffer.alloc(presentedHash.length);
+    const validHash =
+      storedHash.length === presentedHash.length && timingSafeEqual(storedHash, presentedHash);
+    if (
+      !request?.statusTokenExpiresAt ||
+      request.statusTokenExpiresAt <= new Date() ||
+      !validHash
+    ) {
+      throw new NotFoundException('DELETION_STATUS_NOT_FOUND');
+    }
+    return {
+      requestId: request.id,
+      status: request.completedAt ? 'COMPLETED' : 'PENDING',
+      requestedAt: request.requestedAt,
+      completedAt: request.completedAt,
+    };
   }
 
   async verifyEmail(rawToken: string) {

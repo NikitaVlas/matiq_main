@@ -168,7 +168,13 @@ export default function AccountSettingsPage() {
       setBusy('');
       return;
     }
-    window.location.assign('/');
+    const result = (await response.json()) as {
+      requestId: string;
+      statusToken: string;
+      statusTokenExpiresAt: string;
+    };
+    sessionStorage.setItem('matiq.accountDeletionStatus', JSON.stringify(result));
+    window.location.assign('/account-deletion-status');
   }
 
   if (loading)

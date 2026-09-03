@@ -19,6 +19,7 @@ describe('account export and deletion', () => {
   let cookie: string[];
   let userId: string;
   let deletionRequestId: string | undefined;
+  let deletionSubjectRef: string | undefined;
 
   beforeAll(async () => {
     const user = await db.user.create({
@@ -48,6 +49,9 @@ describe('account export and deletion', () => {
       if (event) await db.outboxEvent.delete({ where: { id: event.id } });
       await db.accountDeletionRequest.deleteMany({ where: { id: deletionRequestId } });
     }
+    if (deletionSubjectRef) {
+      await db.deletionTombstone.deleteMany({ where: { subjectRef: deletionSubjectRef } });
+    }
     await db.user.deleteMany({ where: { id: userId } });
     await db.$disconnect();
     await app.close();
@@ -59,6 +63,9 @@ describe('account export and deletion', () => {
       .set('Cookie', cookie)
       .expect(200);
     expect(exported.body.account.email).toBe(email);
+    expect(exported.body.schemaVersion).toBe(1);
+    expect(JSON.stringify(exported.body)).not.toContain('passwordHash');
+    expect(JSON.stringify(exported.body)).not.toContain('tokenHash');
 
     await request(app.getHttpServer())
       .delete('/auth/account')
@@ -72,11 +79,28 @@ describe('account export and deletion', () => {
       .send({ password })
       .expect(201);
 
-    await request(app.getHttpServer())
+    const deletion = await request(app.getHttpServer())
       .delete('/auth/account')
       .set('Cookie', cookie)
       .send({ confirmation: 'DELETE' })
-      .expect(200, { accepted: true });
+      .expect(200);
+    expect(deletion.body).toMatchObject({
+      accepted: true,
+      requestId: expect.any(String),
+      statusToken: expect.any(String),
+      statusTokenExpiresAt: expect.any(String),
+    });
+    deletionRequestId = deletion.body.requestId;
+
+    await request(app.getHttpServer())
+      .post('/auth/account-deletion/status')
+      .send({ requestId: deletionRequestId, statusToken: 'incorrect-status-token-value-00000000' })
+      .expect(404);
+    await request(app.getHttpServer())
+      .post('/auth/account-deletion/status')
+      .send({ requestId: deletionRequestId, statusToken: deletion.body.statusToken })
+      .expect(201)
+      .expect(({ body }) => expect(body).toMatchObject({ status: 'PENDING' }));
 
     await request(app.getHttpServer()).get('/auth/me').set('Cookie', cookie).expect(401);
     const deleted = await db.user.findUniqueOrThrow({ where: { id: userId } });
@@ -85,8 +109,8 @@ describe('account export and deletion', () => {
     await expect(
       db.auditLog.findFirst({ where: { action: 'ACCOUNT_DELETE_REQUESTED' } }),
     ).resolves.toBeTruthy();
-    deletionRequestId = (await db.accountDeletionRequest.findFirstOrThrow({ where: { userId } }))
-      .id;
+    const deletionRequest = await db.accountDeletionRequest.findFirstOrThrow({ where: { userId } });
+    deletionSubjectRef = deletionRequest.subjectRef;
     await expect(
       db.outboxEvent.findUnique({
         where: { idempotencyKey: `privacy.account-delete.v1:${deletionRequestId}` },

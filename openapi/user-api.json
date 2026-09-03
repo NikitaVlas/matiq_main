@@ -281,6 +281,20 @@
         ]
       }
     },
+    "/auth/account-deletion/status": {
+      "post": {
+        "operationId": "AuthController_accountDeletionStatus",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
     "/auth/mfa/setup": {
       "post": {
         "operationId": "AuthController_beginMfaSetup",
