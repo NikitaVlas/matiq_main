@@ -67,7 +67,10 @@ BullMQ process использует PostgreSQL outbox/inbox, стабильны�
 подключён через зашифрованный outbox и provider-neutral adapter. Production
 email provider и reconciliation ещё не подключены. GDPR account-deletion
 orchestration и локальные retention jobs подключены через Worker; production
-processor adapters и backup deletion остаются production gate.
+processor adapters и production backup deletion остаются production gate.
+Локальный расширенный export, deletion status и ledger suppression реализованы.
+Добавлен настоящий синтетический pg_dump/pg_restore drill с JSON evidence;
+он не подтверждает восстановление production-хранилищ.
 Добавлены health, PostgreSQL/Redis readiness и метрики queue/outbox/job lifecycle.
 
 ### Subscription
@@ -110,5 +113,5 @@ VAT/invoices, refund/cancellation policy, grace/reconciliation и Admin support
 
 - Status: Active implementation audit
 - Owner: Команда MATIQ
-- Last reviewed: 2026-09-02
+- Last reviewed: 2026-09-04
 - Related code: Repository-wide; реализация MVP частичная

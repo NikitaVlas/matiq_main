@@ -116,5 +116,29 @@ describe('account export and deletion', () => {
         where: { idempotencyKey: `privacy.account-delete.v1:${deletionRequestId}` },
       }),
     ).resolves.toMatchObject({ topic: 'privacy.account-delete.v1' });
+    await db.accountDeletionRequest.update({
+      where: { id: deletionRequestId },
+      data: { completedAt: new Date(), userId: null },
+    });
+    const completed = await request(app.getHttpServer())
+      .post('/auth/account-deletion/status')
+      .send({ requestId: deletionRequestId, statusToken: deletion.body.statusToken })
+      .expect(201);
+    expect(completed.body.status).toBe('COMPLETED');
+    expect(completed.body).not.toHaveProperty('userId');
+    expect(completed.body).not.toHaveProperty('statusTokenHash');
+    await db.accountDeletionRequest.update({
+      where: { id: deletionRequestId },
+      data: { statusTokenExpiresAt: new Date(0) },
+    });
+    const expired = await request(app.getHttpServer())
+      .post('/auth/account-deletion/status')
+      .send({ requestId: deletionRequestId, statusToken: deletion.body.statusToken })
+      .expect(404);
+    const missing = await request(app.getHttpServer())
+      .post('/auth/account-deletion/status')
+      .send({ requestId: 'missing-request', statusToken: deletion.body.statusToken })
+      .expect(404);
+    expect(expired.body).toEqual(missing.body);
   });
 });

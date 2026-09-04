@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/main.ts",
+    "test:recovery": "tsx src/recovery-drill.ts",
     "lint": "eslint src test",
     "privacy:ledger:export": "tsx src/deletion-ledger-cli.ts export",
     "privacy:ledger:reapply": "tsx src/deletion-ledger-cli.ts reapply",

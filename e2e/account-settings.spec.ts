@@ -60,7 +60,15 @@ test('athlete manages sessions, enables MFA, and confirms deletion securely', as
     if (path === '/auth/account' && request.method() === 'DELETE') {
       expect(request.postDataJSON()).toEqual({ confirmation: 'DELETE' });
       deleted = true;
-      return json(route, { accepted: true });
+      return json(route, {
+        accepted: true,
+        requestId: 'test-deletion',
+        statusToken: 'synthetic-status-token',
+        statusTokenExpiresAt: '2099-01-01T00:00:00.000Z',
+      });
+    }
+    if (path === '/auth/account-deletion/status') {
+      return json(route, { requestId: 'test-deletion', status: 'COMPLETED' });
     }
 
     return json(route, {});
@@ -84,4 +92,6 @@ test('athlete manages sessions, enables MFA, and confirms deletion securely', as
   await page.getByLabel('Gib DELETE ein').fill('DELETE');
   await page.getByRole('button', { name: 'Konto endgültig löschen' }).click();
   await expect.poll(() => deleted).toBe(true);
+  await expect(page).toHaveURL(/\/account-deletion-status$/);
+  await expect(page.getByRole('heading', { name: 'Löschung abgeschlossen' })).toBeVisible();
 });

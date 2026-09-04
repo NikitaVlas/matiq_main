@@ -30,26 +30,38 @@ export default function AccountDeletionStatusPage() {
 
   const refresh = useCallback(async (current: StoredRequest) => {
     setLoading(true);
-    const response = await userApiResponse('/auth/account-deletion/status', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ requestId: current.requestId, statusToken: current.statusToken }),
-    });
-    if (!response.ok) {
-      setError('Der Löschstatus ist nicht mehr verfügbar. Der Statuslink gilt höchstens 30 Tage.');
-    } else {
-      setStatus((await response.json()) as DeletionStatus);
-      setError('');
+    setError('');
+    try {
+      const response = await userApiResponse('/auth/account-deletion/status', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ requestId: current.requestId, statusToken: current.statusToken }),
+      });
+      if (!response.ok) {
+        setStatus(undefined);
+        setError(
+          response.status === 404
+            ? 'Der Löschstatus ist nicht mehr verfügbar. Der Statuslink gilt höchstens 30 Tage.'
+            : 'Der Status konnte nicht geladen werden. Bitte versuche es später erneut.',
+        );
+      } else {
+        const result = (await response.json()) as DeletionStatus;
+        if (result.status !== 'PENDING' && result.status !== 'COMPLETED')
+          throw new Error('INVALID_STATUS');
+        setStatus(result);
+      }
+    } catch {
+      setStatus(undefined);
+      setError('Die Verbindung ist fehlgeschlagen. Bitte versuche es erneut.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
-    if (!request || status?.status === 'COMPLETED') return;
+    if (!request) return;
     void refresh(request);
-    const timer = window.setInterval(() => void refresh(request), 5_000);
-    return () => window.clearInterval(timer);
-  }, [refresh, request, status?.status]);
+  }, [refresh, request]);
 
   return (
     <main className="settings-page">

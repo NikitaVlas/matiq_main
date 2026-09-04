@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import type { PrismaClient } from '@prisma/client';
-import { eraseLocalAccountData } from './privacy.js';
+import { eraseAccountAuditIdentifiers, eraseLocalAccountData } from './privacy.js';
 
 export type DeletionLedgerSnapshot = {
   version: 1;
@@ -69,6 +69,13 @@ export async function reapplyDeletionLedger(
     const user = await db.user.findUnique({ where: { privacySubjectId: item.subjectRef } });
     if (!user) continue;
     await db.$transaction(async (tx) => {
+      const receipt = await tx.accountDeletionRequest.findUnique({
+        where: { subjectRef: item.subjectRef },
+        select: { completedAt: true },
+      });
+      const completedAt = receipt?.completedAt ?? now;
+      // Receipt retention is separate from the rolling backup/tombstone window.
+      const receiptRetainUntil = new Date(Date.UTC(completedAt.getUTCFullYear() + 4, 0, 1));
       await eraseLocalAccountData(tx, user.id);
       await tx.session.deleteMany({ where: { userId: user.id } });
       await tx.emailVerificationToken.deleteMany({ where: { userId: user.id } });
@@ -92,11 +99,12 @@ export async function reapplyDeletionLedger(
         create: {
           subjectRef: item.subjectRef,
           requestedAt,
-          completedAt: now,
-          retainUntil,
+          completedAt,
+          retainUntil: receiptRetainUntil,
         },
-        update: { userId: null, completedAt: now, retainUntil },
+        update: { userId: null, completedAt, retainUntil: receiptRetainUntil },
       });
+      await eraseAccountAuditIdentifiers(tx, user.id, item.subjectRef);
       await tx.auditLog.create({
         data: {
           actor: 'system:restore-guard',

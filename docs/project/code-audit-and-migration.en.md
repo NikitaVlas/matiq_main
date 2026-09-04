@@ -66,7 +66,10 @@ bounded retries, and dead-letter records. Verification/password-reset email is
 connected through encrypted outbox events and a provider-neutral adapter.
 Production email and reconciliation are not connected. Worker-based GDPR
 account-deletion orchestration and local retention jobs are connected;
-production processor adapters and backup deletion remain production gates.
+production processor adapters and production backup deletion remain production gates.
+Expanded local export, deletion status, and ledger suppression are implemented.
+A real synthetic pg_dump/pg_restore drill now produces JSON evidence;
+this does not certify production storage recovery.
 Health, PostgreSQL/Redis readiness, and queue/outbox/job lifecycle metrics exist.
 
 ### Subscription
@@ -109,5 +112,5 @@ support cannot be completed before their product and legal gates pass.
 
 - Status: Active implementation audit
 - Owner: MATIQ team
-- Last reviewed: 2026-09-02
+- Last reviewed: 2026-09-04
 - Related code: Repository-wide; MVP implementation is partial

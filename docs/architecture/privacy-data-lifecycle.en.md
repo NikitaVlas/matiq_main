@@ -43,6 +43,18 @@ other users' data.
 
 ## Account deletion
 
+For a paid period, the approved choice disables renewal immediately, preserves
+paid access and schedules deletion at period end. Until then the user may cancel
+deletion without automatically enabling renewal. The account is not yet erased.
+A separate “Delete now” choice does not wait for paid access to expire. Final
+deletion is irreversible. Ordinary cancellation does not automatically issue a
+refund; statutory refund/withdrawal rights remain unaffected.
+See [SPEC-0017](../specifications/SPEC-0017-deletion-billing.en.md).
+Scheduled deletion is not implemented; current code blocks immediately.
+
+The following steps and erasure deadlines apply when final deletion starts,
+not when voluntarily scheduling deletion for a future date:
+
 1. The user starts a dedicated destructive flow in the profile.
 2. Consequences are shown and recent authentication is required.
 3. Sessions are revoked; subscription handling prevents a hidden future charge.
@@ -156,5 +168,5 @@ remains available without an explanation.
 
 - Status: Approved engineering baseline; legal review required before production
 - Owner: MATIQ team
-- Last reviewed: 2026-09-02
+- Last reviewed: 2026-09-04
 - Related code: Identity, profiles, assessment, analytics, billing, audit

@@ -3,6 +3,18 @@ import type { EventHandler } from './types.js';
 
 type AccountDeletionPayload = { requestId: string; userId: string };
 
+export async function eraseAccountAuditIdentifiers(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  subjectRef: string,
+) {
+  await tx.auditLog.updateMany({
+    where: { OR: [{ actor: userId }, { entityId: userId }, { actor: `subject:${subjectRef}` }] },
+    // Keep the minimum event, never arbitrary JSON that can contain nested identifiers.
+    data: { actor: `subject:${subjectRef}`, entityId: null, metadata: Prisma.DbNull },
+  });
+}
+
 export async function eraseLocalAccountData(tx: Prisma.TransactionClient, userId: string) {
   await tx.verifiedWatchInterval.deleteMany({ where: { userId } });
   await tx.playbackSession.deleteMany({ where: { userId } });
@@ -69,10 +81,7 @@ export function createAccountDeletionHandler(
         where: { id: request.id, userId: payload.userId, completedAt: null },
         data: { userId: null, completedAt },
       });
-      await tx.auditLog.updateMany({
-        where: { OR: [{ actor: payload.userId }, { entityId: payload.userId }] },
-        data: { actor: `subject:${request.subjectRef}`, entityId: null },
-      });
+      await eraseAccountAuditIdentifiers(tx, payload.userId, request.subjectRef);
     });
   };
 }

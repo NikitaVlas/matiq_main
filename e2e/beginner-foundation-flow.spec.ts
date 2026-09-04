@@ -51,6 +51,11 @@ test('new white belt receives Foundation and can add Assessment recommendations 
     const path = new URL(request.url()).pathname;
 
     if (path === '/auth/login') return json(route, { ok: true });
+    if (path === '/auth/me') return json(route, { role: 'ATHLETE' });
+    if (path === '/athlete-profile' && request.method() === 'GET') {
+      return json(route, { disciplines: ['BJJ_GI'] });
+    }
+    if (path === '/assessment/attempt/BJJ_GI') return json(route, { answers: [] });
     if (path === '/athlete-profile' && request.method() === 'PUT') {
       expect(request.postDataJSON()).toMatchObject({
         disciplines: ['BJJ_GI'],

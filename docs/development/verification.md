@@ -44,6 +44,15 @@ and integration tests. Never run these commands against production.
 
 ## Reporting
 
+Browser tests use synthetic API responses and run in Chromium via `pnpm e2e`.
+They are not a full-stack production test. The CI browser job runs on Linux;
+local Windows execution uses the same cross-platform Playwright configuration.
+
+Real synthetic PostgreSQL dump/restore check:
+`pnpm --filter @matiq/worker test:recovery`. See
+[recovery runbook](recovery-runbook.ru.md). JSON evidence is written under
+`test-results/recovery/` and uploaded by the separate CI recovery job.
+
 Report every command, outcome, skipped check, manual check, and residual risk.
 
 ## Document status

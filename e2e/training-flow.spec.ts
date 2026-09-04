@@ -34,6 +34,11 @@ test('athlete completes assessment, opens a roadmap lesson, and updates progress
     const path = new URL(request.url()).pathname;
 
     if (path === '/auth/login') return json(route, { ok: true });
+    if (path === '/auth/me') return json(route, { role: 'ATHLETE' });
+    if (path === '/athlete-profile') return json(route, { disciplines: ['BJJ_GI'] });
+    if (path === '/assessment/attempt/BJJ_GI') return json(route, { answers: [] });
+    if (path === '/content/history' || path === '/content/courses') return json(route, []);
+    if (path === '/subscription') return json(route, { status: 'TRIAL', hasAccess: true });
     if (path === '/assessment/questions') return json(route, [question]);
     if (path === '/assessment/answers') return json(route, { completed: false, answers: [] });
     if (path === '/assessment/submit') {
@@ -84,6 +89,10 @@ test('athlete completes assessment, opens a roadmap lesson, and updates progress
           metadataValues: [],
         },
         playbackUrl: 'data:video/mp4;base64,',
+        playbackSessionId: 'synthetic-session',
+        playbackToken: 'synthetic-playback-token',
+        watermarkId: 'synthetic-watermark',
+        expiresAt: '2099-01-01T00:00:00.000Z',
         watchedSeconds: 0,
         courseContext: null,
       });
@@ -96,10 +105,17 @@ test('athlete completes assessment, opens a roadmap lesson, and updates progress
         metadataFallback: null,
       });
     }
-    if (path === '/content/videos/video-1/watch') {
-      expect(request.postDataJSON()).toEqual({ watchedSeconds: 100 });
+    if (path === '/content/videos/video-1/heartbeat') {
+      expect(request.postDataJSON()).toMatchObject({
+        playbackToken: 'synthetic-playback-token',
+        currentPositionSec: 100,
+        idempotencyKey: expect.any(String),
+        sequence: expect.any(Number),
+      });
       lessonCompleted = true;
       return json(route, {
+        accepted: true,
+        processed: true,
         watchedSeconds: 100,
         completed: true,
         newlyCompleted: true,
@@ -142,6 +158,7 @@ test('athlete completes assessment, opens a roadmap lesson, and updates progress
   await page.getByLabel('Passwort').fill('Test-password-123');
   await page.getByRole('button', { name: 'Anmelden' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole('heading', { name: 'DEIN NÄCHSTER SCHRITT' })).toBeVisible();
 
   await page.goto('/assessment');
   await page.getByLabel('Es gelingt selten').check();
