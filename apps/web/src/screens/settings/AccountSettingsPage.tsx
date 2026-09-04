@@ -10,6 +10,7 @@ type Account = {
 };
 type Session = { id: string; createdAt: string; lastSeenAt: string; current: boolean };
 type MfaSetup = { secret: string; otpauthUrl: string };
+type DeletionSchedule = { scheduled: boolean; executeAt: string | null; renewalConfirmed: boolean };
 
 const request = userApiResponse;
 
@@ -29,6 +30,54 @@ export default function AccountSettingsPage() {
   const [busy, setBusy] = useState('');
   const [mfaSetup, setMfaSetup] = useState<MfaSetup>();
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [deletionSchedule, setDeletionSchedule] = useState<DeletionSchedule>();
+
+  async function loadDeletionSchedule() {
+    const response = await request('/auth/account/deletion-schedule');
+    if (!response.ok) throw new Error('SCHEDULE_UNAVAILABLE');
+    setDeletionSchedule(await response.json());
+  }
+
+  async function changeSchedule(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const cancel = Boolean(deletionSchedule?.scheduled);
+    setBusy('schedule');
+    setError('');
+    setStatus('');
+    try {
+      const authentication = await request('/auth/reauthenticate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password: data.get('password') }),
+      });
+      if (!authentication.ok)
+        throw new Error(await errorMessage(authentication, 'Erneute Anmeldung fehlgeschlagen.'));
+      const response = await request('/auth/account/deletion-schedule', {
+        method: cancel ? 'DELETE' : 'POST',
+        headers: { 'content-type': 'application/json' },
+        ...(!cancel ? { body: JSON.stringify({ confirmation: data.get('confirmation') }) } : {}),
+      });
+      if (!response.ok)
+        throw new Error(await errorMessage(response, 'Löschplanung konnte nicht geändert werden.'));
+      setDeletionSchedule(await response.json());
+      setStatus(
+        cancel
+          ? 'Löschung aufgehoben. Die automatische Verlängerung bleibt deaktiviert bzw. ihre Deaktivierung angefordert.'
+          : 'Löschauftrag gespeichert. Bitte beachte den Bestätigungsstatus der Verlängerung.',
+      );
+      form.reset();
+    } catch (failure) {
+      setError(
+        failure instanceof Error && !(failure instanceof TypeError)
+          ? failure.message
+          : 'Verbindung fehlgeschlagen. Bitte erneut versuchen.',
+      );
+    } finally {
+      setBusy('');
+    }
+  }
 
   async function load() {
     const [accountResponse, sessionsResponse] = await Promise.all([
@@ -41,6 +90,9 @@ export default function AccountSettingsPage() {
   }
 
   useEffect(() => {
+    void loadDeletionSchedule().catch(() =>
+      setError('Die Löschplanung konnte nicht geladen werden. Bitte aktualisieren.'),
+    );
     void load()
       .catch(() => setError('Die Kontoeinstellungen konnten nicht geladen werden.'))
       .finally(() => setLoading(false));
@@ -340,7 +392,71 @@ export default function AccountSettingsPage() {
       </section>
 
       <section className="settings-card settings-danger">
+        <h2>Löschung planen</h2>
+        <p>
+          Behalte deinen bezahlten Zugang bis zum Ende des bezahlten Zeitraums. Danach beginnt die
+          endgültige Löschung. Ohne verbleibenden bezahlten Zeitraum beginnt sie sofort.
+        </p>
+        <p>
+          Vor diesem Datum kannst du die Löschung aufheben. Das aktiviert keine automatische
+          Verlängerung. Nach der endgültigen Löschung ist keine Wiederherstellung möglich.
+        </p>
+        {deletionSchedule?.scheduled ? (
+          <p role="status">
+            Löschung geplant:{' '}
+            {deletionSchedule.executeAt
+              ? new Date(deletionSchedule.executeAt).toLocaleString('de-DE')
+              : ''}
+            .{' '}
+            {deletionSchedule.renewalConfirmed
+              ? 'Verlängerung deaktiviert.'
+              : 'Bestätigung zur Deaktivierung der Verlängerung steht noch aus.'}
+          </p>
+        ) : null}
+        <button
+          type="button"
+          disabled={Boolean(busy)}
+          onClick={() => {
+            setBusy('schedule-refresh');
+            void loadDeletionSchedule()
+              .catch(() => setError('Status konnte nicht geladen werden.'))
+              .finally(() => setBusy(''));
+          }}
+        >
+          Löschstatus aktualisieren
+        </button>
+        <form className="settings-form" onSubmit={(event) => void changeSchedule(event)}>
+          <label>
+            Passwort für die Löschplanung
+            <input
+              name="password"
+              type="password"
+              minLength={12}
+              maxLength={128}
+              required
+              autoComplete="current-password"
+            />
+          </label>
+          {!deletionSchedule?.scheduled ? (
+            <label>
+              Bestätigung der Planung: DELETE
+              <input name="confirmation" required pattern="DELETE" autoComplete="off" />
+            </label>
+          ) : null}
+          <button disabled={Boolean(busy) || !deletionSchedule}>
+            {deletionSchedule?.scheduled
+              ? 'Geplante Löschung aufheben'
+              : 'Am Ende des bezahlten Zeitraums löschen'}
+          </button>
+        </form>
+      </section>
+
+      <section className="settings-card settings-danger">
         <h2>Konto löschen</h2>
+        <p>
+          Jetzt löschen: Der Zugang endet sofort. Eine Erstattung erfolgt nicht automatisch;
+          gesetzliche Rechte bleiben unberührt.
+        </p>
         <p>
           Diese Aktion beendet alle Sitzungen und entfernt dein aktives Profil, Assessment und
           deinen Trainingsfortschritt dauerhaft.

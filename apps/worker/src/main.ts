@@ -1,6 +1,10 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import { MetricsRegistry, validateEmailEncryptionConfiguration } from '@matiq/backend';
+import {
+  MetricsRegistry,
+  PostgresDeletionSchedule,
+  validateEmailEncryptionConfiguration,
+} from '@matiq/backend';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { IdempotentConsumer } from './idempotent-consumer.js';
@@ -10,6 +14,7 @@ import { WorkerObservabilityServer } from './observability-server.js';
 import { configuredEmailProvider, createEmailHandler } from './email-provider.js';
 import { createAccountDeletionHandler } from './privacy.js';
 import { RetentionService } from './retention-service.js';
+import { processPendingRenewalCancellations } from './renewal-cancellation.js';
 
 const queueName = process.env.WORKER_QUEUE_NAME ?? 'matiq';
 validateEmailEncryptionConfiguration();
@@ -31,6 +36,25 @@ const observability = new WorkerObservabilityServer(db, connection, queue, metri
 const pollingIntervalMs = Number(process.env.OUTBOX_POLL_INTERVAL_MS ?? 1_000);
 let dispatching = false;
 let applyingRetention = false;
+let reconcilingRenewals = false;
+// No production provider is selected. External operations fail closed until
+// an approved adapter is wired; local-only subscriptions can be confirmed.
+const renewalTimer = setInterval(() => {
+  if (reconcilingRenewals) return;
+  reconcilingRenewals = true;
+  void processPendingRenewalCancellations(db)
+    .then(async (counts) => ({
+      ...counts,
+      deletionsStarted: await new PostgresDeletionSchedule(db).processDue(),
+    }))
+    .then((counts) =>
+      console.info(JSON.stringify({ message: 'renewal_reconciliation', ...counts })),
+    )
+    .catch(() => console.error(JSON.stringify({ message: 'renewal_reconciliation_failed' })))
+    .finally(() => {
+      reconcilingRenewals = false;
+    });
+}, 60_000);
 const retention = new RetentionService(db);
 
 const timer = setInterval(
@@ -79,6 +103,7 @@ worker.on('failed', (job) => {
 async function shutdown() {
   clearInterval(timer);
   clearInterval(retentionTimer);
+  clearInterval(renewalTimer);
   await observability.close();
   await worker.close();
   await queue.close();

@@ -2,7 +2,7 @@
 
 ## Scope
 
-Design produced at the owner's request. Not implemented or approved for production.
+Local workflow implemented at the owner's request; not approved for production.
 No provider selection, real billing calls, refunds, migrations or accounting
 record deletion are authorised by this document.
 
@@ -23,11 +23,11 @@ record deletion are authorised by this document.
 - Only provider confirmation establishes successful renewal cancellation.
 - Without a remaining paid period there is no paid-period deferral.
 
-Current code blocks immediately; scheduled deletion is not implemented. Voluntary
+Separate immediate and scheduled deletion paths are implemented. Voluntary
 scheduling does not redefine final erasure deadlines. Legal review remains a
 production requirement.
 
-## Implemented foundation (not connected to the product)
+## Implemented local workflow
 
 Pure scheduling, cancellation and due-date rules are implemented in
 `packages/backend/src/identity/scheduled-deletion-policy.ts`. They preserve paid
@@ -36,19 +36,29 @@ or after the deadline and never enable renewal. Immediate deletion is not delaye
 by unavailable billing reconciliation; this does not imply processor completion.
 Only trusted server code may supply dates and confirmation evidence.
 
-API, persistence, worker and UI are not connected. Review the shared billing
-boundary first: an application port in packages/backend used by API and worker,
-with provider adapter and durable PostgreSQL operations. Claim/cancel races need
-transactional protection, not just pure policy checks.
+Shared billing boundary accepted: [ADR-0007](../architecture/decisions/ADR-0007-shared-renewal-cancellation.en.md).
+Implemented provider port, PostgreSQL operation store, internal API
+requestRenewalCancellation entry point and one-minute worker polling. Added
+GET/POST/DELETE /auth/account/deletion-schedule, German settings UI and due-date
+execution. The server derives the deadline from paid periods.
+API acceptance is not cancellation success; worker without a provider cannot
+confirm external cancellation. Fake adapters exist only in tests. Scheduling,
+cancellation and execution share a User row lock. Cancellation is strictly
+before the deadline; repeated execution cannot create another deletion request.
 See [technical design](../../specs/scheduled_deletion_design.md).
 
 ## Remaining runtime gaps
 
 SubscriptionService.cancel schedules end-of-period cancellation for the latest
 ACTIVE/TRIAL subscription only. The deletion worker has no billing adapter;
-its default external processor list is empty. Restore marks deletion complete
-without reconciling billing. Webhooks upsert subscription state without checking
-deletedAt. Therefore changing a local status alone cannot prove cancellation.
+its default external processor list is empty. Ordinary processing refuses to
+complete receipts with external references but no processors. Legacy restore
+still completes without billing reconciliation. Late webhooks retain CANCELED
+for deleted users and enqueue reconciliation, without extending scheduled dates.
+Checkout/resume reject schedules or pending operations; remote-call races and
+provider event ordering still need full verification. The independent ledger
+does not replay scheduling/cancellation changes made after backup. Changing a
+local status alone cannot prove cancellation.
 
 ## Proposed implementation sequence
 
@@ -79,7 +89,7 @@ deletedAt. Therefore changing a local status alone cannot prove cancellation.
 - Approved provider, adapter and cancellation/erasure confirmation capabilities.
 - Restricted reconciliation mapping, retention category, owner and schema; how
   late webhook events remain attributable after product identifiers are removed.
-- Reviewed shared billing boundary and durable operation schema/ADR.
+- Approved adapter wiring and migration rollout; shared boundary is accepted in ADR-0007.
 
 ## Required tests
 
@@ -100,12 +110,28 @@ links and broader irreversible unlinkability are not covered by this helper.
 
 ## Document status
 
+- Current slice: API, UI and due-date executor implemented. API integration:
+  3 passed; E2E: 7 passed. Migrations applied only to disposable test databases.
+  Recovery `1e2672a459c615b4d22fffbb`: new schedule checks passed; overall FAILED
+  remains for previous subscription/provider findings. Entries below are
+  historical evidence from earlier slices. `pnpm verify` and `git diff --check`
+  passed. Applied fullstack-guardian security checkpoint. Graph discovery returned
+  no new symbols; source inspection was used as fallback.
+- Final `pnpm verify` and `git diff --check` passed.
+- Current slice: shared mechanism implemented, 7 unit tests added. Prisma validate
+  passed with local DATABASE_URL after initial network/missing-URL failures.
+  New migration applied only to disposable recovery databases, not the working DB.
+  Run `2ac5621c881ee1051feb7e6c` (26.9 s) verified restored operations, ownership,
+  request deduplication, lease fencing and confirmation without repeated provider
+  calls. Overall FAILED for pre-existing subscription/provider findings.
+  E2E and other integration suites were not run; public contracts are unchanged.
+  Previous-slice verification follows below.
 - Foundation verification: 11 new unit tests and `pnpm verify` passed after fixing
   the initial parameterized-test TypeScript error; `git diff --check` passed.
   Integration/E2E/recovery were not rerun: functions are not connected to DB/UI;
   the existing failing billing recovery gate remains open. Applied fullstack-guardian
   security checkpoint; shared billing boundary approval remains a stop condition.
-- Status: Product behavior approved; scheduled deletion not implemented; billing design pending
+- Status: Local scheduled deletion implemented; production provider and recovery gates pending
 - Owner: MATIQ team
 - Last reviewed: 2026-09-04
 - Related code: worker/privacy.ts, worker/deletion-ledger.ts, SubscriptionService

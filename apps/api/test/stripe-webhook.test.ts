@@ -20,6 +20,11 @@ const event = {
 describe('Stripe webhook processing', () => {
   it('records an event once and creates an active subscription', async () => {
     const db = {
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValueOnce([{ deletedAt: null }])
+        .mockResolvedValue([]),
+      $transaction: vi.fn(async (callback) => callback(db)),
       paymentWebhookEvent: {
         findUnique: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockResolvedValue({}),
@@ -44,6 +49,11 @@ describe('Stripe webhook processing', () => {
 
   it('starts a three-day grace period after a failed renewal', async () => {
     const db = {
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValueOnce([{ deletedAt: null }])
+        .mockResolvedValue([]),
+      $transaction: vi.fn(async (callback) => callback(db)),
       paymentWebhookEvent: {
         findUnique: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockResolvedValue({}),
@@ -123,6 +133,7 @@ describe('Stripe webhook processing', () => {
 
   it('requires cancellation confirmation and can resume a scheduled cancellation', async () => {
     const db = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
       subscription: {
         findFirst: vi.fn().mockResolvedValue({
           id: 'subscription_1',
@@ -147,5 +158,39 @@ describe('Stripe webhook processing', () => {
       where: { id: 'subscription_1' },
       data: { status: 'ACTIVE', cancelAtPeriodEnd: false },
     });
+  });
+
+  it('blocks resume while deletion is scheduled without calling the provider', async () => {
+    const db = { $queryRaw: vi.fn().mockResolvedValue([{ id: 'user_1' }]) };
+    const stripe = { resume: vi.fn() };
+    await expect(
+      new SubscriptionService(db as never, stripe as never).resume('user_1'),
+    ).rejects.toThrow('ACCOUNT_DELETION_OR_CANCELLATION_PENDING');
+    expect(stripe.resume).not.toHaveBeenCalled();
+  });
+
+  it('keeps a deleted account canceled on a late active webhook and queues reconciliation', async () => {
+    const db = {
+      $transaction: vi.fn(async (callback) => callback(db)),
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValueOnce([{ deletedAt: new Date() }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValue([{ id: 'operation' }]),
+      paymentWebhookEvent: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+      subscription: { upsert: vi.fn().mockResolvedValue({ id: 'local-sub' }) },
+    };
+    await new SubscriptionService(db as never, {} as never).processStripeEvent(event as never);
+    expect(db.subscription.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ status: 'CANCELED' }),
+        update: expect.objectContaining({ status: 'CANCELED' }),
+      }),
+    );
+    expect(db.$queryRaw).toHaveBeenCalledTimes(3);
   });
 });

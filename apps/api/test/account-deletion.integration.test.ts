@@ -52,12 +52,23 @@ describe('account export and deletion', () => {
     if (deletionSubjectRef) {
       await db.deletionTombstone.deleteMany({ where: { subjectRef: deletionSubjectRef } });
     }
+    await db.$executeRaw`DELETE FROM "AccountDeletionSchedule" WHERE "userId" = ${userId}`;
     await db.user.deleteMany({ where: { id: userId } });
     await db.$disconnect();
     await app.close();
   });
 
   it('exports data and requires recent re-authentication before deletion', async () => {
+    await request(app.getHttpServer()).get('/auth/account/deletion-schedule').expect(401);
+    await request(app.getHttpServer())
+      .post('/auth/account/deletion-schedule')
+      .set('Cookie', cookie)
+      .send({ confirmation: 'DELETE' })
+      .expect(401);
+    await request(app.getHttpServer())
+      .delete('/auth/account/deletion-schedule')
+      .set('Cookie', cookie)
+      .expect(401);
     const exported = await request(app.getHttpServer())
       .get('/auth/account/export')
       .set('Cookie', cookie)
@@ -78,6 +89,43 @@ describe('account export and deletion', () => {
       .set('Cookie', cookie)
       .send({ password })
       .expect(201);
+
+    await db.subscription.create({
+      data: { userId, status: 'ACTIVE', endsAt: new Date(Date.now() + 86_400_000) },
+    });
+    await request(app.getHttpServer())
+      .post('/auth/account/deletion-schedule')
+      .set('Cookie', cookie)
+      .send({ confirmation: 'wrong' })
+      .expect(400);
+    const planned = await request(app.getHttpServer())
+      .post('/auth/account/deletion-schedule')
+      .set('Cookie', cookie)
+      .send({ confirmation: 'DELETE' })
+      .expect(201);
+    expect(planned.body).toMatchObject({
+      scheduled: true,
+      renewalConfirmed: true,
+      executeAt: expect.any(String),
+    });
+    expect(Object.keys(planned.body).sort()).toEqual([
+      'executeAt',
+      'renewalConfirmed',
+      'scheduled',
+    ]);
+    await request(app.getHttpServer()).get('/auth/me').set('Cookie', cookie).expect(200);
+    const duplicate = await request(app.getHttpServer())
+      .post('/auth/account/deletion-schedule')
+      .set('Cookie', cookie)
+      .send({ confirmation: 'DELETE' })
+      .expect(201);
+    expect(duplicate.body).toEqual(planned.body);
+    await request(app.getHttpServer())
+      .delete('/auth/account/deletion-schedule')
+      .set('Cookie', cookie)
+      .expect(200)
+      .expect(({ body }) => expect(body.scheduled).toBe(false));
+    expect((await db.user.findUniqueOrThrow({ where: { id: userId } })).deletedAt).toBeNull();
 
     const deletion = await request(app.getHttpServer())
       .delete('/auth/account')

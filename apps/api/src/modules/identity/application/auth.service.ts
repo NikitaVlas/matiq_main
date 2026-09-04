@@ -10,6 +10,7 @@ import {
   createTransactionalEmail,
   encryptTransactionalEmail,
   validatePassword,
+  PostgresDeletionSchedule,
   type TransactionalEmailKind,
 } from '@matiq/backend';
 import type { Prisma } from '@prisma/client';
@@ -33,6 +34,30 @@ export class AuthService {
     @Inject(Database) private readonly db: Database,
     @Inject(RateLimitService) private readonly rateLimit: RateLimitService,
   ) {}
+
+  async deletionSchedule(userId: string) {
+    this.rateLimit.check(`deletion-schedule-read:${userId}`, 60, 60 * 60 * 1000);
+    return new PostgresDeletionSchedule(this.db).status(userId);
+  }
+
+  async changeDeletionSchedule(userId: string, reauthenticatedAt: Date | null, cancel: boolean) {
+    this.rateLimit.check(`deletion-schedule-change:${userId}`, 10, 60 * 60 * 1000);
+    if (!reauthenticatedAt || reauthenticatedAt.getTime() < Date.now() - reauthenticationWindowMs) {
+      throw new UnauthorizedException('REAUTHENTICATION_REQUIRED');
+    }
+    const schedule = new PostgresDeletionSchedule(this.db);
+    try {
+      return cancel ? await schedule.cancel(userId) : await schedule.request(userId);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        ['ACCOUNT_UNAVAILABLE', 'DELETION_CANNOT_BE_CANCELED'].includes(error.message)
+      ) {
+        throw new ConflictException(error.message);
+      }
+      throw error;
+    }
+  }
 
   async register(emailInput: string, password: string) {
     const errors = validatePassword(password);
@@ -385,6 +410,8 @@ export class AuthService {
     const statusTokenExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     const replacementPasswordHash = await bcrypt.hash(randomBytes(32).toString('base64url'), 12);
     const deletion = await this.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${userId} FOR UPDATE`;
+      await tx.$executeRaw`DELETE FROM "AccountDeletionSchedule" WHERE "userId" = ${userId}`;
       const existing = await tx.accountDeletionRequest.findUnique({ where: { userId } });
       if (existing) throw new ConflictException('ACCOUNT_DELETION_ALREADY_REQUESTED');
       const user = await tx.user.findUniqueOrThrow({

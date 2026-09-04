@@ -47,8 +47,11 @@ export function createAccountDeletionHandler(
     if (!request || request.completedAt) return;
     if (request.userId !== payload.userId) throw new Error('ACCOUNT_DELETION_SUBJECT_MISMATCH');
     const subscriptions = await db.subscription.findMany({
-      where: { userId: payload.userId, providerCustomerId: { not: null } },
-      select: { providerCustomerId: true },
+      where: {
+        userId: payload.userId,
+        OR: [{ providerCustomerId: { not: null } }, { providerSubscriptionId: { not: null } }],
+      },
+      select: { providerCustomerId: true, providerSubscriptionId: true },
     });
     const providerCustomerIds = [
       ...new Set(
@@ -61,6 +64,10 @@ export function createAccountDeletionHandler(
     await db.$transaction(async (tx) => {
       await eraseLocalAccountData(tx, payload.userId);
     });
+
+    if (subscriptions.length && processors.length === 0) {
+      throw new Error('EXTERNAL_DELETION_CONFIRMATION_REQUIRED');
+    }
 
     for (const processor of processors) {
       await processor.eraseAccount({ subjectRef: request.subjectRef, providerCustomerIds });

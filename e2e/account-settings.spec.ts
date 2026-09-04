@@ -7,6 +7,8 @@ function json(route: Route, body: unknown, status = 200) {
     headers: {
       'access-control-allow-origin': 'http://localhost:3100',
       'access-control-allow-credentials': 'true',
+      'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS',
+      'access-control-allow-headers': 'content-type',
     },
     body: JSON.stringify(body),
   });
@@ -18,6 +20,8 @@ test('athlete manages sessions, enables MFA, and confirms deletion securely', as
   await page.route('http://localhost:4000/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
+    if (path === '/auth/account/deletion-schedule')
+      return json(route, { scheduled: false, executeAt: null, renewalConfirmed: false });
 
     if (path === '/auth/me') {
       return json(route, {

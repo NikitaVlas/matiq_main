@@ -15,6 +15,11 @@ import {
   parseDeletionLedger,
   reapplyDeletionLedger,
 } from './deletion-ledger.js';
+import {
+  PostgresRenewalStore,
+  RenewalCancellationService,
+  PostgresDeletionSchedule,
+} from '@matiq/backend';
 
 // Intentionally fixed to the repository's local Compose service, never DATABASE_URL.
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -190,6 +195,34 @@ try {
     assert.equal(await restored.verifiedWatchInterval.count({ where }), expected);
   }
   stage = 'dump';
+  const renewalSubscription = await source.subscription.create({
+    data: {
+      userId: control.id,
+      status: 'ACTIVE',
+      endsAt: new Date(Date.now() + 86_400_000),
+      providerSubscriptionId: `synthetic-renewal-${runId}`,
+    },
+  });
+  const operationId = `renewal-${runId}`;
+  const sourceOperations = new PostgresRenewalStore(source);
+  await assert.rejects(sourceOperations.request(operationId, renewalSubscription.id, user.id));
+  await sourceOperations.request(operationId, renewalSubscription.id, control.id);
+  await sourceOperations.request(operationId, renewalSubscription.id, control.id);
+  const scheduledUser = await source.user.create({
+    data: { email: 'scheduled@example.invalid', passwordHash: 'synthetic' },
+  });
+  await source.subscription.create({
+    data: { userId: scheduledUser.id, status: 'ACTIVE', endsAt: new Date(Date.now() + 86_400_000) },
+  });
+  await source.session.create({
+    data: {
+      userId: scheduledUser.id,
+      tokenHash: 'scheduled-session',
+      expiresAt: new Date(Date.now() + 86_400_000),
+    },
+  });
+  const planned = await new PostgresDeletionSchedule(source).request(scheduledUser.id);
+  assert.equal(planned.scheduled, true);
   const dump = docker([
     'pg_dump',
     '-U',
@@ -235,6 +268,67 @@ try {
       subscription,
     );
   }
+  stage = 'renewal_operation_recovery';
+  const operations = new PostgresRenewalStore(restored);
+  assert.ok((await operations.pending()).includes(operationId));
+  const firstClaim = await operations.claim(operationId);
+  assert.ok(firstClaim);
+  assert.equal(await operations.claim(operationId), null);
+  await restored.$executeRaw`UPDATE "RenewalCancellationOperation" SET "leaseUntil" = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE "id" = ${operationId}`;
+  const nextClaim = await operations.claim(operationId);
+  assert.ok(nextClaim);
+  assert.notEqual(firstClaim.leaseToken, nextClaim.leaseToken);
+  assert.equal(await operations.confirm(firstClaim), false);
+  await operations.retry(nextClaim);
+  await restored.$executeRaw`UPDATE "RenewalCancellationOperation" SET "availableAt" = CURRENT_TIMESTAMP WHERE "id" = ${operationId}`;
+  let disabled = false;
+  let remoteCalls = 0;
+  const renewalService = new RenewalCancellationService(operations, {
+    isRenewalDisabled: async () => disabled,
+    disableRenewal: async (_id, key) => {
+      assert.equal(key, operationId);
+      disabled = true;
+      remoteCalls++;
+    },
+  });
+  assert.equal(await renewalService.process(operationId), 'CONFIRMED');
+  assert.equal(await renewalService.process(operationId), 'NOT_CLAIMED');
+  assert.equal(remoteCalls, 1);
+  assert.equal(
+    (await restored.subscription.findUniqueOrThrow({ where: { id: renewalSubscription.id } }))
+      .cancelAtPeriodEnd,
+    true,
+  );
+  checks.push(
+    'renewal_operation_survives_restore',
+    'renewal_lease_fencing',
+    'renewal_confirmation_idempotent',
+  );
+  stage = 'scheduled_deletion';
+  const scheduling = new PostgresDeletionSchedule(restored);
+  assert.deepEqual(await scheduling.status(scheduledUser.id), planned);
+  assert.equal(await scheduling.processDue(), 0);
+  assert.equal((await scheduling.cancel(scheduledUser.id)).scheduled, false);
+  await scheduling.request(scheduledUser.id);
+  await restored.$executeRaw`UPDATE "AccountDeletionSchedule" SET "executeAt" = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE "userId" = ${scheduledUser.id}`;
+  await assert.rejects(scheduling.cancel(scheduledUser.id), /DELETION_CANNOT_BE_CANCELED/);
+  const starts = await Promise.all([scheduling.processDue(), scheduling.processDue()]);
+  assert.equal(
+    starts.reduce((a, b) => a + b, 0),
+    1,
+  );
+  assert.equal(await scheduling.processDue(), 0);
+  assert.ok((await restored.user.findUniqueOrThrow({ where: { id: scheduledUser.id } })).deletedAt);
+  assert.equal(await restored.session.count({ where: { userId: scheduledUser.id } }), 0);
+  assert.equal(
+    await restored.accountDeletionRequest.count({ where: { userId: scheduledUser.id } }),
+    1,
+  );
+  checks.push(
+    'schedule_survives_restore',
+    'schedule_cancel_before_deadline',
+    'schedule_due_single_claim',
+  );
   stage = 'suppression';
   for (let attempt = 0; attempt < 2; attempt++) {
     stage = 'suppression';

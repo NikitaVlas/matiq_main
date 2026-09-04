@@ -51,6 +51,17 @@ export class ConfirmDeletionDto {
   confirmation!: 'DELETE';
 }
 
+export class DeletionScheduleDto {
+  @ApiProperty({ type: Boolean })
+  scheduled!: boolean;
+
+  @ApiProperty({ type: String, nullable: true })
+  executeAt!: string | null;
+
+  @ApiProperty({ type: Boolean })
+  renewalConfirmed!: boolean;
+}
+
 export class AccountDeletionStatusDto {
   @ApiProperty()
   @IsString()

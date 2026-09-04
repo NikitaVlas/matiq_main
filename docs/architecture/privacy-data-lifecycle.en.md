@@ -50,7 +50,9 @@ A separate “Delete now” choice does not wait for paid access to expire. Fina
 deletion is irreversible. Ordinary cancellation does not automatically issue a
 refund; statutory refund/withdrawal rights remain unaffected.
 See [SPEC-0017](../specifications/SPEC-0017-deletion-billing.en.md).
-Scheduled deletion is not implemented; current code blocks immediately.
+Scheduled deletion is implemented locally: persistence, cancellation before the
+deadline and worker execution. External renewal cancellation remains pending
+without a provider adapter; production and external-link recovery are not certified.
 
 The following steps and erasure deadlines apply when final deletion starts,
 not when voluntarily scheduling deletion for a future date:

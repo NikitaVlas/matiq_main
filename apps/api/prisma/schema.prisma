@@ -833,6 +833,30 @@ model Subscription {
   @@index([userId, status, endsAt])
 }
 
+model RenewalCancellationOperation {
+  id             String   @id
+  subscriptionId String
+  status         String   @default("PENDING")
+  leaseToken     String?
+  leaseUntil     DateTime?
+  attempts       Int      @default(0)
+  availableAt    DateTime @default(now())
+  confirmedAt    DateTime?
+  lastError      String?
+  createdAt      DateTime @default(now())
+
+  @@index([status, availableAt])
+}
+
+model AccountDeletionSchedule {
+  id        String   @id
+  userId    String   @unique
+  executeAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([executeAt])
+}
+
 model PaymentWebhookEvent {
   id              String    @id @default(cuid())
   providerEventId String    @unique

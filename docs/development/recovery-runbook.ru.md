@@ -41,6 +41,14 @@ backup, применяется дважды. Проверяется удален
 
 ## Document status
 
+- Прогон `1e2672a459c615b4d22fffbb` (28,242 с): восстановление расписания,
+  отмена до срока и однократное исполнение при конкуренции прошли. Общий FAILED
+  на `remaining_privacy_review`: `deleted_account_subscription_still_active` и
+  `provider_identifiers_remain_linked`. Изменения расписания после backup не
+  переносятся ledger v1; это production gate. Ниже исторические результаты.
+- Прогон `2ac5621c881ee1051feb7e6c`: новые проверки устойчивой renewal-операции,
+  lease fencing и подтверждения прошли. Общий FAILED остаётся из-за прежних
+  subscription/provider findings; fake provider используется только внутри теста.
 - Текущий прогон `256c4923f199a1628b121d51`: metadata очищена, FAILED остаётся
   из-за подписок и provider links. План: [SPEC-0017](../specifications/SPEC-0017-deletion-billing.ru.md).
 - Следующий пункт — исторический результат до исправления metadata.

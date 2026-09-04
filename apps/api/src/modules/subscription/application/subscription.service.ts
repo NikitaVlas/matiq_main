@@ -3,6 +3,8 @@ import { SubscriptionStatus } from '@prisma/client';
 import { Database } from '../../../shared/infrastructure/database';
 import { StripeBillingService } from '../infrastructure/stripe-billing.service';
 import Stripe from 'stripe';
+import { createHash } from 'node:crypto';
+import { PostgresRenewalStore } from '@matiq/backend';
 
 @Injectable()
 export class SubscriptionService {
@@ -10,6 +12,12 @@ export class SubscriptionService {
     @Inject(Database) private readonly db: Database,
     @Inject(StripeBillingService) private readonly stripe: StripeBillingService,
   ) {}
+  // Internal entry point for the upcoming scheduled-deletion use case.
+  // Accepted is not confirmation; do not expose it as a successful cancellation.
+  async requestRenewalCancellation(userId: string, subscriptionId: string, operationId: string) {
+    await new PostgresRenewalStore(this.db).request(operationId, subscriptionId, userId);
+    return { accepted: true };
+  }
   async startTrial(userId: string) {
     const existing = await this.db.subscription.findFirst({
       where: { userId },
@@ -68,6 +76,7 @@ export class SubscriptionService {
     immediateAccessConsent: boolean,
     withdrawalAcknowledgement: boolean,
   ) {
+    await this.requireRenewalAllowed(userId);
     if (!immediateAccessConsent || !withdrawalAcknowledgement)
       throw new ForbiddenException('CHECKOUT_CONSENT_REQUIRED');
     await this.db.auditLog.create({
@@ -111,6 +120,7 @@ export class SubscriptionService {
   }
 
   async resume(userId: string) {
+    await this.requireRenewalAllowed(userId);
     const current = await this.db.subscription.findFirst({
       where: { userId, status: SubscriptionStatus.CANCEL_AT_PERIOD_END },
       orderBy: { createdAt: 'desc' },
@@ -171,52 +181,76 @@ export class SubscriptionService {
       where: { providerEventId: event.id },
     });
     if (seen) return;
-    await this.db.paymentWebhookEvent.create({
-      data: {
-        providerEventId: event.id,
-        eventType: event.type,
-        payload: event.data.object as object,
-      },
+    return this.db.$transaction(async (tx) => {
+      await tx.paymentWebhookEvent.create({
+        data: {
+          providerEventId: event.id,
+          eventType: event.type,
+          payload: event.data.object as object,
+        },
+      });
+      if (!event.type.startsWith('customer.subscription.')) return;
+      const subscription = event.data.object as Stripe.Subscription;
+      const userId = subscription.metadata.matiqUserId;
+      if (!userId) return;
+      const users = await tx.$queryRaw<
+        { deletedAt: Date | null }[]
+      >`SELECT "deletedAt" FROM "User" WHERE "id" = ${userId} FOR UPDATE`;
+      if (!users.length) return;
+      const schedules = await tx.$queryRaw<
+        { id: string }[]
+      >`SELECT "id" FROM "AccountDeletionSchedule" WHERE "userId" = ${userId}`;
+      const periodEnd = subscription.items.data[0]?.current_period_end ?? subscription.start_date;
+      const status = users[0]?.deletedAt
+        ? SubscriptionStatus.CANCELED
+        : subscription.status === 'active'
+          ? SubscriptionStatus.ACTIVE
+          : subscription.status === 'past_due'
+            ? SubscriptionStatus.PAST_DUE
+            : subscription.cancel_at_period_end
+              ? SubscriptionStatus.CANCEL_AT_PERIOD_END
+              : SubscriptionStatus.CANCELED;
+      const graceEndsAt =
+        status === SubscriptionStatus.PAST_DUE
+          ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+          : null;
+      const localSubscription = await tx.subscription.upsert({
+        where: { providerSubscriptionId: subscription.id },
+        create: {
+          userId,
+          status,
+          startsAt: new Date(subscription.start_date * 1000),
+          endsAt: new Date(periodEnd * 1000),
+          providerSubscriptionId: subscription.id,
+          providerCustomerId: String(subscription.customer),
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
+          graceEndsAt,
+        },
+        update: {
+          status,
+          endsAt: new Date(periodEnd * 1000),
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
+          graceEndsAt,
+        },
+      });
+      if (schedules[0] || users[0]?.deletedAt) {
+        const prefix = schedules[0]?.id ?? 'deleted';
+        const key = `${prefix}:${createHash('sha256').update(event.id).digest('hex')}`;
+        await new PostgresRenewalStore(tx).request(key, localSubscription.id, userId);
+      }
+      await tx.paymentWebhookEvent.update({
+        where: { providerEventId: event.id },
+        data: { processedAt: new Date() },
+      });
     });
-    if (!event.type.startsWith('customer.subscription.')) return;
-    const subscription = event.data.object as Stripe.Subscription;
-    const userId = subscription.metadata.matiqUserId;
-    if (!userId) return;
-    const periodEnd = subscription.items.data[0]?.current_period_end ?? subscription.start_date;
-    const status =
-      subscription.status === 'active'
-        ? SubscriptionStatus.ACTIVE
-        : subscription.status === 'past_due'
-          ? SubscriptionStatus.PAST_DUE
-          : subscription.cancel_at_period_end
-            ? SubscriptionStatus.CANCEL_AT_PERIOD_END
-            : SubscriptionStatus.CANCELED;
-    const graceEndsAt =
-      status === SubscriptionStatus.PAST_DUE
-        ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-        : null;
-    await this.db.subscription.upsert({
-      where: { providerSubscriptionId: subscription.id },
-      create: {
-        userId,
-        status,
-        startsAt: new Date(subscription.start_date * 1000),
-        endsAt: new Date(periodEnd * 1000),
-        providerSubscriptionId: subscription.id,
-        providerCustomerId: String(subscription.customer),
-        cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        graceEndsAt,
-      },
-      update: {
-        status,
-        endsAt: new Date(periodEnd * 1000),
-        cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        graceEndsAt,
-      },
-    });
-    await this.db.paymentWebhookEvent.update({
-      where: { providerEventId: event.id },
-      data: { processedAt: new Date() },
-    });
+  }
+
+  private async requireRenewalAllowed(userId: string) {
+    const blocked = await this.db.$queryRaw<{ id: string }[]>`SELECT u."id" FROM "User" u
+      WHERE u."id" = ${userId} AND (u."deletedAt" IS NOT NULL
+        OR EXISTS (SELECT 1 FROM "AccountDeletionSchedule" d WHERE d."userId" = u."id")
+        OR EXISTS (SELECT 1 FROM "RenewalCancellationOperation" o JOIN "Subscription" s ON s."id" = o."subscriptionId"
+          WHERE s."userId" = u."id" AND o."status" <> 'CONFIRMED'))`;
+    if (blocked.length) throw new ForbiddenException('ACCOUNT_DELETION_OR_CANCELLATION_PENDING');
   }
 }

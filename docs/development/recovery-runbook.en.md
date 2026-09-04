@@ -30,6 +30,14 @@ or independent ledger storage. Those remain launch gates.
 
 ## Document status
 
+- Run `1e2672a459c615b4d22fffbb` (28.242 s): schedule restore, cancellation
+  before deadline and concurrent single execution passed. Overall FAILED at
+  `remaining_privacy_review`: `deleted_account_subscription_still_active` and
+  `provider_identifiers_remain_linked`. Schedule changes after backup are not
+  carried by ledger v1; this remains a production gate. Older evidence follows.
+- Run `2ac5621c881ee1051feb7e6c`: new durable renewal-operation, lease fencing and
+  confirmation checks passed. Overall FAILED remains for previous subscription/
+  provider findings; the fake provider is test-only.
 - Current run `256c4923f199a1628b121d51`: metadata scrubbed, still FAILED for
   subscriptions/provider links. See [SPEC-0017](../specifications/SPEC-0017-deletion-billing.en.md).
 - The next entry is historical evidence before the metadata fix.

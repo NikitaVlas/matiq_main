@@ -295,6 +295,65 @@
         ]
       }
     },
+    "/auth/account/deletion-schedule": {
+      "get": {
+        "operationId": "AuthController_deletionSchedule",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionScheduleDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "authentication"
+        ]
+      },
+      "post": {
+        "operationId": "AuthController_scheduleDeletion",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionScheduleDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "authentication"
+        ]
+      },
+      "delete": {
+        "operationId": "AuthController_cancelDeletionSchedule",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionScheduleDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
     "/auth/mfa/setup": {
       "post": {
         "operationId": "AuthController_beginMfaSetup",
@@ -778,6 +837,27 @@
   "tags": [],
   "servers": [],
   "components": {
-    "schemas": {}
+    "schemas": {
+      "DeletionScheduleDto": {
+        "type": "object",
+        "properties": {
+          "scheduled": {
+            "type": "boolean"
+          },
+          "executeAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "renewalConfirmed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "scheduled",
+          "executeAt",
+          "renewalConfirmed"
+        ]
+      }
+    }
   }
 }

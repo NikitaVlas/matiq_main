@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -11,13 +12,14 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiOkResponse, ApiCreatedResponse } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { AuthGuard, AuthenticatedRequest } from '../infrastructure/auth.guard';
 import {
   ChangePasswordDto,
   AccountDeletionStatusDto,
   ConfirmDeletionDto,
+  DeletionScheduleDto,
   EmailDto,
   LoginDto,
   MfaCodeDto,
@@ -181,6 +183,8 @@ export class AuthController {
     @Req() request: AuthenticatedRequest,
     @Res({ passthrough: true }) response: Response,
   ) {
+    if (dto?.confirmation !== 'DELETE')
+      throw new BadRequestException('DELETION_CONFIRMATION_REQUIRED');
     const result = await this.auth.requestAccountDeletion(
       request.userId,
       request.reauthenticatedAt,
@@ -192,6 +196,29 @@ export class AuthController {
   @Post('account-deletion/status')
   accountDeletionStatus(@Body() dto: AccountDeletionStatusDto) {
     return this.auth.accountDeletionStatus(dto.requestId, dto.statusToken);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('account/deletion-schedule')
+  @ApiOkResponse({ type: DeletionScheduleDto })
+  deletionSchedule(@Req() request: AuthenticatedRequest) {
+    return this.auth.deletionSchedule(request.userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('account/deletion-schedule')
+  @ApiCreatedResponse({ type: DeletionScheduleDto })
+  scheduleDeletion(@Body() dto: ConfirmDeletionDto, @Req() request: AuthenticatedRequest) {
+    if (dto?.confirmation !== 'DELETE')
+      throw new BadRequestException('DELETION_CONFIRMATION_REQUIRED');
+    return this.auth.changeDeletionSchedule(request.userId, request.reauthenticatedAt, false);
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('account/deletion-schedule')
+  @ApiOkResponse({ type: DeletionScheduleDto })
+  cancelDeletionSchedule(@Req() request: AuthenticatedRequest) {
+    return this.auth.changeDeletionSchedule(request.userId, request.reauthenticatedAt, true);
   }
 
   @UseGuards(AuthGuard)

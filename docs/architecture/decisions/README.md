@@ -11,6 +11,8 @@
 
 ## Document status
 
+- [ADR-0007 RU](ADR-0007-shared-renewal-cancellation.ru.md) /
+  [EN](ADR-0007-shared-renewal-cancellation.en.md): shared renewal cancellation — Accepted.
 - Status: Active index
 - Owner: MATIQ team
 - Last reviewed: 2026-07-19
