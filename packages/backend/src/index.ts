@@ -1,6 +1,7 @@
 export * from './identity/password-policy.js';
 export * from './identity/scheduled-deletion-policy.js';
 export * from './identity/postgres-deletion-schedule.js';
+export * from './privacy/postgres-operations-monitor.js';
 export * from './billing/renewal-cancellation.js';
 export * from './billing/postgres-renewal-store.js';
 export * from './athlete-profile/profile-policy.js';

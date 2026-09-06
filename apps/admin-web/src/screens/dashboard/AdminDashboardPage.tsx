@@ -9,6 +9,19 @@ import {
   ViewingAnalyticsData,
 } from '../../widgets/viewing-analytics/ui/ViewingAnalytics';
 
+type PrivacyOperations = {
+  scheduled: number;
+  dueSchedules: number;
+  pendingDeletion: number;
+  pendingOutbox: number;
+  staleProcessing: number;
+  failedInbox: number;
+  privacyDeadLetters: number;
+  renewalPending: number;
+  renewalReviewRequired: number;
+  oldestPendingSeconds: number;
+};
+
 async function request(path: UserApiPath, init: RequestInit) {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 10_000);
@@ -42,6 +55,8 @@ export default function AdminHome() {
   } | null>(null);
   const [viewingAnalytics, setViewingAnalytics] = useState<ViewingAnalyticsData | null>(null);
   const [analyticsLoaded, setAnalyticsLoaded] = useState(false);
+  const [privacyOperations, setPrivacyOperations] = useState<PrivacyOperations | null>(null);
+  const [privacyMessage, setPrivacyMessage] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -85,10 +100,12 @@ export default function AdminHome() {
 
       let response: Response;
       let analyticsResponse: Response;
+      let privacyResponse: Response;
       try {
-        [response, analyticsResponse] = await Promise.all([
+        [response, analyticsResponse, privacyResponse] = await Promise.all([
           adminApi('/admin/stats'),
           adminApi('/admin/viewing-analytics'),
+          adminApi('/admin/privacy-operations'),
         ]);
       } catch {
         setError('Admin API ist nicht erreichbar. Bitte Port 4001 prüfen.');
@@ -106,12 +123,54 @@ export default function AdminHome() {
       }
       setViewingAnalytics(await analyticsResponse.json());
       setAnalyticsLoaded(true);
+      if (!privacyResponse.ok) {
+        setError(await responseError(privacyResponse, 'GDPR-Betriebsstatus nicht verfügbar'));
+        return;
+      }
+      setPrivacyOperations(await privacyResponse.json());
     } catch (caught) {
       setError(
         caught instanceof DOMException && caught.name === 'AbortError'
           ? 'Die Anmeldung hat länger als 10 Sekunden gedauert. User API oder Datenbank prüfen.'
           : 'User API ist nicht erreichbar.',
       );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function retryPrivacyOperations(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
+    setPrivacyMessage('');
+    const data = new FormData(event.currentTarget);
+    if (String(data.get('confirmation') ?? '').trim() !== 'RETRY') {
+      setError('Bitte RETRY zur Bestätigung eingeben.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const response = await adminApi('/admin/privacy-operations/retry', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ confirmation: 'RETRY' }),
+      });
+      if (!response.ok) {
+        setError(await responseError(response, 'Wiederholung konnte nicht gestartet werden'));
+        return;
+      }
+      const result = (await response.json()) as {
+        pendingReleased: number;
+        deadLettersRequeued: number;
+        status: PrivacyOperations;
+      };
+      setPrivacyOperations(result.status);
+      setPrivacyMessage(
+        `${result.pendingReleased} wartende und ${result.deadLettersRequeued} fehlgeschlagene Vorgänge freigegeben.`,
+      );
+      event.currentTarget.reset();
+    } catch {
+      setError('Admin API ist nicht erreichbar. Wiederholung wurde nicht bestätigt.');
     } finally {
       setIsSubmitting(false);
     }
@@ -206,6 +265,74 @@ export default function AdminHome() {
       )}
       {error && <p style={{ color: '#a5221a' }}>{error}</p>}
       {stats && <AdminStats stats={stats} />}
+      {privacyOperations && (
+        <section aria-labelledby="privacy-operations-heading" style={{ marginTop: 32 }}>
+          <h2 id="privacy-operations-heading">GDPR-Betriebsstatus</h2>
+          <p>Nur aggregierte technische Zustände, ohne Personen- oder Zahlungsdaten.</p>
+          <dl
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 12,
+              maxWidth: 900,
+            }}
+          >
+            <div>
+              <dt>Geplante Löschungen</dt>
+              <dd>{privacyOperations.scheduled}</dd>
+            </div>
+            <div>
+              <dt>Fällige Zeitpläne</dt>
+              <dd>{privacyOperations.dueSchedules}</dd>
+            </div>
+            <div>
+              <dt>Löschung ausstehend</dt>
+              <dd>{privacyOperations.pendingDeletion}</dd>
+            </div>
+            <div>
+              <dt>Outbox ausstehend</dt>
+              <dd>{privacyOperations.pendingOutbox}</dd>
+            </div>
+            <div>
+              <dt>Verarbeitung festgefahren</dt>
+              <dd>{privacyOperations.staleProcessing}</dd>
+            </div>
+            <div>
+              <dt>Fehlgeschlagene Inbox</dt>
+              <dd>{privacyOperations.failedInbox}</dd>
+            </div>
+            <div>
+              <dt>Dead Letter</dt>
+              <dd>{privacyOperations.privacyDeadLetters}</dd>
+            </div>
+            <div>
+              <dt>Verlängerung ausstehend</dt>
+              <dd>{privacyOperations.renewalPending}</dd>
+            </div>
+            <div>
+              <dt>Manuelle Prüfung</dt>
+              <dd>{privacyOperations.renewalReviewRequired}</dd>
+            </div>
+            <div>
+              <dt>Ältester Vorgang</dt>
+              <dd>{privacyOperations.oldestPendingSeconds} Sekunden</dd>
+            </div>
+          </dl>
+          <form
+            onSubmit={retryPrivacyOperations}
+            style={{ display: 'grid', gap: 12, maxWidth: 420 }}
+          >
+            <label>
+              Bestätigung: RETRY
+              <input name="confirmation" autoComplete="off" required />
+            </label>
+            <button disabled={isSubmitting}>
+              {isSubmitting ? 'Bitte warten…' : 'Sichere Wiederholung starten'}
+            </button>
+          </form>
+          {privacyMessage && <p role="status">{privacyMessage}</p>}
+        </section>
+      )}
       {stats && !analyticsLoaded && <p>Wiedergabestatistik wird geladen…</p>}
       {viewingAnalytics && <ViewingAnalytics data={viewingAnalytics} />}
     </main>

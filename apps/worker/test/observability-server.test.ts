@@ -13,8 +13,23 @@ describe('WorkerObservabilityServer', () => {
 
   it('exposes liveness, readiness and queue metrics', async () => {
     const db = {
-      $queryRaw: vi.fn().mockResolvedValue([{ '?column?': 1 }]),
-      outboxEvent: { findFirst: vi.fn().mockResolvedValue(null) },
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValueOnce([{ '?column?': 1 }])
+        .mockResolvedValueOnce([
+          {
+            scheduled: 1,
+            dueSchedules: 0,
+            pendingDeletion: 2,
+            pendingOutbox: 1,
+            staleProcessing: 0,
+            failedInbox: 0,
+            privacyDeadLetters: 0,
+            renewalPending: 1,
+            renewalReviewRequired: 0,
+            oldestPendingSeconds: 30,
+          },
+        ]),
     } as unknown as PrismaClient;
     const redis = { ping: vi.fn().mockResolvedValue('PONG') } as unknown as Pick<Redis, 'ping'>;
     const queue = {
@@ -32,6 +47,7 @@ describe('WorkerObservabilityServer', () => {
     expect((await fetch(`http://127.0.0.1:${port}/ready`)).status).toBe(200);
     const metrics = await fetch(`http://127.0.0.1:${port}/metrics`).then((value) => value.text());
     expect(metrics).toContain('matiq_worker_queue_jobs{state="waiting"} 2');
+    expect(metrics).toContain('matiq_worker_privacy_operations{state="pendingDeletion"} 2');
   });
 
   it('returns a safe unavailable readiness response', async () => {

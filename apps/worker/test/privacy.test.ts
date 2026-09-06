@@ -1,9 +1,54 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
 import { describe, expect, it, vi } from 'vitest';
 import { createAccountDeletionHandler } from '../src/privacy.js';
-import { reapplyDeletionLedger } from '../src/deletion-ledger.js';
+import { parseDeletionLedger, reapplyDeletionLedger } from '../src/deletion-ledger.js';
 
 describe('restored deletion receipt retention', () => {
+  it('accepts legacy ledgers and validates schedule-aware ledgers', () => {
+    expect(
+      parseDeletionLedger({
+        version: 1,
+        exportedAt: '2026-09-06T00:00:00.000Z',
+        tombstones: [],
+      }),
+    ).toMatchObject({ version: 1 });
+    expect(
+      parseDeletionLedger({
+        version: 2,
+        exportedAt: '2026-09-06T00:00:00.000Z',
+        tombstones: [],
+        schedules: [
+          {
+            subjectRef: 'subject-1',
+            executeAt: '2026-10-01T00:00:00.000Z',
+            createdAt: '2026-09-06T00:00:00.000Z',
+          },
+        ],
+      }),
+    ).toMatchObject({ version: 2 });
+    expect(() =>
+      parseDeletionLedger({
+        version: 2,
+        exportedAt: '2026-09-06T00:00:00.000Z',
+        tombstones: [],
+      }),
+    ).toThrow('INVALID_LEDGER');
+    expect(() =>
+      parseDeletionLedger({
+        version: 2,
+        exportedAt: '2026-09-06T00:00:00.000Z',
+        tombstones: [
+          {
+            subjectRef: 'subject-1',
+            requestedAt: '2026-09-01T00:00:00.000Z',
+            retainUntil: '2026-10-01T00:00:00.000Z',
+          },
+        ],
+        schedules: [],
+      }),
+    ).toThrow('INVALID_LEDGER');
+  });
+
   it.each([null, new Date('2025-12-31T23:59:59Z')])(
     'uses completion year and preserves an existing completion: %s',
     async (existingCompletion) => {
@@ -31,6 +76,7 @@ describe('restored deletion receipt retention', () => {
             'emailVerificationToken',
             'passwordResetToken',
             'mfaRecoveryCode',
+            'subscription',
             'user',
             'auditLog',
           ].map((name) => [name, repository]),
@@ -74,6 +120,10 @@ describe('restored deletion receipt retention', () => {
           ],
         },
         data: { actor: 'subject:synthetic-subject', entityId: null, metadata: Prisma.DbNull },
+      });
+      expect(repository.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'synthetic-user' },
+        data: { status: 'CANCELED' },
       });
       const retainUntil = new Date(
         existingCompletion ? '2029-01-01T00:00:00Z' : '2030-01-01T00:00:00Z',

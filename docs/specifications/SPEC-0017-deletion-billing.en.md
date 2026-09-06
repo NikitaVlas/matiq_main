@@ -56,9 +56,10 @@ complete receipts with external references but no processors. Legacy restore
 still completes without billing reconciliation. Late webhooks retain CANCELED
 for deleted users and enqueue reconciliation, without extending scheduled dates.
 Checkout/resume reject schedules or pending operations; remote-call races and
-provider event ordering still need full verification. The independent ledger
-does not replay scheduling/cancellation changes made after backup. Changing a
-local status alone cannot prove cancellation.
+provider event ordering still need full verification. Ledger v2 replays schedule
+creation and cancellation after backup while v1 stays compatible without that
+capability. Reapply changes a restored deleted account's local subscription to
+CANCELED, but this does not prove provider cancellation.
 
 ## Proposed implementation sequence
 
@@ -110,6 +111,14 @@ links and broader irreversible unlinkability are not covered by this helper.
 
 ## Document status
 
+- 2026-09-06 slice: deletion ledger v2 restores schedule creation and cancellation
+  after backup; v1 remains readable. Restored deleted accounts no longer retain an
+  ACTIVE local subscription. Incomplete receipts remain incomplete and are requeued
+  instead of being falsely completed. Worker unit/typecheck passed. Recovery run
+  `2d2416c643a3e42f4b72b346` passed every new check; overall FAILED remains only
+  for `provider_identifiers_remain_linked`. Real payment integration is intentionally
+  deferred. Full
+  `pnpm verify` and `git diff --check` passed.
 - Current slice: API, UI and due-date executor implemented. API integration:
   3 passed; E2E: 7 passed. Migrations applied only to disposable test databases.
   Recovery `1e2672a459c615b4d22fffbb`: new schedule checks passed; overall FAILED

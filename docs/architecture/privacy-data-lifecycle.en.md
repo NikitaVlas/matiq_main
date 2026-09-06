@@ -69,6 +69,15 @@ not when voluntarily scheduling deletion for a future date:
    active service and expires through the backup lifecycle.
 8. Completion is confirmed to the user.
 
+Before each backup, the operator exports ledger v2 to independent storage. It
+contains only random `privacySubjectId` values, request/retention/completion dates and current
+scheduled-deletion dates—never email, internal user IDs or payment identifiers.
+It is authoritative for schedules at export time, restoring both creation and
+cancellation after backup. Legacy v1 ledgers remain readable but do not reconcile
+schedules or completion state. An incomplete request is requeued after restore and
+is not marked complete without a processor. The latest ledger must be reapplied
+before API or workers receive traffic.
+
 Viewing and assessment history must no longer identify the user. Financial and
 audit records remain only on a documented legal basis.
 

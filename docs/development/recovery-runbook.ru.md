@@ -41,6 +41,10 @@ backup, применяется дважды. Проверяется удален
 
 ## Document status
 
+- Прогон `2d2416c643a3e42f4b72b346` (23,925 с) подтвердил ledger v2: создание и отмена
+  расписания после backup, однократное исполнение и ожидание processor прошли.
+  Общий статус FAILED только из-за отложенного `provider_identifiers_remain_linked`.
+  Ledger v1 остаётся читаемым. Предыдущий preflight-результат ниже не проверял данные.
 - Прогон `1e2672a459c615b4d22fffbb` (28,242 с): восстановление расписания,
   отмена до срока и однократное исполнение при конкуренции прошли. Общий FAILED
   на `remaining_privacy_review`: `deleted_account_subscription_still_active` и

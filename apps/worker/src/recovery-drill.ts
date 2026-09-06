@@ -223,6 +223,23 @@ try {
   });
   const planned = await new PostgresDeletionSchedule(source).request(scheduledUser.id);
   assert.equal(planned.scheduled, true);
+  const postBackupScheduledUser = await source.user.create({
+    data: { email: 'post-backup-scheduled@example.invalid', passwordHash: 'synthetic' },
+  });
+  await source.subscription.create({
+    data: {
+      userId: postBackupScheduledUser.id,
+      status: 'ACTIVE',
+      endsAt: new Date(Date.now() + 86_400_000),
+    },
+  });
+  await source.session.create({
+    data: {
+      userId: postBackupScheduledUser.id,
+      tokenHash: 'post-backup-scheduled-session',
+      expiresAt: new Date(Date.now() + 86_400_000),
+    },
+  });
   const dump = docker([
     'pg_dump',
     '-U',
@@ -241,6 +258,10 @@ try {
       retainUntil: new Date(now.getTime() + 35 * 86_400_000),
     },
   });
+  await new PostgresDeletionSchedule(source).cancel(scheduledUser.id);
+  const postBackupPlanned = await new PostgresDeletionSchedule(source).request(
+    postBackupScheduledUser.id,
+  );
   const ledger = JSON.stringify(await exportDeletionLedger(source));
   stage = 'restore';
   docker(
@@ -306,27 +327,34 @@ try {
   );
   stage = 'scheduled_deletion';
   const scheduling = new PostgresDeletionSchedule(restored);
-  assert.deepEqual(await scheduling.status(scheduledUser.id), planned);
+  assert.equal((await scheduling.status(scheduledUser.id)).scheduled, true);
+  await reapplyDeletionLedger(restored, parseDeletionLedger(JSON.parse(ledger)));
+  assert.equal((await scheduling.status(scheduledUser.id)).scheduled, false);
+  assert.deepEqual(await scheduling.status(postBackupScheduledUser.id), postBackupPlanned);
   assert.equal(await scheduling.processDue(), 0);
-  assert.equal((await scheduling.cancel(scheduledUser.id)).scheduled, false);
-  await scheduling.request(scheduledUser.id);
-  await restored.$executeRaw`UPDATE "AccountDeletionSchedule" SET "executeAt" = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE "userId" = ${scheduledUser.id}`;
-  await assert.rejects(scheduling.cancel(scheduledUser.id), /DELETION_CANNOT_BE_CANCELED/);
+  await restored.$executeRaw`UPDATE "AccountDeletionSchedule" SET "executeAt" = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE "userId" = ${postBackupScheduledUser.id}`;
+  await assert.rejects(
+    scheduling.cancel(postBackupScheduledUser.id),
+    /DELETION_CANNOT_BE_CANCELED/,
+  );
   const starts = await Promise.all([scheduling.processDue(), scheduling.processDue()]);
   assert.equal(
     starts.reduce((a, b) => a + b, 0),
     1,
   );
   assert.equal(await scheduling.processDue(), 0);
-  assert.ok((await restored.user.findUniqueOrThrow({ where: { id: scheduledUser.id } })).deletedAt);
-  assert.equal(await restored.session.count({ where: { userId: scheduledUser.id } }), 0);
+  assert.ok(
+    (await restored.user.findUniqueOrThrow({ where: { id: postBackupScheduledUser.id } }))
+      .deletedAt,
+  );
+  assert.equal(await restored.session.count({ where: { userId: postBackupScheduledUser.id } }), 0);
   assert.equal(
-    await restored.accountDeletionRequest.count({ where: { userId: scheduledUser.id } }),
+    await restored.accountDeletionRequest.count({ where: { userId: postBackupScheduledUser.id } }),
     1,
   );
   checks.push(
-    'schedule_survives_restore',
-    'schedule_cancel_before_deadline',
+    'post_backup_schedule_restored',
+    'post_backup_schedule_cancellation_restored',
     'schedule_due_single_claim',
   );
   stage = 'suppression';
@@ -341,10 +369,13 @@ try {
         where: { subjectRef: user.privacySubjectId },
       },
     );
-    assert.ok(receipt.completedAt);
+    assert.equal(receipt.completedAt, null);
+    assert.equal(receipt.userId, user.id);
     assert.equal(
-      receipt.retainUntil.toISOString(),
-      new Date(Date.UTC(receipt.completedAt.getUTCFullYear() + 4, 0, 1)).toISOString(),
+      await restored.outboxEvent.count({
+        where: { idempotencyKey: `privacy.account-delete.v1:restore:${user.privacySubjectId}` },
+      }),
+      1,
     );
     assert.notEqual(deleted.email, user.email);
     const unaffected: User = await restored.user.findUniqueOrThrow({ where: { id: control.id } });
@@ -373,6 +404,7 @@ try {
     'control_account_preserved',
     'audit_pseudonymised',
     'playback_heartbeats_and_intervals_erased',
+    'restore_receipt_waits_for_processor',
   );
   stage = 'remaining_privacy_review';
   const remainingMetadata = (

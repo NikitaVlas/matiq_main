@@ -16,7 +16,8 @@ health/readiness и машиночитаемые метрики.
 - Readiness Worker проверяет PostgreSQL и Redis без раскрытия ошибок.
 
 Не входят tracing backend, dashboards, alerts, production scraping и
-domain-specific business metrics.
+domain-specific business metrics. Исключение, добавленное 2026-09-06: безопасные
+агрегаты состояния GDPR-операций и управляемый Admin retry.
 
 ## Требования
 
@@ -46,6 +47,12 @@ domain-specific business metrics.
 
 ## Verification results
 
+- Расширение 2026-09-06: общая PostgreSQL-модель агрегатов, Admin-only GET/POST,
+  немецкий Admin UI, Prometheus gauges и повтор зависших/dead-letter операций.
+  Retry требует MFA Admin, недавнюю reauthentication и точное подтверждение,
+  создаёт audit event и не раскрывает payload, ошибки или идентификаторы.
+  Backend 27, Worker 19 и Admin API 38 unit-тестов прошли; Admin PostgreSQL
+  integration 9 тестов и отдельный Admin Chromium E2E прошли.
 - Shared metrics registry tests: 5 passed (включая существующие policies).
 - User API observability tests: 4 passed.
 - Admin API health/metrics tests: 4 passed.
@@ -60,6 +67,8 @@ domain-specific business metrics.
 - Метрики хранятся в памяти процесса и сбрасываются при рестарте.
 - Scraping, retention, dashboards и alerts настраиваются при выборе production
   observability stack.
+- Application предоставляет gauges и Admin-представление, но отправка alerts во
+  внешний канал остаётся production-настройкой.
 - В production доступ к `/metrics` должен быть ограничен внутренней сетью или
   reverse proxy; application payload и персональные данные endpoint не содержит.
 
@@ -67,5 +76,5 @@ domain-specific business metrics.
 
 - Status: Verified
 - Owner: MATIQ team
-- Last reviewed: 2026-09-01
+- Last reviewed: 2026-09-06
 - Related code: `packages/backend`, `apps/api`, `apps/admin-api`, `apps/worker`

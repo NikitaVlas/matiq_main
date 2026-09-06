@@ -30,6 +30,10 @@ or independent ledger storage. Those remain launch gates.
 
 ## Document status
 
+- Run `2d2416c643a3e42f4b72b346` (23.925 s) verified ledger v2: post-backup schedule
+  creation and cancellation, single execution and processor-pending state passed.
+  Overall status is FAILED only for deferred `provider_identifiers_remain_linked`.
+  Ledger v1 remains readable. The earlier preflight result below tested no data.
 - Run `1e2672a459c615b4d22fffbb` (28.242 s): schedule restore, cancellation
   before deadline and concurrent single execution passed. Overall FAILED at
   `remaining_privacy_review`: `deleted_account_subscription_still_active` and

@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
-import type { MetricsRegistry } from '@matiq/backend';
+import { PostgresPrivacyOperationsMonitor, type MetricsRegistry } from '@matiq/backend';
 import type { Queue } from 'bullmq';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -50,21 +50,21 @@ export class WorkerObservabilityServer {
 
   private async metricResponse(response: Parameters<typeof sendJson>[0]) {
     try {
-      const [counts, oldest] = await Promise.all([
+      const [counts, privacy] = await Promise.all([
         this.queue.getJobCounts('waiting', 'active', 'delayed', 'failed'),
-        this.db.outboxEvent.findFirst({
-          where: { status: 'PENDING' },
-          orderBy: { createdAt: 'asc' },
-          select: { createdAt: true },
-        }),
+        new PostgresPrivacyOperationsMonitor(this.db).snapshot(),
       ]);
       for (const [state, count] of Object.entries(counts)) {
         this.metrics.setGauge('matiq_worker_queue_jobs', count, { state });
       }
       this.metrics.setGauge(
         'matiq_worker_outbox_oldest_pending_seconds',
-        oldest ? Math.max(0, (Date.now() - oldest.createdAt.getTime()) / 1_000) : 0,
+        privacy.oldestPendingSeconds,
       );
+      for (const [state, count] of Object.entries(privacy)) {
+        if (state === 'oldestPendingSeconds') continue;
+        this.metrics.setGauge('matiq_worker_privacy_operations', count, { state });
+      }
       response.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8' });
       response.end(this.metrics.render());
     } catch {

@@ -30,7 +30,7 @@ export class IdempotentConsumer {
       return;
     }
 
-    const inbox = await this.startAttempt(existing, event);
+    const inbox = await this.startAttempt(existing, event, job.attemptsMade);
     if (!inbox || inbox.status === 'COMPLETED') {
       this.metrics?.increment('matiq_worker_jobs_total', { result: 'deduplicated' });
       console.info(
@@ -87,11 +87,21 @@ export class IdempotentConsumer {
   private async startAttempt(
     existing: InboxJob | null,
     event: WorkerEvent,
+    queueAttemptsMade = 0,
   ): Promise<InboxJob | null> {
     if (existing) {
-      if (existing.status !== 'FAILED') return null;
+      const staleBefore = new Date(Date.now() - 5 * 60_000);
+      const retryable =
+        existing.status === 'FAILED' ||
+        (existing.status === 'PROCESSING' &&
+          existing.updatedAt <= staleBefore &&
+          queueAttemptsMade > 0);
+      if (!retryable) return null;
       const claimed = await this.db.inboxJob.updateMany({
-        where: { id: existing.id, status: 'FAILED' },
+        where: {
+          id: existing.id,
+          OR: [{ status: 'FAILED' }, { status: 'PROCESSING', updatedAt: { lte: staleBefore } }],
+        },
         data: {
           status: 'PROCESSING',
           attempts: { increment: 1 },
@@ -120,7 +130,7 @@ export class IdempotentConsumer {
       const raced = await this.db.inboxJob.findUniqueOrThrow({
         where: { outboxEventId: event.outboxEventId },
       });
-      return this.startAttempt(raced, event);
+      return this.startAttempt(raced, event, queueAttemptsMade);
     }
   }
 }

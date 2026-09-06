@@ -17,6 +17,7 @@
     "test": "turbo run test",
     "test:integration": "turbo run test:integration",
     "e2e": "playwright test",
+    "e2e:admin": "playwright test --config playwright.admin.config.ts",
     "e2e:ui": "playwright test --ui",
     "openapi:generate": "pnpm --filter @matiq/api openapi:generate && pnpm --filter @matiq/admin-api openapi:generate && pnpm --filter @matiq/contracts openapi:generate",
     "db:generate": "pnpm --filter @matiq/api prisma:generate",

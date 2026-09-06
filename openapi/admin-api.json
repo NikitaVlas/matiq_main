@@ -935,6 +935,48 @@
         ]
       }
     },
+    "/admin/privacy-operations": {
+      "get": {
+        "operationId": "PrivacyOperationsController_status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacyOperationsStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-privacy-operations"
+        ]
+      }
+    },
+    "/admin/privacy-operations/retry": {
+      "post": {
+        "operationId": "PrivacyOperationsController_retry",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryPrivacyOperationsResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-privacy-operations"
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "HealthController_get",
@@ -987,6 +1029,85 @@
   "tags": [],
   "servers": [],
   "components": {
-    "schemas": {}
+    "schemas": {
+      "PrivacyOperationsStatusDto": {
+        "type": "object",
+        "properties": {
+          "scheduled": {
+            "type": "number",
+            "minimum": 0
+          },
+          "dueSchedules": {
+            "type": "number",
+            "minimum": 0
+          },
+          "pendingDeletion": {
+            "type": "number",
+            "minimum": 0
+          },
+          "pendingOutbox": {
+            "type": "number",
+            "minimum": 0
+          },
+          "staleProcessing": {
+            "type": "number",
+            "minimum": 0
+          },
+          "failedInbox": {
+            "type": "number",
+            "minimum": 0
+          },
+          "privacyDeadLetters": {
+            "type": "number",
+            "minimum": 0
+          },
+          "renewalPending": {
+            "type": "number",
+            "minimum": 0
+          },
+          "renewalReviewRequired": {
+            "type": "number",
+            "minimum": 0
+          },
+          "oldestPendingSeconds": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "scheduled",
+          "dueSchedules",
+          "pendingDeletion",
+          "pendingOutbox",
+          "staleProcessing",
+          "failedInbox",
+          "privacyDeadLetters",
+          "renewalPending",
+          "renewalReviewRequired",
+          "oldestPendingSeconds"
+        ]
+      },
+      "RetryPrivacyOperationsResultDto": {
+        "type": "object",
+        "properties": {
+          "pendingReleased": {
+            "type": "number",
+            "minimum": 0
+          },
+          "deadLettersRequeued": {
+            "type": "number",
+            "minimum": 0
+          },
+          "status": {
+            "$ref": "#/components/schemas/PrivacyOperationsStatusDto"
+          }
+        },
+        "required": [
+          "pendingReleased",
+          "deadLettersRequeued",
+          "status"
+        ]
+      }
+    }
   }
 }

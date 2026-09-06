@@ -10,6 +10,7 @@ import { AssessmentModule } from './modules/assessment/assessment.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { RoleModule } from './modules/roles/role.module';
 import { TrainerFinanceModule } from './modules/trainer-finance/trainer-finance.module';
+import { PrivacyOperationsModule } from './modules/privacy-operations/privacy-operations.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { TrainerFinanceModule } from './modules/trainer-finance/trainer-finance.
     AuditModule,
     RoleModule,
     TrainerFinanceModule,
+    PrivacyOperationsModule,
     AdminModule,
   ],
 })

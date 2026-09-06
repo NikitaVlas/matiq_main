@@ -69,6 +69,45 @@ describe('IdempotentConsumer', () => {
     );
   });
 
+  it('reclaims a processing event abandoned for more than five minutes', async () => {
+    const handler = vi.fn().mockResolvedValue(undefined);
+    const stale = { ...inbox, updatedAt: new Date(Date.now() - 6 * 60_000) };
+    const updateMany = vi.fn().mockResolvedValue({ count: 1 });
+    const db = {
+      inboxJob: {
+        findUnique: vi.fn().mockResolvedValueOnce(stale),
+        updateMany,
+        findUniqueOrThrow: vi.fn().mockResolvedValue(stale),
+        update: vi.fn(),
+      },
+    } as unknown as PrismaClient;
+
+    await new IdempotentConsumer(db, new Map([[event.topic, handler]])).process(job(1));
+
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: inbox.id }),
+      }),
+    );
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
+  it('does not reclaim stale processing state without a queue retry attempt', async () => {
+    const handler = vi.fn();
+    const db = {
+      inboxJob: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ ...inbox, updatedAt: new Date(Date.now() - 6 * 60_000) }),
+        updateMany: vi.fn(),
+      },
+    } as unknown as PrismaClient;
+
+    await new IdempotentConsumer(db, new Map([[event.topic, handler]])).process(job());
+    expect(handler).not.toHaveBeenCalled();
+    expect(db.inboxJob.updateMany).not.toHaveBeenCalled();
+  });
+
   it('creates one dead-letter record on the final failed attempt', async () => {
     const handler = vi.fn().mockRejectedValue(new Error('provider unavailable'));
     const inboxUpdate = vi.fn().mockResolvedValue({ ...inbox, status: 'DEAD_LETTER' });
