@@ -2,7 +2,7 @@
 
 ## Метаданные
 
-- Status: Implemented; background export extension pending verification
+- Status: Implemented / Verified
 - Owner: MATIQ team
 - Created: 2026-09-03
 - Updated: 2026-09-03
@@ -67,11 +67,11 @@
 - [x] Worker сохраняет tombstone и очищает status hash после 30 дней.
 - [x] Recovery test восстанавливает пользовательские данные и повторно удаляет
   их по отдельно сохранённому ledger.
-- [ ] OpenAPI, unit/integration tests и `pnpm verify` проходят для фонового extension.
+- [x] OpenAPI, unit/integration tests и `pnpm verify` проходят для фонового extension.
 
 ## Document status
 
-- Status: Background export extension pending verification
+- Status: Implemented / Verified
 - Owner: MATIQ team
 - Last reviewed: 2026-09-07
 - Related code: User API, User Web, Worker, Prisma schema

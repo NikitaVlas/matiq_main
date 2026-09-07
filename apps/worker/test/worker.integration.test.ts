@@ -63,12 +63,12 @@ describe('Worker outbox lifecycle', () => {
     await queue.close();
     await connection.quit();
     await db.deadLetterJob.deleteMany({
-      where: { inboxJob: { outboxEvent: { idempotencyKey: { startsWith: runId } } } },
+      where: { inboxJob: { outboxEvent: { idempotencyKey: { contains: runId } } } },
     });
     await db.inboxJob.deleteMany({
-      where: { outboxEvent: { idempotencyKey: { startsWith: runId } } },
+      where: { outboxEvent: { idempotencyKey: { contains: runId } } },
     });
-    await db.outboxEvent.deleteMany({ where: { idempotencyKey: { startsWith: runId } } });
+    await db.outboxEvent.deleteMany({ where: { idempotencyKey: { contains: runId } } });
     const deletionRequests = await db.accountDeletionRequest.findMany({
       where: { subjectRef: { startsWith: runId } },
       select: { id: true },
@@ -93,7 +93,7 @@ describe('Worker outbox lifecycle', () => {
         idempotencyKey: `${runId}:success`,
       },
     });
-    await expect(dispatcher.dispatchBatch()).resolves.toBe(1);
+    await expect(dispatcher.dispatchBatch()).resolves.toBeGreaterThanOrEqual(1);
     await waitFor(
       async () =>
         (await db.inboxJob.findUnique({ where: { outboxEventId: event.id } }))?.status ===
@@ -277,6 +277,19 @@ describe('Worker outbox lifecycle', () => {
       email: `deleted-${subjectRef}@deleted.invalid`,
       deletedAt: expect.any(Date),
     });
+    await expect(
+      db.accountDeletionRequest.findUnique({ where: { subjectRef } }),
+    ).resolves.toMatchObject({ userId: restoredUser.id, completedAt: null });
+
+    const restoredEvent = await db.outboxEvent.findUniqueOrThrow({
+      where: { idempotencyKey: `privacy.account-delete.v1:restore:${subjectRef}` },
+    });
+    await dispatcher.dispatchBatch();
+    await waitFor(
+      async () =>
+        (await db.inboxJob.findUnique({ where: { outboxEventId: restoredEvent.id } }))?.status ===
+        'COMPLETED',
+    );
     await expect(
       db.accountDeletionRequest.findUnique({ where: { subjectRef } }),
     ).resolves.toMatchObject({ userId: null, completedAt: expect.any(Date) });

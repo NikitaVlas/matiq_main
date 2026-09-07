@@ -2,7 +2,7 @@
 
 ## Document status
 
-- Status: Approved for implementation
+- Status: Implemented / Verified
 - Owner: MATIQ team
 - Last reviewed: 2026-09-07
 
