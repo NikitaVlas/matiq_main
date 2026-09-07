@@ -74,6 +74,13 @@ export class AccountDeletionStatusDto {
   statusToken!: string;
 }
 
+export class AccountExportDownloadDto {
+  @ApiProperty()
+  @IsString()
+  @Length(32, 256)
+  downloadToken!: string;
+}
+
 export class MfaCodeDto {
   @ApiProperty({ example: '123456' })
   @IsString()

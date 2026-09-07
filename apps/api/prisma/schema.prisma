@@ -137,6 +137,14 @@ enum InboxJobStatus {
   DEAD_LETTER
 }
 
+enum AccountExportStatus {
+  PENDING
+  READY
+  FAILED
+  DOWNLOADED
+  EXPIRED
+}
+
 model User {
   id                      String                   @id @default(cuid())
   privacySubjectId        String                   @unique @default(cuid())
@@ -167,6 +175,26 @@ model User {
   trainerPayoutReports    TrainerPayoutReport[]    @relation("PayoutTrainer")
   deletionRequest         AccountDeletionRequest?
   recoveryCodes           MfaRecoveryCode[]
+  accountExports          AccountExportRequest[]
+}
+
+model AccountExportRequest {
+  id                String              @id @default(cuid())
+  userId            String
+  status            AccountExportStatus @default(PENDING)
+  downloadTokenHash String
+  ciphertext        Bytes?
+  iv                Bytes?
+  authTag           Bytes?
+  requestedAt       DateTime            @default(now())
+  completedAt       DateTime?
+  downloadedAt      DateTime?
+  expiresAt         DateTime?
+  failureCode       String?
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, requestedAt])
+  @@index([status, expiresAt])
 }
 
 model AssessmentAttempt {

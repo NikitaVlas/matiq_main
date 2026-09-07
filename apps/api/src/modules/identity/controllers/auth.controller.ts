@@ -18,6 +18,7 @@ import { AuthGuard, AuthenticatedRequest } from '../infrastructure/auth.guard';
 import {
   ChangePasswordDto,
   AccountDeletionStatusDto,
+  AccountExportDownloadDto,
   ConfirmDeletionDto,
   DeletionScheduleDto,
   EmailDto,
@@ -174,6 +175,38 @@ export class AuthController {
   @Get('account/export')
   exportAccount(@Req() request: AuthenticatedRequest) {
     return this.auth.exportAccount(request.userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('account/exports')
+  requestAccountExport(@Req() request: AuthenticatedRequest) {
+    return this.auth.requestAccountExport(request.userId, request.reauthenticatedAt);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('account/exports/:id')
+  accountExportStatus(@Param('id') id: string, @Req() request: AuthenticatedRequest) {
+    return this.auth.accountExportStatus(request.userId, id);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('account/exports/:id/download')
+  async downloadAccountExport(
+    @Param('id') id: string,
+    @Body() dto: AccountExportDownloadDto,
+    @Req() request: AuthenticatedRequest,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const json = await this.auth.downloadAccountExport(
+      request.userId,
+      id,
+      dto.downloadToken,
+      request.reauthenticatedAt,
+    );
+    response.setHeader('Content-Type', 'application/json; charset=utf-8');
+    response.setHeader('Content-Disposition', 'attachment; filename="matiq-account-export.json"');
+    response.setHeader('Cache-Control', 'no-store');
+    return JSON.parse(json) as unknown;
   }
 
   @UseGuards(AuthGuard)

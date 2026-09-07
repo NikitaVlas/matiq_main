@@ -4,6 +4,7 @@ import {
   MetricsRegistry,
   PostgresDeletionSchedule,
   validateEmailEncryptionConfiguration,
+  accountExportKey,
 } from '@matiq/backend';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
@@ -15,9 +16,11 @@ import { configuredEmailProvider, createEmailHandler } from './email-provider.js
 import { createAccountDeletionHandler } from './privacy.js';
 import { RetentionService } from './retention-service.js';
 import { processPendingRenewalCancellations } from './renewal-cancellation.js';
+import { createAccountExportHandler } from './account-export.js';
 
 const queueName = process.env.WORKER_QUEUE_NAME ?? 'matiq';
 validateEmailEncryptionConfiguration();
+accountExportKey();
 const connection = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
   maxRetriesPerRequest: null,
 });
@@ -28,6 +31,7 @@ const handlers: HandlerRegistry = new Map([
   ['system.noop', async () => Promise.resolve()],
   ['email.send.v1', createEmailHandler(configuredEmailProvider())],
   ['privacy.account-delete.v1', createAccountDeletionHandler(db)],
+  ['privacy.account-export.v1', createAccountExportHandler(db)],
 ]);
 const consumer = new IdempotentConsumer(db, handlers, metrics);
 const dispatcher = new OutboxDispatcher(db, queue, 25, metrics);

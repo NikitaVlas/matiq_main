@@ -267,6 +267,48 @@
         ]
       }
     },
+    "/auth/account/exports": {
+      "post": {
+        "operationId": "AuthController_requestAccountExport",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/auth/account/exports/{id}": {
+      "get": {
+        "operationId": "AuthController_accountExportStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/auth/account/exports/{id}/download": {
+      "post": {
+        "operationId": "AuthController_downloadAccountExport",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
     "/auth/account": {
       "delete": {
         "operationId": "AuthController_deleteAccount",

@@ -2,7 +2,7 @@
 
 ## Метаданные
 
-- Status: Implemented / Verified
+- Status: Implemented; background export extension pending verification
 - Owner: MATIQ team
 - Created: 2026-09-03
 - Updated: 2026-09-03
@@ -27,7 +27,8 @@
 
 ### Frontend
 
-- Settings скачивает расширенный JSON export.
+- Settings после re-authentication запрашивает фоновую подготовку расширенного
+  JSON export и скачивает его один раз после готовности.
 - После запроса удаления status-secret сохраняется только в `sessionStorage`,
   затем пользователь переходит на `/account-deletion-status`.
 - Страница статуса показывает loading, pending, completed и expired/error states
@@ -37,6 +38,10 @@
 
 - `GET /auth/account/export` остаётся authenticated и возвращает versioned
   allowlisted JSON.
+- `POST /auth/account/exports` создаёт фоновую задачу через transactional outbox;
+  owner-scoped status и download endpoints не раскрывают данные других субъектов.
+- Подготовленный export хранится как AES-256-GCM ciphertext не более 7 дней и
+  очищается сразу после первого успешного скачивания.
 - `DELETE /auth/account` расширяет response полями `requestId`, `statusToken` и
   `statusTokenExpiresAt`.
 - `POST /auth/account-deletion/status` принимает request ID и secret в body.
@@ -62,11 +67,11 @@
 - [x] Worker сохраняет tombstone и очищает status hash после 30 дней.
 - [x] Recovery test восстанавливает пользовательские данные и повторно удаляет
   их по отдельно сохранённому ledger.
-- [x] OpenAPI, unit/integration tests и `pnpm verify` проходят.
+- [ ] OpenAPI, unit/integration tests и `pnpm verify` проходят для фонового extension.
 
 ## Document status
 
-- Status: Implemented / Verified
+- Status: Background export extension pending verification
 - Owner: MATIQ team
-- Last reviewed: 2026-09-03
+- Last reviewed: 2026-09-07
 - Related code: User API, User Web, Worker, Prisma schema

@@ -10,6 +10,7 @@ export const RETENTION_DAYS = {
   processedPayload: 1,
   messagingMetadata: 30,
   deadLetter: 30,
+  accountExport: 7,
   audit: 5 * 365,
 } as const;
 
@@ -114,6 +115,23 @@ export class RetentionService {
       ]);
     }
 
+    const accountExports = await this.db.accountExportRequest.updateMany({
+      where: {
+        status: { in: ['PENDING', 'READY', 'FAILED'] },
+        OR: [
+          { expiresAt: { lte: now } },
+          { expiresAt: null, requestedAt: { lt: cutoff(RETENTION_DAYS.accountExport) } },
+        ],
+      },
+      data: {
+        status: 'EXPIRED',
+        ciphertext: null,
+        iv: null,
+        authTag: null,
+        downloadTokenHash: '',
+      },
+    });
+
     const [auditLogs, deletionReceipts, expiredStatusTokens, deletionTombstones] =
       await Promise.all([
         this.db.auditLog.deleteMany({
@@ -142,6 +160,7 @@ export class RetentionService {
       deletionReceipts: deletionReceipts.count,
       expiredStatusTokens: expiredStatusTokens.count,
       deletionTombstones: deletionTombstones.count,
+      accountExports: accountExports.count,
     };
   }
 }

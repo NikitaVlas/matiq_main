@@ -11,6 +11,10 @@ import {
   encryptTransactionalEmail,
   validatePassword,
   PostgresDeletionSchedule,
+  accountExportTokenHash,
+  buildAccountExport,
+  decryptAccountExport,
+  type AccountExportDatabase,
   type TransactionalEmailKind,
 } from '@matiq/backend';
 import type { Prisma } from '@prisma/client';
@@ -285,121 +289,107 @@ export class AuthService {
 
   async exportAccount(userId: string) {
     this.rateLimit.check(`account-export:${userId}`, 3, 60 * 60 * 1000);
-    const user = await this.db.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: {
-        email: true,
-        role: true,
-        emailVerifiedAt: true,
-        createdAt: true,
-        updatedAt: true,
-        athleteProfile: {
-          include: { roadmapItems: true },
-        },
-        assessment: {
-          include: { responses: true, scores: true },
-        },
-        assessmentAttempts: {
-          include: { answers: true, evaluations: true },
-          orderBy: { createdAt: 'asc' },
-        },
-        subscriptions: { orderBy: { createdAt: 'asc' } },
-        videoWatches: { orderBy: { createdAt: 'asc' } },
-        playbackSessions: {
-          orderBy: { createdAt: 'asc' },
-          select: {
-            id: true,
-            videoId: true,
-            mode: true,
-            status: true,
-            expiresAt: true,
-            lastHeartbeatAt: true,
-            creditedPositionSec: true,
-            accessClass: true,
-            createdAt: true,
-            closedAt: true,
-            heartbeats: {
-              orderBy: { receivedAt: 'asc' },
-              select: {
-                sequence: true,
-                previousPositionSec: true,
-                currentPositionSec: true,
-                activePlaybackMs: true,
-                playbackRate: true,
-                visible: true,
-                active: true,
-                clientAt: true,
-                receivedAt: true,
-                accepted: true,
-                creditedPositionSec: true,
-                rejectionReason: true,
-              },
-            },
-          },
-        },
-        verifiedWatchIntervals: {
-          orderBy: { createdAt: 'asc' },
-          select: {
-            videoId: true,
-            trainerId: true,
-            accessClass: true,
-            startMs: true,
-            endMs: true,
-            durationMs: true,
-            createdAt: true,
-          },
-        },
-        trainerProfile: true,
-        authoredCourses: { select: { id: true, title: true, published: true } },
-        authoredVideos: { select: { id: true, title: true, published: true } },
-        trainerAgreements: { orderBy: { version: 'asc' } },
-        trainerPayoutReports: { orderBy: { createdAt: 'asc' } },
-      },
-    });
+    const result = await buildAccountExport(this.db as unknown as AccountExportDatabase, userId);
     await this.db.auditLog.create({
       data: { actor: userId, action: 'ACCOUNT_EXPORT', entity: 'User', entityId: userId },
     });
-    return {
-      schemaVersion: 1,
-      exportedAt: new Date().toISOString(),
-      account: {
-        email: user.email,
-        role: user.role,
-        emailVerifiedAt: user.emailVerifiedAt,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
-      athleteProfile: user.athleteProfile,
-      assessment: user.assessment,
-      assessmentAttempts: user.assessmentAttempts,
-      subscriptions: user.subscriptions,
-      viewing: {
-        history: user.videoWatches,
-        playbackSessions: user.playbackSessions,
-        verifiedIntervals: user.verifiedWatchIntervals,
-      },
-      trainer: {
-        profile: user.trainerProfile,
-        courses: user.authoredCourses,
-        videos: user.authoredVideos,
-        agreements: user.trainerAgreements,
-        payoutReports: user.trainerPayoutReports.map(
-          ({
-            paidWatchMs,
-            trialWatchMs,
-            trainerWeightNumerator,
-            trainerWeightDenominator,
-            ...report
-          }) => ({
-            ...report,
-            paidWatchMs: paidWatchMs.toString(),
-            trialWatchMs: trialWatchMs.toString(),
-            trainerWeightNumerator: trainerWeightNumerator.toString(),
-            trainerWeightDenominator: trainerWeightDenominator.toString(),
-          }),
-        ),
-      },
-    };
+    return result;
+  }
+
+  async requestAccountExport(userId: string, reauthenticatedAt: Date | null) {
+    this.rateLimit.check(`account-export-request:${userId}`, 3, 24 * 60 * 60 * 1000);
+    if (!reauthenticatedAt || reauthenticatedAt.getTime() < Date.now() - reauthenticationWindowMs)
+      throw new UnauthorizedException('REAUTHENTICATION_REQUIRED');
+    const downloadToken = randomBytes(32).toString('base64url');
+    const request = await this.db.$transaction(async (tx) => {
+      const created = await tx.accountExportRequest.create({
+        data: { userId, downloadTokenHash: accountExportTokenHash(downloadToken) },
+      });
+      await tx.outboxEvent.create({
+        data: {
+          topic: 'privacy.account-export.v1',
+          payload: { requestId: created.id, userId },
+          idempotencyKey: `account-export:${created.id}`,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          actor: userId,
+          action: 'ACCOUNT_EXPORT_REQUESTED',
+          entity: 'AccountExportRequest',
+          entityId: created.id,
+        },
+      });
+      return created;
+    });
+    return { requestId: request.id, downloadToken, status: request.status };
+  }
+
+  async accountExportStatus(userId: string, requestId: string) {
+    const request = await this.db.accountExportRequest.findFirst({
+      where: { id: requestId, userId },
+      select: { id: true, status: true, requestedAt: true, completedAt: true, expiresAt: true },
+    });
+    if (!request) throw new NotFoundException('ACCOUNT_EXPORT_NOT_FOUND');
+    return request;
+  }
+
+  async downloadAccountExport(
+    userId: string,
+    requestId: string,
+    token: string,
+    reauthenticatedAt: Date | null,
+  ) {
+    this.rateLimit.check(`account-export-download:${userId}`, 10, 60 * 60 * 1000);
+    if (!reauthenticatedAt || reauthenticatedAt.getTime() < Date.now() - reauthenticationWindowMs)
+      throw new UnauthorizedException('REAUTHENTICATION_REQUIRED');
+    const request = await this.db.accountExportRequest.findFirst({
+      where: { id: requestId, userId },
+    });
+    const suppliedHash = Buffer.from(accountExportTokenHash(token));
+    const storedHash = Buffer.from(request?.downloadTokenHash ?? '0'.repeat(64));
+    if (
+      !request ||
+      suppliedHash.length !== storedHash.length ||
+      !timingSafeEqual(suppliedHash, storedHash)
+    )
+      throw new NotFoundException('ACCOUNT_EXPORT_NOT_FOUND');
+    if (
+      request.status !== 'READY' ||
+      !request.expiresAt ||
+      request.expiresAt <= new Date() ||
+      !request.ciphertext ||
+      !request.iv ||
+      !request.authTag
+    )
+      throw new ConflictException('ACCOUNT_EXPORT_NOT_READY');
+    const json = decryptAccountExport({
+      ciphertext: request.ciphertext,
+      iv: request.iv,
+      authTag: request.authTag,
+    });
+    await this.db.$transaction(async (tx) => {
+      const consumed = await tx.accountExportRequest.updateMany({
+        where: { id: request.id, userId, status: 'READY', downloadedAt: null },
+        data: {
+          status: 'DOWNLOADED',
+          downloadedAt: new Date(),
+          ciphertext: null,
+          iv: null,
+          authTag: null,
+        },
+      });
+      if (!consumed.count) throw new ConflictException('ACCOUNT_EXPORT_ALREADY_DOWNLOADED');
+      await tx.auditLog.create({
+        data: {
+          actor: userId,
+          action: 'ACCOUNT_EXPORT_DOWNLOADED',
+          entity: 'AccountExportRequest',
+          entityId: request.id,
+        },
+      });
+    });
+    return json;
   }
 
   async requestAccountDeletion(userId: string, reauthenticatedAt: Date | null) {

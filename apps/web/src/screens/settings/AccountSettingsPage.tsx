@@ -170,23 +170,64 @@ export default function AccountSettingsPage() {
     setBusy('');
   }
 
-  async function downloadExport() {
+  async function downloadExport(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
     setBusy('export');
     setError('');
-    const response = await request('/auth/account/export');
-    if (!response.ok)
-      setError(await errorMessage(response, 'Export konnte nicht erstellt werden.'));
-    else {
-      const blob = new Blob([JSON.stringify(await response.json(), null, 2)], {
-        type: 'application/json',
+    setStatus('');
+    const authentication = await request('/auth/reauthenticate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: new FormData(form).get('password') }),
+    });
+    if (!authentication.ok) {
+      setError(await errorMessage(authentication, 'Erneute Anmeldung fehlgeschlagen.'));
+      setBusy('');
+      return;
+    }
+    const response = await request('/auth/account/exports', { method: 'POST' });
+    if (!response.ok) {
+      setError(await errorMessage(response, 'Export konnte nicht angefordert werden.'));
+      setBusy('');
+      return;
+    }
+    const created = (await response.json()) as { requestId: string; downloadToken: string };
+    setStatus('Dein Export wird im Hintergrund vorbereitet.');
+    let ready = false;
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+      const statusResponse = await request(`/auth/account/exports/${created.requestId}`);
+      if (!statusResponse.ok) break;
+      const exportStatus = (await statusResponse.json()) as { status: string };
+      if (exportStatus.status === 'READY') {
+        ready = true;
+        break;
+      }
+      if (['FAILED', 'EXPIRED'].includes(exportStatus.status)) break;
+    }
+    if (ready) {
+      const download = await request(`/auth/account/exports/${created.requestId}/download`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ downloadToken: created.downloadToken }),
       });
+      if (!download.ok) {
+        setError(await errorMessage(download, 'Export konnte nicht heruntergeladen werden.'));
+        setBusy('');
+        return;
+      }
+      const blob = await download.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `matiq-account-export-${new Date().toISOString().slice(0, 10)}.json`;
       link.click();
       URL.revokeObjectURL(url);
+      form.reset();
       setStatus('Datenexport heruntergeladen.');
+    } else {
+      setError('Der Export dauert länger. Bitte fordere ihn später erneut an.');
     }
     setBusy('');
   }
@@ -384,11 +425,25 @@ export default function AccountSettingsPage() {
       <section className="settings-card">
         <h2>Deine Daten</h2>
         <p>
-          Lade eine maschinenlesbare Kopie deiner Konto-, Assessment- und Trainingsdaten herunter.
+          Fordere eine maschinenlesbare Kopie deiner Konto-, Assessment- und Trainingsdaten an. Sie
+          wird verschlüsselt vorbereitet, kann einmal heruntergeladen werden und verfällt nach
+          sieben Tagen.
         </p>
-        <button disabled={busy === 'export'} onClick={() => void downloadExport()}>
-          {busy === 'export' ? 'Export wird erstellt...' : 'Daten exportieren'}
-        </button>
+        <form className="settings-form" onSubmit={(event) => void downloadExport(event)}>
+          <label>
+            Aktuelles Passwort
+            <input
+              name="password"
+              type="password"
+              minLength={12}
+              required
+              autoComplete="current-password"
+            />
+          </label>
+          <button disabled={busy === 'export'}>
+            {busy === 'export' ? 'Export wird vorbereitet...' : 'Datenexport anfordern'}
+          </button>
+        </form>
       </section>
 
       <section className="settings-card settings-danger">

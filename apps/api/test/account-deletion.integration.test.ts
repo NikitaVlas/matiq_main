@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { accountExportExpiresAt, encryptAccountExport } from '@matiq/backend';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/bootstrap';
@@ -8,6 +9,8 @@ import { createApp } from '../src/bootstrap';
 const databaseUrl = process.env.DATABASE_URL;
 const email = `account-deletion-${Date.now()}@example.de`;
 const password = 'SicheresPasswort1';
+const exportKey = Buffer.alloc(32, 5);
+process.env.ACCOUNT_EXPORT_ENCRYPTION_KEY = exportKey.toString('base64');
 
 if (!databaseUrl?.includes('/matiq_test')) {
   throw new Error('Account deletion integration tests require a disposable matiq_test database.');
@@ -20,6 +23,7 @@ describe('account export and deletion', () => {
   let userId: string;
   let deletionRequestId: string | undefined;
   let deletionSubjectRef: string | undefined;
+  let exportRequestId: string | undefined;
 
   beforeAll(async () => {
     const user = await db.user.create({
@@ -37,6 +41,18 @@ describe('account export and deletion', () => {
   });
 
   afterAll(async () => {
+    if (exportRequestId) {
+      const exportEvent = await db.outboxEvent.findUnique({
+        where: { idempotencyKey: `account-export:${exportRequestId}` },
+        include: { inboxJob: { include: { deadLetter: true } } },
+      });
+      if (exportEvent?.inboxJob?.deadLetter)
+        await db.deadLetterJob.delete({ where: { id: exportEvent.inboxJob.deadLetter.id } });
+      if (exportEvent?.inboxJob)
+        await db.inboxJob.delete({ where: { id: exportEvent.inboxJob.id } });
+      if (exportEvent) await db.outboxEvent.delete({ where: { id: exportEvent.id } });
+      await db.accountExportRequest.deleteMany({ where: { id: exportRequestId } });
+    }
     if (deletionRequestId) {
       const event = await db.outboxEvent.findUnique({
         where: { idempotencyKey: `privacy.account-delete.v1:${deletionRequestId}` },
@@ -83,12 +99,55 @@ describe('account export and deletion', () => {
       .set('Cookie', cookie)
       .send({ confirmation: 'DELETE' })
       .expect(401);
+    await request(app.getHttpServer())
+      .post('/auth/account/exports')
+      .set('Cookie', cookie)
+      .expect(401);
 
     await request(app.getHttpServer())
       .post('/auth/reauthenticate')
       .set('Cookie', cookie)
       .send({ password })
       .expect(201);
+
+    const exportRequest = await request(app.getHttpServer())
+      .post('/auth/account/exports')
+      .set('Cookie', cookie)
+      .expect(201);
+    exportRequestId = exportRequest.body.requestId as string;
+    expect(exportRequest.body.downloadToken).toEqual(expect.any(String));
+    await request(app.getHttpServer())
+      .get(`/auth/account/exports/${exportRequestId}`)
+      .set('Cookie', cookie)
+      .expect(200)
+      .expect(({ body }) => expect(body.status).toBe('PENDING'));
+    const encrypted = encryptAccountExport({ schemaVersion: 1, account: { email } }, exportKey);
+    const completedAt = new Date();
+    await db.accountExportRequest.update({
+      where: { id: exportRequestId },
+      data: {
+        ...encrypted,
+        status: 'READY',
+        completedAt,
+        expiresAt: accountExportExpiresAt(completedAt),
+      },
+    });
+    await request(app.getHttpServer())
+      .post(`/auth/account/exports/${exportRequestId}/download`)
+      .set('Cookie', cookie)
+      .send({ downloadToken: 'x'.repeat(43) })
+      .expect(404);
+    await request(app.getHttpServer())
+      .post(`/auth/account/exports/${exportRequestId}/download`)
+      .set('Cookie', cookie)
+      .send({ downloadToken: exportRequest.body.downloadToken })
+      .expect(201)
+      .expect(({ body }) => expect(body.account.email).toBe(email));
+    await request(app.getHttpServer())
+      .post(`/auth/account/exports/${exportRequestId}/download`)
+      .set('Cookie', cookie)
+      .send({ downloadToken: exportRequest.body.downloadToken })
+      .expect(409);
 
     await db.subscription.create({
       data: { userId, status: 'ACTIVE', endsAt: new Date(Date.now() + 86_400_000) },

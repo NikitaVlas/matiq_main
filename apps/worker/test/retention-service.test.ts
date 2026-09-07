@@ -18,6 +18,7 @@ describe('RetentionService', () => {
       auditLog: { deleteMany: deleted },
       accountDeletionRequest: { deleteMany: deleted, updateMany: updated },
       deletionTombstone: { deleteMany: deleted },
+      accountExportRequest: { updateMany: updated },
       $transaction: vi.fn(),
     } as unknown as PrismaClient;
     const now = new Date('2026-09-02T12:00:00.000Z');
