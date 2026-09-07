@@ -138,5 +138,14 @@ describe('Admin API authentication', () => {
       .expect(200);
     await request(app.getHttpServer()).get('/admin/stats').set('Cookie', editorCookie).expect(401);
     await request(app.getHttpServer()).get('/admin/users').set('Cookie', editorCookie).expect(401);
+    await request(app.getHttpServer())
+      .post('/admin/videos')
+      .set('Cookie', editorCookie)
+      .send({ title: 'Forbidden', storageKey: 'private/forbidden.mp4' })
+      .expect(401);
+    await request(app.getHttpServer())
+      .get('/admin/videos/missing/playback-url')
+      .set('Cookie', editorCookie)
+      .expect(401);
   });
 });

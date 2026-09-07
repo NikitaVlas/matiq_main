@@ -4,13 +4,18 @@
 
 ## Gates и требуемые доказательства
 
-- [ ] Identity: негативные API-тесты own-only доступа, разделение Admin/User
-  sessions, MFA и re-authentication; приложить результаты к release revision.
+- [x] Identity: негативные API-тесты подтверждают own-only sessions/export,
+  разделение Admin/User cookies, MFA, re-authentication и отказ для
+  expired/deleted/unverified privileged sessions. Локальные результаты
+  2026-09-07: User API integration 6 файлов/10 тестов, Admin API integration
+  4 файла/9 тестов.
 - [ ] Контент: недоступность оригинальных видео без entitlement; проверка upload,
   signed URL expiry и запрещённых Admin-действий.
 - [ ] Billing: подпись и replay webhooks, reconciliation, VAT/refunds — после
   утверждения PSP и коммерческих правил.
-- [ ] Secrets: dependency/security scan и проверка журналов/артефактов на секреты.
+- [ ] Secrets: сигнатуры известных секретов в tracked-файлах не найдены, но
+  `pnpm audit --prod --audit-level high` выявил 69 уязвимостей (2 critical,
+  32 high); gate открыт до обновления и повторного чистого scan.
 - [ ] Browser: сквозной путь регистрации, assessment, просмотра и удаления;
   keyboard/focus, mobile, accessibility и ошибки сети. Синтетические Chromium
   сценарии (13/13) покрывают эти пути, включая экспорт данных; для закрытия gate

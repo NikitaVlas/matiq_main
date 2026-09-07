@@ -2,6 +2,21 @@
 
 ## Verified
 
+- 2026-09-07 Identity/Content: an athlete cannot revoke another user's session;
+  User API rejects an Admin cookie and Admin API rejects an Athlete cookie;
+  Editor cannot create videos or obtain an Admin playback URL. The guard rejects
+  privileged sessions without MFA and sessions that are expired, deleted, or
+  unverified.
+- The local video adapter creates a 300-second signed URL and deliberately stops
+  in production until an approved provider is integrated. Unit evidence: User API
+  16 files/51 tests, Admin API 11 files/41 tests. Integration against `matiq_test`:
+  User API 6 files/10 tests and Admin API 4 files/9 tests.
+- A tracked-file signature scan found no private keys or known AWS, GitHub,
+  Stripe, or Slack token formats. `.env` values were not printed.
+- `pnpm audit --prod --audit-level high` reports 69 vulnerabilities: 2 critical,
+  32 high, 32 moderate, and 3 low. Critical findings affect Next.js 15.3.4 and
+  transitive `fast-xml-parser` through AWS SDK. This is a launch blocker; no
+  dependencies were upgraded in this slice.
 - 2026-09-07: local `pnpm e2e` passed 13/13. Added registration → email
   verification → athlete profile, retry after a registration 409, one-time GDPR
   export download, and UI recovery after an export network failure.
@@ -60,9 +75,12 @@
   and receipt verification in the real recovery drill.
 - Recovery drill does not establish complete audit/financial/provider cleanup.
 - Mocked E2E do not prove real email, video, payments or full-stack registration.
-- Penetration testing, dependency vulnerability scanning, a full WCAG/contrast
-  audit and execution of the CI browser job remain outstanding. Synthetic API E2E
-  does not replace full-stack email/video/provider verification.
+- Penetration testing, a full WCAG/contrast audit, and execution of the CI browser
+  job remain outstanding. Synthetic API E2E does not replace full-stack
+  email/video/provider verification.
+- The dependency vulnerability scan is now complete but failing. Next.js,
+  AWS SDK/NestJS transitive dependencies must be upgraded and the scan rerun
+  without high or critical findings.
 
 Launch/security gates remain open. The confirmed audit restore defect is fixed.
 In the previous slice, `pnpm verify` passed (unchanged packages used the local

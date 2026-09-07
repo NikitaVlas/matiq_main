@@ -2,6 +2,20 @@
 
 ## Проверено
 
+- 2026-09-07 Identity/Content: пользователь не может отозвать чужую сессию;
+  User API не принимает Admin cookie, Admin API не принимает Athlete cookie;
+  Editor не может создавать видео или получать Admin playback URL. Guard
+  отклоняет privileged session без MFA, а также expired, deleted и unverified.
+- Локальный video adapter выдаёт signed URL на 300 секунд и намеренно прекращает
+  работу в production до подключения утверждённого провайдера. Unit: User API
+  16 файлов/51 тест, Admin API 11 файлов/41 тест. Integration с `matiq_test`:
+  User API 6 файлов/10 тестов, Admin API 4 файла/9 тестов.
+- Secret signature scan tracked-файлов не нашёл private keys, известных AWS,
+  GitHub, Stripe и Slack token formats. Значения `.env` не выводились.
+- Dependency scan `pnpm audit --prod --audit-level high`: 69 уязвимостей —
+  2 critical, 32 high, 32 moderate, 3 low. Critical затрагивают Next.js 15.3.4
+  и транзитивный `fast-xml-parser` через AWS SDK. Это launch-блокер; зависимости
+  в этом срезе не обновлялись.
 - 2026-09-07: локальный `pnpm e2e` прошёл 13/13. Добавлены регистрация →
   подтверждение email → заполнение Athletenprofil, повтор регистрации после 409,
   одноразовая загрузка GDPR export и восстановление UI после сетевой ошибки.
@@ -62,9 +76,12 @@
   доказывает полноту очистки audit/financial/provider данных после restore.
 - Mocked E2E не доказывают реальную доставку email, обработку видео, платежи или
   регистрацию через все backend-границы.
-- Не выполнены penetration test, dependency vulnerability scan, полный
-  WCAG/contrast audit и удалённый запуск CI browser job. E2E используют
+- Не выполнены penetration test, полный WCAG/contrast audit и удалённый запуск
+  CI browser job. E2E используют
   синтетический API и не заменяют full-stack проверку email/video/provider.
+- Dependency vulnerability scan теперь выполнен, но не пройден. Требуется
+  отдельное обновление Next.js, AWS SDK/NestJS-транзитивных зависимостей и
+  повторный scan без high/critical результатов.
 
 Полный launch/security gate не закрыт. Дефект ссылок audit после restore исправлен.
 В предыдущем срезе `pnpm verify` прошёл (неизменённые пакеты использовали локальный cache); browser E2E

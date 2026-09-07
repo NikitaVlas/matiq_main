@@ -7,6 +7,7 @@ import { createApp } from '../src/bootstrap';
 
 const databaseUrl = process.env.DATABASE_URL;
 const email = `account-session-${Date.now()}@example.de`;
+const otherEmail = `other-${email}`;
 const initialPassword = 'SicheresPasswort1';
 const updatedPassword = 'NeuesSicheresPasswort2';
 
@@ -39,7 +40,7 @@ describe('account session lifecycle', () => {
   });
 
   afterAll(async () => {
-    await db.user.deleteMany({ where: { email } });
+    await db.user.deleteMany({ where: { email: { in: [email, otherEmail] } } });
     await db.$disconnect();
     await app.close();
   });
@@ -50,6 +51,31 @@ describe('account session lifecycle', () => {
       .send({ email, password: initialPassword })
       .expect(201);
     const secondCookie = secondLogin.headers['set-cookie'] as unknown as string[];
+
+    const otherUser = await db.user.create({
+      data: {
+        email: otherEmail,
+        passwordHash: await bcrypt.hash(initialPassword, 12),
+        emailVerifiedAt: new Date(),
+      },
+    });
+    const otherLogin = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: otherEmail, password: initialPassword })
+      .expect(201);
+    const otherCookie = otherLogin.headers['set-cookie'] as unknown as string[];
+    const foreignSession = await db.session.findFirstOrThrow({ where: { userId: otherUser.id } });
+
+    await request(app.getHttpServer())
+      .delete(`/auth/sessions/${foreignSession.id}`)
+      .set('Cookie', firstCookie)
+      .expect(400);
+    await request(app.getHttpServer()).get('/auth/me').set('Cookie', otherCookie).expect(200);
+
+    const adminCookieOnly = firstCookie.map((value) =>
+      value.replace('matiq_session=', 'matiq_admin_session='),
+    );
+    await request(app.getHttpServer()).get('/auth/me').set('Cookie', adminCookieOnly).expect(401);
 
     const sessions = await request(app.getHttpServer())
       .get('/auth/sessions')

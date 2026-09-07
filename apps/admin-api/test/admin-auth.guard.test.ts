@@ -36,11 +36,25 @@ describe('AdminAuthGuard', () => {
   it('rejects a session without an MFA-enabled administrator', async () => {
     const db = {
       session: {
-        findUnique: vi
-          .fn()
-          .mockResolvedValue({ ...session, user: { ...session.user, role: 'EDITOR' } }),
+        findUnique: vi.fn().mockResolvedValue({
+          ...session,
+          user: { ...session.user, mfaSecretEncrypted: null, mfaEnabledAt: null },
+        }),
       },
     };
+    await expect(
+      new AdminAuthGuard(db as never, reflector as never).canActivate(
+        context('matiq_admin_session=session-token'),
+      ),
+    ).rejects.toThrow();
+  });
+
+  it.each([
+    { expiresAt: new Date(0), user: session.user },
+    { expiresAt: session.expiresAt, user: { ...session.user, deletedAt: new Date() } },
+    { expiresAt: session.expiresAt, user: { ...session.user, emailVerifiedAt: null } },
+  ])('rejects expired, deleted, or unverified privileged sessions', async (invalid) => {
+    const db = { session: { findUnique: vi.fn().mockResolvedValue({ ...session, ...invalid }) } };
     await expect(
       new AdminAuthGuard(db as never, reflector as never).canActivate(
         context('matiq_admin_session=session-token'),

@@ -2,10 +2,15 @@
 
 This checklist is not security certification or production authorization.
 
-- [ ] Identity: own-only negative tests, Admin/User session isolation, MFA and reauthentication.
+- [x] Identity: negative API tests cover own-only sessions/export, Admin/User
+  cookie isolation, MFA, reauthentication, and rejection of expired, deleted, or
+  unverified privileged sessions. Local 2026-09-07 evidence: User API integration
+  6 files/10 tests; Admin API integration 4 files/9 tests.
 - [ ] Content: entitlement enforcement, uploads, signed URL expiry and forbidden Admin actions.
 - [ ] Billing: signed/replayed webhooks, reconciliation, VAT/refunds after provider approval.
-- [ ] Secrets: dependency/security scans and review of logs/artifacts for credentials.
+- [ ] Secrets: no known secret signatures were found in tracked files, but
+  `pnpm audit --prod --audit-level high` reports 69 vulnerabilities (2 critical,
+  32 high); this gate remains open until upgrades and a clean rerun.
 - [ ] Browser: registration, assessment, playback and deletion; keyboard, focus,
   mobile, accessibility and network error states. Synthetic Chromium scenarios
   (13/13) cover these flows, including data export; a full WCAG/contrast audit and
