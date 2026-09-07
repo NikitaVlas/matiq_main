@@ -12,10 +12,11 @@
   User API 6 файлов/10 тестов, Admin API 4 файла/9 тестов.
 - Secret signature scan tracked-файлов не нашёл private keys, известных AWS,
   GitHub, Stripe и Slack token formats. Значения `.env` не выводились.
-- Dependency scan `pnpm audit --prod --audit-level high`: 69 уязвимостей —
-  2 critical, 32 high, 32 moderate, 3 low. Critical затрагивают Next.js 15.3.4
-  и транзитивный `fast-xml-parser` через AWS SDK. Это launch-блокер; зависимости
-  в этом срезе не обновлялись.
+- 2026-09-07 зависимости обновлены без смены основных мажорных веток: Next.js
+  15.5.21, AWS SDK 3.1127.0, NestJS 11.2.3, Swagger 11.4.7 и Multer 2.3.0.
+  Исправленные транзитивные `nanoid`, `postcss`, `qs`, `sharp` и `uuid`
+  закреплены через pnpm overrides. `pnpm audit --prod --audit-level high`:
+  `No known vulnerabilities found`.
 - 2026-09-07: локальный `pnpm e2e` прошёл 13/13. Добавлены регистрация →
   подтверждение email → заполнение Athletenprofil, повтор регистрации после 409,
   одноразовая загрузка GDPR export и восстановление UI после сетевой ошибки.
@@ -79,9 +80,9 @@
 - Не выполнены penetration test, полный WCAG/contrast audit и удалённый запуск
   CI browser job. E2E используют
   синтетический API и не заменяют full-stack проверку email/video/provider.
-- Dependency vulnerability scan теперь выполнен, но не пройден. Требуется
-  отдельное обновление Next.js, AWS SDK/NestJS-транзитивных зависимостей и
-  повторный scan без high/critical результатов.
+- Dependency vulnerability gate закрыт: после обновления и повторного scan
+  известных production-уязвимостей не найдено. Overrides требуют планового
+  пересмотра при следующих обновлениях Next.js, Express и BullMQ.
 
 Полный launch/security gate не закрыт. Дефект ссылок audit после restore исправлен.
 В предыдущем срезе `pnpm verify` прошёл (неизменённые пакеты использовали локальный cache); browser E2E
@@ -89,9 +90,10 @@
 необратимость разрыва связей во всех сохраняемых данных пока не доказаны.
 Graph discovery не нашёл restore-функцию; проверен непосредственно исходный код.
 
-Для нового тестового расширения: worker lint и typecheck прошли (после исправления
-TS7022 в тесте); git diff --check прошёл. Полный verify, E2E и остальные integration
-повторно не запускались. Graph указал устаревшие строки AuthService; сверено с исходником.
+После обновления зависимостей `pnpm verify` прошёл. Integration с `matiq_test`:
+User API 6 файлов/10 тестов и Admin API 4 файла/9 тестов. Browser E2E: User Web
+13/13, Admin Web 1/1. Полный WCAG/contrast audit и production-provider проверки
+по-прежнему не выполнены.
 
 ## Document status
 

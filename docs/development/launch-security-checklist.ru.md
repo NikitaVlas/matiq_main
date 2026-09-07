@@ -13,9 +13,10 @@
   signed URL expiry и запрещённых Admin-действий.
 - [ ] Billing: подпись и replay webhooks, reconciliation, VAT/refunds — после
   утверждения PSP и коммерческих правил.
-- [ ] Secrets: сигнатуры известных секретов в tracked-файлах не найдены, но
-  `pnpm audit --prod --audit-level high` выявил 69 уязвимостей (2 critical,
-  32 high); gate открыт до обновления и повторного чистого scan.
+- [x] Secrets/dependencies: сигнатуры известных секретов в tracked-файлах не
+  найдены. После обновления Next.js, AWS SDK, NestJS, Multer и закрепления
+  исправленных транзитивных версий `pnpm audit --prod --audit-level high`
+  завершён 2026-09-07 с результатом `No known vulnerabilities found`.
 - [ ] Browser: сквозной путь регистрации, assessment, просмотра и удаления;
   keyboard/focus, mobile, accessibility и ошибки сети. Синтетические Chromium
   сценарии (13/13) покрывают эти пути, включая экспорт данных; для закрытия gate
@@ -27,8 +28,8 @@
 - [ ] Incident response: ответственные, канал escalation, процедура breach.
 - [ ] Владелец принимает residual risks и разрешает запуск.
 
-Следующая инженерная работа: Identity/Content negative security coverage,
-dependency/security scan и полный accessibility audit. Пустые пункты не считать
+Следующая инженерная работа: production video-provider validation, полный
+accessibility audit и recovery/observability evidence. Пустые пункты не считать
 выполненными.
 
 ## Document status
