@@ -10,7 +10,7 @@ export default async function CheckEmailPage({
     <main>
       <section className="shell">
         <p className="eyebrow">Fast geschafft</p>
-        <h2>Prüfe dein Postfach</h2>
+        <h1>Prüfe dein Postfach</h1>
         <p>Wir haben dir einen Bestätigungslink gesendet. Er ist 24 Stunden gültig.</p>
         <ResendVerificationForm email={email} />
       </section>

@@ -27,7 +27,7 @@ export function VerifyEmailForm({ initialToken }: { initialToken: string }) {
     <main>
       <section className="shell">
         <p className="eyebrow">E-Mail bestätigen</p>
-        <h2>Bestätige deine Adresse</h2>
+        <h1>Bestätige deine Adresse</h1>
         <p>Öffne den Link aus deiner E-Mail. Im lokalen Modus ist der Token bereits eingetragen.</p>
         <form onSubmit={submit}>
           <label>

@@ -32,7 +32,7 @@ export default function RegisterPage() {
     <main>
       <section className="shell">
         <p className="eyebrow">Konto erstellen</p>
-        <h2>Starte deine Roadmap</h2>
+        <h1>Starte deine Roadmap</h1>
         <form onSubmit={submit}>
           <label>
             E-Mail

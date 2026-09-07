@@ -2,6 +2,15 @@
 
 ## Проверено
 
+- 2026-09-07: локальный `pnpm e2e` прошёл 13/13. Добавлены регистрация →
+  подтверждение email → заполнение Athletenprofil, повтор регистрации после 409,
+  одноразовая загрузка GDPR export и восстановление UI после сетевой ошибки.
+- Accessibility baseline расширен на login и settings при ширине 390 px: `main`,
+  единственный `h1`, подписи полей, уникальные `id`, отсутствие горизонтального
+  overflow и достижимый keyboard focus. Исправлена иерархия заголовков login,
+  register, check-email, verify-email и profile.
+- Обнаружено и исправлено зависание GDPR export: исключение `fetch` теперь
+  объявляется через `role=alert`, а busy-state всегда снимается.
 - Browser: 6 сценариев Chromium с синтетическим API, включая assessment/lesson,
   beginner flow, settings/MFA/delete, network retry и недоступный status.
 - Accessibility baseline: keyboard retry, main/h1 и отсутствие горизонтального
@@ -54,7 +63,8 @@
 - Mocked E2E не доказывают реальную доставку email, обработку видео, платежи или
   регистрацию через все backend-границы.
 - Не выполнены penetration test, dependency vulnerability scan, полный
-  accessibility audit и удалённый запуск нового CI browser job.
+  WCAG/contrast audit и удалённый запуск CI browser job. E2E используют
+  синтетический API и не заменяют full-stack проверку email/video/provider.
 
 Полный launch/security gate не закрыт. Дефект ссылок audit после restore исправлен.
 В предыдущем срезе `pnpm verify` прошёл (неизменённые пакеты использовали локальный cache); browser E2E
@@ -70,5 +80,5 @@ TS7022 в тесте); git diff --check прошёл. Полный verify, E2E �
 
 - Status: Partial review; production blockers open
 - Owner: MATIQ team
-- Last reviewed: 2026-09-04
+- Last reviewed: 2026-09-07
 - Related code: deletion-ledger.ts, AccountDeletionStatusPage.tsx, e2e

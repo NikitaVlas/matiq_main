@@ -2,6 +2,15 @@
 
 ## Verified
 
+- 2026-09-07: local `pnpm e2e` passed 13/13. Added registration → email
+  verification → athlete profile, retry after a registration 409, one-time GDPR
+  export download, and UI recovery after an export network failure.
+- The accessibility baseline now covers login and settings at 390 px: `main`, a
+  single `h1`, labelled controls, unique `id` values, no horizontal overflow and
+  reachable keyboard focus. Corrected heading hierarchy on login, registration,
+  check-email, verify-email and profile screens.
+- Found and fixed a stuck GDPR export state: fetch failures are announced through
+  `role=alert`, and the busy state is always cleared.
 - Six Chromium browser scenarios with synthetic APIs: assessment/lesson,
   beginner flow, settings/MFA/deletion, network retry and unavailable status.
 - Accessibility baseline: keyboard retry, main/h1, and no horizontal overflow
@@ -51,8 +60,9 @@
   and receipt verification in the real recovery drill.
 - Recovery drill does not establish complete audit/financial/provider cleanup.
 - Mocked E2E do not prove real email, video, payments or full-stack registration.
-- Penetration testing, dependency vulnerability scanning, full accessibility
-  auditing and remote execution of the new CI browser job remain outstanding.
+- Penetration testing, dependency vulnerability scanning, a full WCAG/contrast
+  audit and execution of the CI browser job remain outstanding. Synthetic API E2E
+  does not replace full-stack email/video/provider verification.
 
 Launch/security gates remain open. The confirmed audit restore defect is fixed.
 In the previous slice, `pnpm verify` passed (unchanged packages used the local
@@ -68,5 +78,5 @@ suites were not rerun. Graph AuthService line numbers were stale; source was che
 
 - Status: Partial review; production blockers open
 - Owner: MATIQ team
-- Last reviewed: 2026-09-04
+- Last reviewed: 2026-09-07
 - Related code: deletion-ledger.ts, AccountDeletionStatusPage.tsx, e2e

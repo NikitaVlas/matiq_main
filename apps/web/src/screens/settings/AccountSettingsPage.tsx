@@ -176,47 +176,41 @@ export default function AccountSettingsPage() {
     setBusy('export');
     setError('');
     setStatus('');
-    const authentication = await request('/auth/reauthenticate', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ password: new FormData(form).get('password') }),
-    });
-    if (!authentication.ok) {
-      setError(await errorMessage(authentication, 'Erneute Anmeldung fehlgeschlagen.'));
-      setBusy('');
-      return;
-    }
-    const response = await request('/auth/account/exports', { method: 'POST' });
-    if (!response.ok) {
-      setError(await errorMessage(response, 'Export konnte nicht angefordert werden.'));
-      setBusy('');
-      return;
-    }
-    const created = (await response.json()) as { requestId: string; downloadToken: string };
-    setStatus('Dein Export wird im Hintergrund vorbereitet.');
-    let ready = false;
-    for (let attempt = 0; attempt < 30; attempt += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 1_000));
-      const statusResponse = await request(`/auth/account/exports/${created.requestId}`);
-      if (!statusResponse.ok) break;
-      const exportStatus = (await statusResponse.json()) as { status: string };
-      if (exportStatus.status === 'READY') {
-        ready = true;
-        break;
+    try {
+      const authentication = await request('/auth/reauthenticate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password: new FormData(form).get('password') }),
+      });
+      if (!authentication.ok)
+        throw new Error(await errorMessage(authentication, 'Erneute Anmeldung fehlgeschlagen.'));
+      const response = await request('/auth/account/exports', { method: 'POST' });
+      if (!response.ok)
+        throw new Error(await errorMessage(response, 'Export konnte nicht angefordert werden.'));
+      const created = (await response.json()) as { requestId: string; downloadToken: string };
+      setStatus('Dein Export wird im Hintergrund vorbereitet.');
+      let ready = false;
+      for (let attempt = 0; attempt < 30; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1_000));
+        const statusResponse = await request(`/auth/account/exports/${created.requestId}`);
+        if (!statusResponse.ok) break;
+        const exportStatus = (await statusResponse.json()) as { status: string };
+        if (exportStatus.status === 'READY') {
+          ready = true;
+          break;
+        }
+        if (['FAILED', 'EXPIRED'].includes(exportStatus.status)) break;
       }
-      if (['FAILED', 'EXPIRED'].includes(exportStatus.status)) break;
-    }
-    if (ready) {
+      if (!ready) throw new Error('Der Export dauert länger. Bitte fordere ihn später erneut an.');
       const download = await request(`/auth/account/exports/${created.requestId}/download`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ downloadToken: created.downloadToken }),
       });
-      if (!download.ok) {
-        setError(await errorMessage(download, 'Export konnte nicht heruntergeladen werden.'));
-        setBusy('');
-        return;
-      }
+      if (!download.ok)
+        throw new Error(
+          await errorMessage(download, 'Export konnte nicht heruntergeladen werden.'),
+        );
       const blob = await download.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -226,10 +220,15 @@ export default function AccountSettingsPage() {
       URL.revokeObjectURL(url);
       form.reset();
       setStatus('Datenexport heruntergeladen.');
-    } else {
-      setError('Der Export dauert länger. Bitte fordere ihn später erneut an.');
+    } catch (failure) {
+      setError(
+        failure instanceof Error && !(failure instanceof TypeError)
+          ? failure.message
+          : 'Verbindung fehlgeschlagen. Bitte erneut versuchen.',
+      );
+    } finally {
+      setBusy('');
     }
-    setBusy('');
   }
 
   async function deleteAccount(event: FormEvent<HTMLFormElement>) {

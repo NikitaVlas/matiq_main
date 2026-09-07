@@ -31,7 +31,7 @@ export default function AthleteProfilePage() {
     <main>
       <section className="shell">
         <p className="eyebrow">Athletenprofil</p>
-        <h2>Wie trainierst du?</h2>
+        <h1>Wie trainierst du?</h1>
         <form onSubmit={submit}>
           <fieldset>
             <legend>Disziplinen</legend>

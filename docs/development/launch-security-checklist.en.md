@@ -7,7 +7,9 @@ This checklist is not security certification or production authorization.
 - [ ] Billing: signed/replayed webhooks, reconciliation, VAT/refunds after provider approval.
 - [ ] Secrets: dependency/security scans and review of logs/artifacts for credentials.
 - [ ] Browser: registration, assessment, playback and deletion; keyboard, focus,
-  mobile, accessibility and network error states.
+  mobile, accessibility and network error states. Synthetic Chromium scenarios
+  (13/13) cover these flows, including data export; a full WCAG/contrast audit and
+  execution of the CI browser job remain required to close the gate.
 - [ ] Recovery: synthetic evidence and separate production restore validation,
   independent ledger, EU storage and approved RPO/RTO.
 - [ ] Observability: dashboards, alerts, ownership and tested alert delivery.
@@ -15,8 +17,9 @@ This checklist is not security certification or production authorization.
 - [ ] Incident response: owners, escalation channel and breach procedure.
 - [ ] Owner accepts residual risks and authorizes launch.
 
-Next engineering work is browser/accessibility coverage and security review
-against these gates. Unchecked entries are not completed.
+Next engineering work is Identity/Content negative security coverage,
+dependency/security scanning and a full accessibility audit. Unchecked entries
+are not completed.
 
 ## Document status
 
@@ -25,5 +28,5 @@ Partial verification and open risks:
 
 - Status: Active checklist; review not completed
 - Owner: MATIQ team
-- Last reviewed: 2026-09-04
+- Last reviewed: 2026-09-07
 - Related code: Repository-wide

@@ -24,7 +24,7 @@ export default function LoginPage() {
     <main>
       <section className="shell">
         <p className="eyebrow">Anmelden</p>
-        <h2>Willkommen zurück</h2>
+        <h1>Willkommen zurück</h1>
         <form onSubmit={submit}>
           <label>
             E-Mail
