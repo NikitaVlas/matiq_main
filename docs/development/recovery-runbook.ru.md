@@ -25,6 +25,16 @@ backup, применяется дважды. Проверяется удален
 оператор проверяет оставшиеся базы с идентификатором конкретного прогона; массовое
 удаление по префиксу запрещено. CI публикует evidence на 30 дней.
 
+## Цели восстановления
+
+- production RPO: не более 15 минут;
+- production RTO: не более 4 часов;
+- локальный synthetic drill budget: 120 секунд.
+
+Evidence содержит эти ориентиры и отдельную проверку локального budget. Выполнение
+локального budget не подтверждает production RPO/RTO: для этого нужен restore
+реального по размеру зашифрованного backup в изолированной EU-среде.
+
 ## Production restore gate (ещё не выполнен)
 
 - Запретить пользовательский трафик и фоновые side effects до завершения проверки.
@@ -41,6 +51,13 @@ backup, применяется дважды. Проверяется удален
 
 ## Document status
 
+- Прогон `4318e0c8fbdbdc5192b4ec15` (28,206 с) подтвердил 18 локальных
+  проверок, включая настоящий dump/restore, независимый post-backup ledger,
+  повторное безопасное применение и выполнение synthetic budget 120 секунд.
+  Общий статус `FAILED` только из-за отложенного
+  `provider_identifiers_remain_linked`; production RPO/RTO этим не доказаны.
+- Прогон `f70d365e8b5b96dcd5c73a81` остановился на preflight до готовности Docker;
+  он не проверял данные и не считается recovery evidence.
 - Прогон `2d2416c643a3e42f4b72b346` (23,925 с) подтвердил ledger v2: создание и отмена
   расписания после backup, однократное исполнение и ожидание processor прошли.
   Общий статус FAILED только из-за отложенного `provider_identifiers_remain_linked`.
@@ -62,5 +79,5 @@ backup, применяется дважды. Проверяется удален
   Evidence содержит безопасные коды findings; прежние PASSED не покрывают новые проверки.
 - Status: Active local runbook; production gates pending
 - Owner: MATIQ team
-- Last reviewed: 2026-09-04
+- Last reviewed: 2026-09-08
 - Related code: apps/worker/src/recovery-drill.ts

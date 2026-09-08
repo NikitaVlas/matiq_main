@@ -20,6 +20,16 @@ exit code 0 and PASSED. Failure records only the stage, never raw database error
 or PII. On cleanup failure inspect only databases identified by that run ID;
 never bulk-delete by prefix. CI retains evidence for 30 days.
 
+## Recovery objectives
+
+- production RPO: no more than 15 minutes;
+- production RTO: no more than 4 hours;
+- local synthetic drill budget: 120 seconds.
+
+Evidence records these objectives and checks the local budget separately. Passing
+the local budget does not prove production RPO/RTO; that requires restoring a
+realistically sized encrypted backup in an isolated EU environment.
+
 Production recovery must keep traffic and workers disabled, restore into an
 isolated EU environment, retrieve the latest independent ledger (including
 post-backup deletions), apply suppression, verify consistency and provider state,
@@ -30,6 +40,12 @@ or independent ledger storage. Those remain launch gates.
 
 ## Document status
 
+- Run `4318e0c8fbdbdc5192b4ec15` (28.206 s) passed 18 local checks, including
+  real dump/restore, an independent post-backup ledger, safe replay, and the
+  120-second synthetic budget. Overall status is `FAILED` only for deferred
+  `provider_identifiers_remain_linked`; this does not prove production RPO/RTO.
+- Run `f70d365e8b5b96dcd5c73a81` stopped at preflight before Docker was ready;
+  it did not inspect data and is not recovery evidence.
 - Run `2d2416c643a3e42f4b72b346` (23.925 s) verified ledger v2: post-backup schedule
   creation and cancellation, single execution and processor-pending state passed.
   Overall status is FAILED only for deferred `provider_identifiers_remain_linked`.
@@ -51,5 +67,5 @@ or independent ledger storage. Those remain launch gates.
   now includes safe finding codes; earlier PASSED reports do not cover these checks.
 - Status: Active local runbook; production gates pending
 - Owner: MATIQ team
-- Last reviewed: 2026-09-04
+- Last reviewed: 2026-09-08
 - Related code: apps/worker/src/recovery-drill.ts

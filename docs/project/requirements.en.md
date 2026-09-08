@@ -226,6 +226,10 @@
 
 - `NFR-REL-001`: Retried payment and viewing events shall not cause duplicate
   accounting.
+- `NFR-REL-002`: Initial production launch objectives are an RPO of no more than
+  15 minutes and an RTO of no more than 4 hours. They become commitments only
+  after the hosting and backup architecture is selected and a production-like
+  recovery drill succeeds.
 - `NFR-OBS-001`: Critical assessment, video-access, subscription, and
   statistics operations shall provide diagnosable logs without sensitive data.
 - `NFR-OBS-002`: The administrative audit log shall be protected from
@@ -275,11 +279,10 @@
 - `OQ-004`: What are the subscription price, currency, tax, refund, and
   cancellation rules?
 - `OQ-005`: Which browsers and minimum versions are supported?
-- `OQ-006`: Which concrete performance targets are mandatory?
 
 ## Document status
 
 - Status: Approved product baseline
 - Owner: MATIQ team
-- Last reviewed: 2026-08-26
+- Last reviewed: 2026-09-08
 - Related code: Repository-wide; implementation is partial

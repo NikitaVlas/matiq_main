@@ -30,6 +30,11 @@ const clients: PrismaClient[] = [];
 const checks: string[] = [];
 const findings: string[] = [];
 const started = new Date();
+const recoveryObjectives = {
+  productionRpoSeconds: 15 * 60,
+  productionRtoSeconds: 4 * 60 * 60,
+  syntheticDrillBudgetMs: 120_000,
+};
 let stage = 'preflight';
 let failure: string | null = null;
 let revision = 'unknown';
@@ -452,14 +457,23 @@ try {
   }
   const directory = resolve(root, 'test-results/recovery');
   await mkdir(directory, { recursive: true });
+  const finished = new Date();
+  const elapsedMs = finished.getTime() - started.getTime();
+  if (elapsedMs <= recoveryObjectives.syntheticDrillBudgetMs) {
+    checks.push('synthetic_restore_within_budget');
+  } else {
+    findings.push('synthetic_restore_exceeded_budget');
+    failure ??= 'synthetic_rto_budget';
+  }
   const evidence = {
     version: 1,
     runId,
     revision,
     scope: 'synthetic-local-postgresql',
     startedAt: started.toISOString(),
-    finishedAt: new Date().toISOString(),
-    elapsedMs: Date.now() - started.getTime(),
+    finishedAt: finished.toISOString(),
+    elapsedMs,
+    objectives: recoveryObjectives,
     status: failure ? 'FAILED' : 'PASSED',
     failedStage: failure,
     checks,

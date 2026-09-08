@@ -69,6 +69,11 @@ not when voluntarily scheduling deletion for a future date:
    active service and expires through the backup lifecycle.
 8. Completion is confirmed to the user.
 
+Initial production launch engineering objectives are RPO ≤ 15 minutes and
+RTO ≤ 4 hours. Until hosting and backup mechanisms are selected, these are
+design targets rather than a proven SLA. The local synthetic drill has a
+separate 120-second budget and does not prove production RPO/RTO.
+
 Before each backup, the operator exports ledger v2 to independent storage. It
 contains only random `privacySubjectId` values, request/retention/completion dates and current
 scheduled-deletion dates—never email, internal user IDs or payment identifiers.
@@ -87,27 +92,27 @@ The periods below are the approved engineering baseline. They do not permit
 indefinite retention and require confirmation by German counsel or a data
 protection officer before production.
 
-| Data | Retention | End-of-period action |
-| --- | --- | --- |
-| Account, profile, assessment, and Roadmap | Active-account lifetime | Block immediately after a confirmed request; erase or irreversibly pseudonymise product data within 30 days |
-| Viewing history and progress | Active-account lifetime | Erase within 30 days after confirmed account deletion |
-| Playback sessions and raw heartbeats | 90 days from creation | Irreversibly erase |
-| Verified watch intervals | 180 days after the accounting month closes | Erase viewer-level records; retain only an anonymised monthly aggregate |
-| Auth events and security logs | 90 days | Erase unless covered by a documented incident/legal hold |
-| Technical application logs | 30 days | Irreversibly erase |
-| Admin audit log | 5 years | Erase; if the subject account is deleted earlier, irreversibly replace its identifiers while retaining the minimum evidentiary event |
-| Evidence that a GDPR request was completed | 3 years from the end of the completion calendar year | Erase; during retention keep only request ID, dates, status, and processed systems without email, name, or original user ID |
-| Used/expired verification and reset tokens | Until use or expiry plus 7 days | Erase the record and token hash |
-| Expired or revoked sessions | No more than 24 hours after expiry/revocation | Erase |
-| Successful Outbox | Encrypted payload: 24 hours after processing; safe technical metadata: 30 days | Purge payload first, then erase the record |
-| Completed Inbox | 30 days | Erase |
-| Dead letter | 30 days; no more than 90 days while an investigation remains open | Erase after closure or the maximum period; never copy the payload |
-| Accounting vouchers: invoices, refunds, chargebacks, payout reports | 8 years from the end of the relevant calendar year | Erase after the mandatory period unless covered by a legal hold |
-| Books, annual accounts, and related records | 10 years from the end of the relevant calendar year | Erase after the mandatory period unless covered by a legal hold |
-| Commercial correspondence and trainer agreements | 6 years from the end of the year in which the agreement ended or the document was received/sent | Erase unless a longer category applies to a particular financial document |
-| MATIQ backups | Rolling 35-day window | Expire through rotation; after restore, reapply the deletion ledger before ordinary processing resumes |
-| Active processor/provider copies | No more than 30 days after the deletion command | Obtain confirmation or record an exception and escalation |
-| Processor/provider backup copies | No more than 90 days | Require this in the DPA/contract and verify it before onboarding |
+| Data                                                                | Retention                                                                                       | End-of-period action                                                                                                                 |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Account, profile, assessment, and Roadmap                           | Active-account lifetime                                                                         | Block immediately after a confirmed request; erase or irreversibly pseudonymise product data within 30 days                          |
+| Viewing history and progress                                        | Active-account lifetime                                                                         | Erase within 30 days after confirmed account deletion                                                                                |
+| Playback sessions and raw heartbeats                                | 90 days from creation                                                                           | Irreversibly erase                                                                                                                   |
+| Verified watch intervals                                            | 180 days after the accounting month closes                                                      | Erase viewer-level records; retain only an anonymised monthly aggregate                                                              |
+| Auth events and security logs                                       | 90 days                                                                                         | Erase unless covered by a documented incident/legal hold                                                                             |
+| Technical application logs                                          | 30 days                                                                                         | Irreversibly erase                                                                                                                   |
+| Admin audit log                                                     | 5 years                                                                                         | Erase; if the subject account is deleted earlier, irreversibly replace its identifiers while retaining the minimum evidentiary event |
+| Evidence that a GDPR request was completed                          | 3 years from the end of the completion calendar year                                            | Erase; during retention keep only request ID, dates, status, and processed systems without email, name, or original user ID          |
+| Used/expired verification and reset tokens                          | Until use or expiry plus 7 days                                                                 | Erase the record and token hash                                                                                                      |
+| Expired or revoked sessions                                         | No more than 24 hours after expiry/revocation                                                   | Erase                                                                                                                                |
+| Successful Outbox                                                   | Encrypted payload: 24 hours after processing; safe technical metadata: 30 days                  | Purge payload first, then erase the record                                                                                           |
+| Completed Inbox                                                     | 30 days                                                                                         | Erase                                                                                                                                |
+| Dead letter                                                         | 30 days; no more than 90 days while an investigation remains open                               | Erase after closure or the maximum period; never copy the payload                                                                    |
+| Accounting vouchers: invoices, refunds, chargebacks, payout reports | 8 years from the end of the relevant calendar year                                              | Erase after the mandatory period unless covered by a legal hold                                                                      |
+| Books, annual accounts, and related records                         | 10 years from the end of the relevant calendar year                                             | Erase after the mandatory period unless covered by a legal hold                                                                      |
+| Commercial correspondence and trainer agreements                    | 6 years from the end of the year in which the agreement ended or the document was received/sent | Erase unless a longer category applies to a particular financial document                                                            |
+| MATIQ backups                                                       | Rolling 35-day window                                                                           | Expire through rotation; after restore, reapply the deletion ledger before ordinary processing resumes                               |
+| Active processor/provider copies                                    | No more than 30 days after the deletion command                                                 | Obtain confirmation or record an exception and escalation                                                                            |
+| Processor/provider backup copies                                    | No more than 90 days                                                                            | Require this in the DPA/contract and verify it before onboarding                                                                     |
 
 Unless a calendar-year rule is stated, a period runs from the triggering event
 through the end of the applicable day. Retention jobs must be idempotent,
@@ -179,5 +184,5 @@ remains available without an explanation.
 
 - Status: Approved engineering baseline; legal review required before production
 - Owner: MATIQ team
-- Last reviewed: 2026-09-04
+- Last reviewed: 2026-09-08
 - Related code: Identity, profiles, assessment, analytics, billing, audit

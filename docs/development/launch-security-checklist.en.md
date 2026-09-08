@@ -18,8 +18,9 @@ This checklist is not security certification or production authorization.
       scans pass on key User Web and Admin Web states, and both suites are included
       in CI. A successful remote CI run and manual screen-reader, zoom, and
       high-contrast checks remain required to close the gate.
-- [ ] Recovery: synthetic evidence and separate production restore validation,
-      independent ledger, EU storage and approved RPO/RTO.
+- [ ] Recovery: local dump/restore and ledger replay are verified, with 15-minute
+      RPO and 4-hour RTO objectives recorded. Production-like restore, independent
+      EU ledger storage, and provider-identifier deletion evidence remain required.
 - [ ] Observability: dashboards, alerts, ownership and tested alert delivery.
 - [ ] Providers/legal: DPA, subprocessors, export/delete, privacy notice and terms.
 - [ ] Incident response: owners, escalation channel and breach procedure.

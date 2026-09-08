@@ -23,8 +23,10 @@
       A/AA и contrast scan проходит на ключевых состояниях User Web и Admin Web;
       оба набора включены в CI. Для закрытия gate остаются успешный удалённый CI run
       и ручная проверка screen reader/zoom/high contrast.
-- [ ] Recovery: приложить synthetic recovery evidence; отдельно подтвердить
-      production restore, независимый ledger, EU storage и цели RPO/RTO.
+- [ ] Recovery: local dump/restore и повторное применение ledger подтверждены;
+      ориентиры RPO 15 минут/RTO 4 часа зафиксированы. До закрытия gate остаются
+      production-like restore, независимое EU-хранилище ledger и подтверждение
+      удаления provider identifiers.
 - [ ] Observability: dashboards/alerts, ответственный и тест доставки alert.
 - [ ] Providers/legal: DPA, subprocessors, export/delete, privacy notice и terms.
 - [ ] Incident response: ответственные, канал escalation, процедура breach.
