@@ -1,4 +1,5 @@
 import { expect, test, type Route } from '@playwright/test';
+import { expectNoWcagViolations } from './wcag';
 
 const question = {
   key: 'top-confidence',
@@ -159,18 +160,23 @@ test('athlete completes assessment, opens a roadmap lesson, and updates progress
   await page.getByRole('button', { name: 'Anmelden' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole('heading', { name: 'DEIN NÄCHSTER SCHRITT' })).toBeVisible();
+  await expectNoWcagViolations(page);
 
   await page.goto('/assessment');
+  await expectNoWcagViolations(page);
   await page.getByLabel('Es gelingt selten').check();
   await page.getByRole('button', { name: 'Assessment abschließen' }).click();
   await expect(
     page.getByRole('heading', { name: 'Dein nächster Entwicklungsschritt' }),
   ).toBeVisible();
+  await expectNoWcagViolations(page);
 
   await page.getByRole('link', { name: 'Kontrolle von oben' }).click();
   await expect(page.getByRole('heading', { name: 'Kontrolle von oben' })).toBeVisible();
+  await expectNoWcagViolations(page);
   await page.getByRole('link', { name: 'Lektion starten' }).click();
   await expect(page.getByRole('heading', { name: 'Pressure halten' })).toBeVisible();
+  await expectNoWcagViolations(page);
 
   await page.locator('video').evaluate((video) => {
     Object.defineProperty(video, 'currentTime', { configurable: true, value: 100 });
@@ -178,8 +184,10 @@ test('athlete completes assessment, opens a roadmap lesson, and updates progress
   });
   await expect(page.getByRole('heading', { name: 'Lektion abgeschlossen' })).toBeVisible();
   await expect(page.getByText('1 Roadmap-Schritt wurde abgeschlossen.')).toBeVisible();
+  await expectNoWcagViolations(page);
 
   await page.goto('/roadmap');
   await expect(page.getByText('1 von 1 Roadmap-Schritten abgeschlossen.')).toBeVisible();
   await expect(page.getByText('Abgeschlossene Roadmap-Schritte')).toBeVisible();
+  await expectNoWcagViolations(page);
 });

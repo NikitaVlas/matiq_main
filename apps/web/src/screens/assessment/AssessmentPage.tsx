@@ -188,7 +188,7 @@ export default function AssessmentPage() {
           </p>
         )}
         {loading ? (
-          <div className="assessment-skeleton" aria-label="Assessment wird geladen">
+          <div className="assessment-skeleton" role="status" aria-label="Assessment wird geladen">
             <span />
             <span />
             <span />

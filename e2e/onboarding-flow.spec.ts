@@ -1,4 +1,5 @@
 import { expect, test, type Route } from '@playwright/test';
+import { expectNoWcagViolations } from './wcag';
 
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({
@@ -34,15 +35,18 @@ test('athlete registers, verifies the email and completes the profile', async ({
   });
 
   await page.goto('/register');
+  await expectNoWcagViolations(page);
   await page.getByLabel('E-Mail').fill('new-athlete@matiq.local');
   await page.getByLabel('Passwort').fill('Strong-password-123');
   await page.getByRole('button', { name: 'Konto erstellen' }).click();
   await expect(page).toHaveURL(/\/check-email\?email=new-athlete%40matiq\.local$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Prüfe dein Postfach' })).toBeVisible();
+  await expectNoWcagViolations(page);
 
   await page.goto('/verify-email?token=verification-token');
   await page.getByRole('button', { name: 'E-Mail bestätigen' }).click();
   await expect(page).toHaveURL(/\/onboarding\/profile$/);
+  await expectNoWcagViolations(page);
 
   await page.getByLabel('BJJ Gi').check();
   await page.getByLabel('Gürtel').selectOption('WHITE');
@@ -52,6 +56,7 @@ test('athlete registers, verifies the email and completes the profile', async ({
   await page.getByLabel('Allgemeine Entwicklung').check();
   await page.getByRole('button', { name: 'Profil speichern' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
+  await expectNoWcagViolations(page);
 
   expect(requests).toEqual([
     {

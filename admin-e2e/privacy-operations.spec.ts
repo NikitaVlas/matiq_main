@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { expectNoWcagViolations } from '../e2e/wcag';
 
 test('Admin sees safe GDPR aggregates and confirms an idempotent retry', async ({ page }) => {
   let retryCalls = 0;
@@ -71,6 +72,7 @@ test('Admin sees safe GDPR aggregates and confirms an idempotent retry', async (
   await page.getByLabel('MFA-Code').fill('123456');
   await page.getByRole('button', { name: 'Dashboard laden' }).click();
   await expect(page.getByRole('heading', { name: 'GDPR-Betriebsstatus' })).toBeVisible();
+  await expectNoWcagViolations(page);
   await expect(page.getByText('Löschung ausstehend').locator('..')).toContainText('3');
   await expect(page.locator('main')).not.toContainText('admin@example.invalid');
 

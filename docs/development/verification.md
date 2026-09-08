@@ -18,6 +18,7 @@ On Windows with restricted PowerShell scripts, use `pnpm.cmd`.
 | Typecheck            | `pnpm typecheck`                            | Yes                 |
 | Unit tests           | `pnpm test`                                 | Yes                 |
 | Browser E2E          | `pnpm e2e`                                  | Critical flows      |
+| Admin browser E2E    | `pnpm e2e:admin`                            | Critical admin flow |
 | Identity integration | `pnpm --filter @matiq/api test:integration` | Yes with PostgreSQL |
 | Build                | `pnpm build`                                | Yes                 |
 | Full verification    | `pnpm verify`                               | Yes                 |
@@ -44,7 +45,9 @@ and integration tests. Never run these commands against production.
 
 ## Reporting
 
-Browser tests use synthetic API responses and run in Chromium via `pnpm e2e`.
+Browser tests use synthetic API responses and run in Chromium via `pnpm e2e`
+and `pnpm e2e:admin`. Representative User and Admin states are checked with
+axe-core against WCAG 2.1 A/AA, including automated color-contrast rules.
 They are not a full-stack production test. The CI browser job runs on Linux;
 local Windows execution uses the same cross-platform Playwright configuration.
 

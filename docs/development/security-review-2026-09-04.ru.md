@@ -24,6 +24,12 @@
   единственный `h1`, подписи полей, уникальные `id`, отсутствие горизонтального
   overflow и достижимый keyboard focus. Исправлена иерархия заголовков login,
   register, check-email, verify-email и profile.
+- 2026-09-08 добавлен автоматический axe-core scan WCAG 2.1 A/AA, включая
+  color contrast, для login, settings, регистрации, подтверждения email,
+  onboarding profile, dashboard, assessment, Roadmap, video и Admin GDPR
+  dashboard. Исправлены отсутствующий title Admin-документа и запрещённый
+  `aria-label` у assessment loading skeleton. User и Admin browser suites
+  включены в CI.
 - Обнаружено и исправлено зависание GDPR export: исключение `fetch` теперь
   объявляется через `role=alert`, а busy-state всегда снимается.
 - Browser: 6 сценариев Chromium с синтетическим API, включая assessment/lesson,
@@ -77,8 +83,9 @@
   доказывает полноту очистки audit/financial/provider данных после restore.
 - Mocked E2E не доказывают реальную доставку email, обработку видео, платежи или
   регистрацию через все backend-границы.
-- Не выполнены penetration test, полный WCAG/contrast audit и удалённый запуск
-  CI browser job. E2E используют
+- Не выполнены penetration test, ручная проверка screen reader/zoom/high contrast
+  и удалённый запуск CI browser job. Автоматический WCAG/contrast baseline
+  проходит локально. E2E используют
   синтетический API и не заменяют full-stack проверку email/video/provider.
 - Dependency vulnerability gate закрыт: после обновления и повторного scan
   известных production-уязвимостей не найдено. Overrides требуют планового
@@ -99,5 +106,5 @@ User API 6 файлов/10 тестов и Admin API 4 файла/9 тестов
 
 - Status: Partial review; production blockers open
 - Owner: MATIQ team
-- Last reviewed: 2026-09-07
+- Last reviewed: 2026-09-08
 - Related code: deletion-ledger.ts, AccountDeletionStatusPage.tsx, e2e

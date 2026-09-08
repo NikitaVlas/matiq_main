@@ -25,6 +25,12 @@
   single `h1`, labelled controls, unique `id` values, no horizontal overflow and
   reachable keyboard focus. Corrected heading hierarchy on login, registration,
   check-email, verify-email and profile screens.
+- On 2026-09-08 an automated axe-core WCAG 2.1 A/AA scan, including color
+  contrast, was added for login, settings, registration, email verification,
+  onboarding profile, dashboard, assessment, Roadmap, video, and the Admin GDPR
+  dashboard. Fixed the missing Admin document title and a prohibited `aria-label`
+  on the assessment loading skeleton. Both User and Admin browser suites now run
+  in CI.
 - Found and fixed a stuck GDPR export state: fetch failures are announced through
   `role=alert`, and the busy state is always cleared.
 - Six Chromium browser scenarios with synthetic APIs: assessment/lesson,
@@ -76,8 +82,9 @@
   and receipt verification in the real recovery drill.
 - Recovery drill does not establish complete audit/financial/provider cleanup.
 - Mocked E2E do not prove real email, video, payments or full-stack registration.
-- Penetration testing, a full WCAG/contrast audit, and execution of the CI browser
-  job remain outstanding. Synthetic API E2E does not replace full-stack
+- Penetration testing, manual screen-reader/zoom/high-contrast checks, and a
+  remote CI browser run remain outstanding. The automated WCAG/contrast baseline
+  passes locally. Synthetic API E2E does not replace full-stack
   email/video/provider verification.
 - The dependency vulnerability gate is closed: the upgraded production tree has
   no known findings. Overrides must be reviewed during future Next.js, Express,
@@ -98,5 +105,5 @@ provider checks remain outstanding.
 
 - Status: Partial review; production blockers open
 - Owner: MATIQ team
-- Last reviewed: 2026-09-07
+- Last reviewed: 2026-09-08
 - Related code: deletion-ledger.ts, AccountDeletionStatusPage.tsx, e2e

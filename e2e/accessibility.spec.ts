@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { expectNoWcagViolations } from './wcag';
 
 function json(route: Route, body: unknown) {
   return route.fulfill({
@@ -51,6 +52,7 @@ test('settings keeps labels, landmarks and keyboard focus on mobile', async ({ p
   });
   await page.goto('/settings');
   await expectAccessibilityBaseline(page);
+  await expectNoWcagViolations(page);
   await page.keyboard.press('Tab');
   expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe('BODY');
 });
@@ -62,6 +64,7 @@ test('login exposes its form and error state to keyboard users', async ({ page }
   );
   await page.goto('/login');
   await expectAccessibilityBaseline(page);
+  await expectNoWcagViolations(page);
   await page.getByLabel('E-Mail').fill('athlete@matiq.local');
   await page.getByLabel('Passwort').fill('Wrong-password-123');
   await page.getByRole('button', { name: 'Anmelden' }).focus();
@@ -69,5 +72,6 @@ test('login exposes its form and error state to keyboard users', async ({ page }
   await expect(
     page.getByRole('alert').filter({ hasText: 'E-Mail-Adresse oder Passwort' }),
   ).toBeVisible();
+  await expectNoWcagViolations(page);
   await expect(page.getByRole('button', { name: 'Anmelden' })).toBeEnabled();
 });
