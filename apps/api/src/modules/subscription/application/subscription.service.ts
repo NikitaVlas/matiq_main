@@ -19,17 +19,34 @@ export class SubscriptionService {
     return { accepted: true };
   }
   async startTrial(userId: string) {
-    const existing = await this.db.subscription.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (existing) return existing;
-    return this.db.subscription.create({
-      data: {
-        userId,
-        status: SubscriptionStatus.TRIAL,
-        endsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
+    return this.db.$transaction(async (tx) => {
+      // Serialize activation with other trial requests and billing webhooks.
+      await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${userId} FOR UPDATE`;
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: {
+          emailVerifiedAt: true,
+          deletedAt: true,
+          assessment: { select: { completedAt: true } },
+        },
+      });
+      if (!user?.emailVerifiedAt || user.deletedAt)
+        throw new ForbiddenException('TRIAL_ACCOUNT_NOT_ELIGIBLE');
+      const existing = await tx.subscription.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (existing) return existing;
+      if (!user.assessment?.completedAt) throw new ForbiddenException('TRIAL_ASSESSMENT_REQUIRED');
+      const startsAt = new Date();
+      return tx.subscription.create({
+        data: {
+          userId,
+          status: SubscriptionStatus.TRIAL,
+          startsAt,
+          endsAt: new Date(startsAt.getTime() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
     });
   }
   async current(userId: string) {

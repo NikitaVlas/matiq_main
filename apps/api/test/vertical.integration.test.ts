@@ -101,6 +101,11 @@ describe('registration to athlete profile', () => {
     expect(resumedDraft.body.status).toBe('DRAFT');
     expect(resumedDraft.body.answers).toHaveLength(2);
     expect(await db.assessment.findUnique({ where: { userId: registeredUser.id } })).toBeNull();
+    await request(app.getHttpServer())
+      .post('/subscription/activate-trial')
+      .set('Cookie', cookie)
+      .expect(403);
+    expect(await db.subscription.count({ where: { userId: registeredUser.id } })).toBe(0);
 
     const assessment = await request(app.getHttpServer())
       .post('/assessment/submit')
@@ -113,6 +118,7 @@ describe('registration to athlete profile', () => {
       })
       .expect(201);
     expect(assessment.body.completed).toBe(true);
+    expect(await db.subscription.count({ where: { userId: registeredUser.id } })).toBe(0);
     expect(assessment.body.roadmap.length).toBeGreaterThan(0);
     const firstAttempts = await db.assessmentAttempt.findMany({
       where: { userId: registeredUser.id, status: 'COMPLETED' },

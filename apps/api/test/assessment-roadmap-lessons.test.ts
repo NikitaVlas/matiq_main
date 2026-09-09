@@ -36,7 +36,7 @@ describe('assessment roadmap lesson matching', () => {
       assessmentAttemptAnswer: { deleteMany: vi.fn(), create: vi.fn() },
       $transaction: vi.fn().mockResolvedValue([]),
     };
-    const service = new AssessmentService(db as never, {} as never);
+    const service = new AssessmentService(db as never);
 
     await expect(
       service.saveDraft('user-1', Discipline.BJJ_GI, [
@@ -68,7 +68,7 @@ describe('assessment roadmap lesson matching', () => {
       { id: 'video-1', watchEvents: [{ completed: true }], metadataValues: [] },
       { id: 'video-2', watchEvents: [], metadataValues: [] },
     ]);
-    const service = new AssessmentService({ video: { findMany } } as never, {} as never);
+    const service = new AssessmentService({ video: { findMany } } as never);
 
     await expect(
       (
@@ -104,7 +104,7 @@ describe('assessment roadmap lesson matching', () => {
 
   it('rejects access to a foreign Roadmap item', async () => {
     const db = { roadmapItem: { findFirst: vi.fn().mockResolvedValue(null) } };
-    const service = new AssessmentService(db as never, {} as never);
+    const service = new AssessmentService(db as never);
 
     await expect(service.roadmapItemDetails('user-1', 'foreign-item')).rejects.toThrow(
       'ROADMAP_ITEM_NOT_FOUND',
@@ -149,7 +149,7 @@ describe('assessment roadmap lesson matching', () => {
         ]),
       },
     };
-    const service = new AssessmentService(db as never, {} as never);
+    const service = new AssessmentService(db as never);
 
     const result = await service.roadmapItemDetails('user-1', 'item-1');
 
@@ -183,7 +183,7 @@ describe('assessment roadmap lesson matching', () => {
       },
       lesson: { findFirst: vi.fn().mockResolvedValue(null) },
     };
-    const service = new AssessmentService(db as never, {} as never);
+    const service = new AssessmentService(db as never);
     await expect(service.addRoadmapItem('user-1', 'Lesson', undefined, 'lesson-1')).rejects.toThrow(
       'LESSON_NOT_AVAILABLE',
     );
@@ -214,7 +214,7 @@ describe('assessment roadmap lesson matching', () => {
       },
       $transaction: vi.fn().mockResolvedValue([]),
     };
-    const service = new AssessmentService(db as never, {} as never);
+    const service = new AssessmentService(db as never);
     await (
       service as unknown as {
         generateRoadmap: (
@@ -259,7 +259,7 @@ describe('assessment roadmap lesson matching', () => {
         }),
       },
     };
-    const service = new AssessmentService(db as never, {} as never);
+    const service = new AssessmentService(db as never);
 
     await expect(service.currentAnswers('user-1')).resolves.toEqual({
       completed: true,

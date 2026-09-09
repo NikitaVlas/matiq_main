@@ -11,7 +11,6 @@ import {
   RoadmapRecommendationType,
 } from '@prisma/client';
 import { Database } from '../../../shared/infrastructure/database';
-import { SubscriptionService } from '../../subscription/application/subscription.service';
 
 const QUESTION_SEED = [
   {
@@ -168,10 +167,7 @@ const QUESTION_BANK_VERSION = 1;
 
 @Injectable()
 export class AssessmentService {
-  constructor(
-    @Inject(Database) private readonly db: Database,
-    @Inject(SubscriptionService) private readonly subscriptions: SubscriptionService,
-  ) {}
+  constructor(@Inject(Database) private readonly db: Database) {}
 
   async questions() {
     for (const question of QUESTION_SEED) {
@@ -333,10 +329,6 @@ export class AssessmentService {
         });
       }
     }
-    const previous = await this.db.assessment.findUnique({
-      where: { userId },
-      select: { id: true },
-    });
     const assessment = await this.db.assessment.upsert({
       where: { userId },
       create: { userId, completedAt: new Date() },
@@ -375,7 +367,6 @@ export class AssessmentService {
         .map((question) => question.skillKey),
     );
     await this.generateRoadmap(profile.id, profile.disciplines, scores, recommendations);
-    if (!previous) await this.subscriptions.startTrial(userId);
     return this.getResult(userId);
   }
 
