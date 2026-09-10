@@ -755,6 +755,30 @@
         ]
       }
     },
+    "/content/videos": {
+      "get": {
+        "operationId": "ContentController_videos",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogVideoDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
     "/content/trainers": {
       "get": {
         "operationId": "ContentController_trainers",
@@ -898,6 +922,129 @@
           "scheduled",
           "executeAt",
           "renewalConfirmed"
+        ]
+      },
+      "CatalogTrainerDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "displayName"
+        ]
+      },
+      "CatalogFacetDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "CatalogVideoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "durationSec": {
+            "type": "number",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "disciplines": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "BJJ_GI",
+                "NO_GI_GRAPPLING"
+              ]
+            }
+          },
+          "trainer": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CatalogTrainerDto"
+              }
+            ]
+          },
+          "gameAreas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          },
+          "skillGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          },
+          "techniques": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          },
+          "movements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          },
+          "drills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "durationSec",
+          "createdAt",
+          "disciplines",
+          "trainer",
+          "gameAreas",
+          "positions",
+          "skillGroups",
+          "techniques",
+          "movements",
+          "drills"
         ]
       }
     }

@@ -1,5 +1,5 @@
 'use client';
-
+import { t, useAdminLanguage } from '../../shared/i18n';
 import { useEffect, useState } from 'react';
 import { adminApi } from '../../shared/api/client';
 
@@ -26,6 +26,7 @@ const slug = (value: string) =>
     .replace(/^-|-$/g, '');
 
 export default function VideoUploadPage() {
+  useAdminLanguage();
   const [file, setFile] = useState<File>();
   const [result, setResult] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -175,10 +176,10 @@ export default function VideoUploadPage() {
   return (
     <main style={{ maxWidth: 860, margin: '40px auto', padding: 24 }}>
       <nav>
-        <a href="/">Courses</a> - <a href="/videos">Upload video</a>
+        <a href="/">{t('Courses')} </a> - <a href="/videos">{t('Upload video')} </a>
       </nav>
-      <h1>Upload local video</h1>
-      <p>Use a Latin filename. Metadata fields and values can be expanded at any time.</p>
+      <h1>{t('Upload local video')} </h1>
+      <p>{t('Use a Latin filename. Metadata fields and values can be expanded at any time.')} </p>
       <form onSubmit={upload}>
         <input
           type="file"
@@ -187,41 +188,41 @@ export default function VideoUploadPage() {
           onChange={(event) => setFile(event.target.files?.[0])}
         />
         <button type="submit" disabled={uploading}>
-          {uploading ? 'Uploading...' : 'Upload video'}
+          {uploading ? t('Uploading...') : t('Upload video')}
         </button>
       </form>
-      {result && <p role="status">{result}</p>}
+      {result && <p role="status">{t(result)}</p>}
 
       <section>
-        <h2>Metadata fields</h2>
+        <h2>{t('Metadata fields')} </h2>
         <p>
-          Metadata fields describe videos and make them easier to filter and recommend. Examples:
-          Discipline, Skill level, Position, Technique, or Content focus. Add a field only when the
-          required category does not already exist; its selectable values are added while editing a
-          video.
+          {t(
+            'Metadata fields describe videos and make them easier to filter and recommend. Examples: Discipline, Skill level, Position, Technique, or Content focus. Add a field only when the required category does not already exist; its selectable values are added while editing a video.',
+          )}{' '}
         </p>
         <input
-          aria-label="New metadata category"
-          placeholder="New category, for example Coach"
+          aria-label={t('New metadata category')}
+          placeholder={t('New category, for example Coach')}
           value={newFieldName}
           onChange={(event) => setNewFieldName(event.target.value)}
         />
         <button type="button" disabled={!newFieldName.trim()} onClick={() => void addField()}>
-          Add field
+          {t('Add field')}{' '}
         </button>
       </section>
 
       <section aria-labelledby="roadmap-coverage-title">
-        <h2 id="roadmap-coverage-title">Roadmap content coverage</h2>
+        <h2 id="roadmap-coverage-title">{t('Roadmap content coverage')} </h2>
         <p>
-          Roadmap topics connect Assessment recommendations with published videos and courses. A
-          topic without coverage remains visible to athletes but cannot recommend a lesson yet.
+          {t(
+            'Roadmap topics connect Assessment recommendations with published videos and courses. A topic without coverage remains visible to athletes but cannot recommend a lesson yet.',
+          )}{' '}
         </p>
         <label>
-          New Roadmap topic{' '}
+          {t('New Roadmap topic')}{' '}
           <input
             maxLength={120}
-            placeholder="For example Half Guard"
+            placeholder={t('For example Half Guard')}
             value={newRoadmapTopic}
             onChange={(event) => setNewRoadmapTopic(event.target.value)}
           />
@@ -231,67 +232,75 @@ export default function VideoUploadPage() {
           disabled={!newRoadmapTopic.trim()}
           onClick={() => void addRoadmapTopic()}
         >
-          Add Roadmap topic
+          {t('Add Roadmap topic')}{' '}
         </button>
         {roadmapCoverage.length ? (
           <ul>
             {roadmapCoverage.map((topic) => (
               <li key={topic.id}>
-                <strong>{topic.name}</strong>: {topic.publishedVideoCount} published video
-                {topic.publishedVideoCount === 1 ? '' : 's'}{' '}
-                {topic.publishedVideoCount === 0 ? <span>— needs content</span> : null}
+                <strong>{topic.name}</strong>: {topic.publishedVideoCount} {t('published videos')}{' '}
+                {topic.publishedVideoCount === 0 ? <span>{t('— needs content')} </span> : null}
               </li>
             ))}
           </ul>
         ) : (
-          <p>No Roadmap topics available.</p>
+          <p>{t('No Roadmap topics available.')} </p>
         )}
         {roadmapDiagnostics ? (
-          <div role="status" aria-label="Roadmap diagnostics">
-            <h3>Warnings</h3>
+          <div role="status" aria-label={t('Roadmap diagnostics')}>
+            <h3>{t('Warnings')} </h3>
             <ul>
               {roadmapDiagnostics.topics.flatMap((topic) => [
                 ...(topic.publishedVideoCount === 0
                   ? [
                       <li key={`${topic.id}-content`}>
-                        {topic.name}: no published content
-                        {topic.draftVideoCount ? ` (${topic.draftVideoCount} draft)` : ''}
+                        {topic.name}
+                        {t(': no published content')}{' '}
+                        {topic.draftVideoCount ? t(` (${topic.draftVideoCount} draft)`) : ''}
                       </li>,
                     ]
                   : []),
                 ...(topic.assessmentMappingCount === 0
-                  ? [<li key={`${topic.id}-assessment`}>{topic.name}: not used by Assessment</li>]
+                  ? [
+                      <li key={`${topic.id}-assessment`}>
+                        {topic.name}
+                        {t(': not used by Assessment')}{' '}
+                      </li>,
+                    ]
                   : []),
               ])}
               {roadmapDiagnostics.unlinkedVideos.map((video) => (
-                <li key={video.id}>{video.title}: published without a Roadmap topic</li>
+                <li key={video.id}>
+                  {video.title}
+                  {t(': published without a Roadmap topic')}{' '}
+                </li>
               ))}
             </ul>
             {!roadmapDiagnostics.topics.some(
               (topic) => topic.publishedVideoCount === 0 || topic.assessmentMappingCount === 0,
             ) && !roadmapDiagnostics.unlinkedVideos.length ? (
-              <p>No Roadmap connection warnings.</p>
+              <p>{t('No Roadmap connection warnings.')} </p>
             ) : null}
           </div>
         ) : null}
       </section>
 
-      <h2>Videos</h2>
+      <h2>{t('Videos')} </h2>
       <ul>
         {videos.map((video) => (
           <li key={video.id} style={{ marginBottom: 20 }}>
             <code>{video.id}</code>{' '}
             <button type="button" onClick={() => void navigator.clipboard.writeText(video.id)}>
-              Copy ID
+              {t('Copy ID')}{' '}
             </button>{' '}
-            - {video.title} ({video.published ? 'published' : 'draft'}){' '}
+            - {video.title} ({video.published ? t('published') : t('draft')}){' '}
             {!video.published && (
               <button type="button" onClick={() => void publish(video.id)}>
-                Publish
+                {t('Publish')}{' '}
               </button>
             )}{' '}
             <button type="button" onClick={() => beginMetadataEdit(video)}>
-              Edit metadata
+              {t('Edit metadata')}{' '}
             </button>
             {editingVideoId === video.id && (
               <section style={{ border: '1px solid #ddd', padding: 16, marginTop: 12 }}>
@@ -299,14 +308,18 @@ export default function VideoUploadPage() {
                   <div key={field.id} style={{ marginBottom: 16 }}>
                     {field.key === 'roadmap-topic' ? (
                       <p>
-                        <strong>Roadmap connection:</strong> select the Assessment topic this video
-                        teaches. Use Add new option only for an approved methodology topic.
+                        <strong>{t('Roadmap connection:')} </strong>{' '}
+                        {t(
+                          'select the Assessment topic this video teaches. Use Add new option only for an approved methodology topic.',
+                        )}{' '}
                       </p>
                     ) : null}
                     {field.key === 'roadmap-content-role' ? (
                       <p>
-                        <strong>Completion role:</strong> Required videos must all be completed;
-                        Recommended and Optional videos do not block the Roadmap step.
+                        <strong>{t('Completion role:')} </strong>{' '}
+                        {t(
+                          'Required videos must all be completed; Recommended and Optional videos do not block the Roadmap step.',
+                        )}{' '}
                       </p>
                     ) : null}
                     <label>
@@ -320,7 +333,7 @@ export default function VideoUploadPage() {
                           }))
                         }
                       >
-                        <option value="">Not selected</option>
+                        <option value="">{t('Not selected')} </option>
                         {field.options.map((option) => (
                           <option key={option.id} value={option.id}>
                             {option.name}
@@ -329,7 +342,7 @@ export default function VideoUploadPage() {
                       </select>
                     </label>
                     <input
-                      placeholder={`Add value to ${field.name}`}
+                      placeholder={t(`Add value to ${field.name}`)}
                       value={newOptions[field.id] ?? ''}
                       onChange={(event) =>
                         setNewOptions((current) => ({
@@ -343,15 +356,15 @@ export default function VideoUploadPage() {
                       disabled={!newOptions[field.id]?.trim()}
                       onClick={() => void addOption(field)}
                     >
-                      Add new option
+                      {t('Add new option')}{' '}
                     </button>
                   </div>
                 ))}
                 <button type="button" onClick={() => void saveMetadata()}>
-                  Save metadata
+                  {t('Save metadata')}{' '}
                 </button>{' '}
                 <button type="button" onClick={() => setEditingVideoId('')}>
-                  Cancel
+                  {t('Cancel')}{' '}
                 </button>
               </section>
             )}

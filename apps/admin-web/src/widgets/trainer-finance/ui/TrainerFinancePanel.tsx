@@ -1,5 +1,5 @@
 'use client';
-
+import { t, useAdminLanguage, adminLocale } from '../../../shared/i18n';
 import type { AdminApiPath } from '@matiq/contracts';
 import { FormEvent, useEffect, useState } from 'react';
 import { adminApi, adminIdentityApi } from '../../../shared/api/client';
@@ -26,6 +26,7 @@ type Period = { id: string; month: string; distributablePoolCents: number; repor
 type Finance = { agreements: Agreement[]; periods: Period[] };
 
 export function TrainerFinancePanel({ trainers }: { trainers: Trainer[] }) {
+  useAdminLanguage();
   const [data, setData] = useState<Finance>();
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -119,13 +120,13 @@ export function TrainerFinancePanel({ trainers }: { trainers: Trainer[] }) {
 
   return (
     <section style={{ marginTop: 48 }} aria-labelledby="trainer-finance-title">
-      <p>30 % vom Netto-Abonnementumsatz · Trial-Gewichtung 0 %</p>
-      <h2 id="trainer-finance-title">Trainerverträge und Abrechnungen</h2>
-      {error ? <p role="alert">{error}</p> : null}
-      {message ? <p role="status">{message}</p> : null}
+      <p>{t('30 % vom Netto-Abonnementumsatz · Trial-Gewichtung 0 %')} </p>
+      <h2 id="trainer-finance-title">{t('Trainerverträge und Abrechnungen')} </h2>
+      {error ? <p role="alert">{t(error)}</p> : null}
+      {message ? <p role="status">{t(message)}</p> : null}
       <form onSubmit={reauthenticate} style={{ display: 'flex', gap: 10, alignItems: 'end' }}>
         <label>
-          Admin-Passwort bestätigen
+          {t('Admin-Passwort bestätigen')}{' '}
           <input
             type="password"
             autoComplete="current-password"
@@ -134,7 +135,7 @@ export function TrainerFinancePanel({ trainers }: { trainers: Trainer[] }) {
             required
           />
         </label>
-        <button disabled={busy}>Finanzaktionen freigeben</button>
+        <button disabled={busy}>{t('Finanzaktionen freigeben')} </button>
       </form>
       <div
         style={{
@@ -144,9 +145,9 @@ export function TrainerFinancePanel({ trainers }: { trainers: Trainer[] }) {
         }}
       >
         <form onSubmit={createAgreement} style={{ display: 'grid', gap: 10 }}>
-          <h3>Neue Vertragsversion</h3>
+          <h3>{t('Neue Vertragsversion')} </h3>
           <label>
-            Trainer
+            {t('Trainer')}{' '}
             <select name="trainerId" required>
               {trainers.map((trainer) => (
                 <option key={trainer.id} value={trainer.id}>
@@ -156,19 +157,17 @@ export function TrainerFinancePanel({ trainers }: { trainers: Trainer[] }) {
             </select>
           </label>
           <label>
-            Gültig ab
-            <input name="validFrom" type="date" required />
+            {t('Gültig ab')} <input name="validFrom" type="date" required />
           </label>
           <label>
-            Gültig bis
-            <input name="validUntil" type="date" />
+            {t('Gültig bis')} <input name="validUntil" type="date" />
           </label>
           <label>
-            <input name="participatesInPool" type="checkbox" defaultChecked /> Teilnahme am
-            30-%-Pool
+            <input name="participatesInPool" type="checkbox" defaultChecked />{' '}
+            {t('Teilnahme am 30-%-Pool')}{' '}
           </label>
           <label>
-            Fixbetrag pro Monat (EUR)
+            {t('Fixbetrag pro Monat (EUR)')}{' '}
             <input
               name="fixedFeeEuro"
               type="number"
@@ -179,20 +178,18 @@ export function TrainerFinancePanel({ trainers }: { trainers: Trainer[] }) {
             />
           </label>
           <label>
-            Sonderbedingungen
-            <textarea name="specialTerms" maxLength={4000} />
+            {t('Sonderbedingungen')} <textarea name="specialTerms" maxLength={4000} />
           </label>
-          <button disabled={busy || trainers.length === 0}>Entwurf anlegen</button>
+          <button disabled={busy || trainers.length === 0}>{t('Entwurf anlegen')} </button>
         </form>
         <form onSubmit={createPeriod} style={{ display: 'grid', gap: 10 }}>
-          <h3>Kalendermonat berechnen</h3>
+          <h3>{t('Kalendermonat berechnen')} </h3>
           <label>
-            Monat
-            <input name="month" type="month" required />
+            {t('Monat')} <input name="month" type="month" required />
           </label>
           {['gross', 'vat', 'refunds', 'chargebacks', 'fees'].map((name) => (
             <label key={name}>
-              {
+              {t(
                 (
                   {
                     gross: 'Zahlungen brutto',
@@ -201,23 +198,26 @@ export function TrainerFinancePanel({ trainers }: { trainers: Trainer[] }) {
                     chargebacks: 'Chargebacks',
                     fees: 'PSP-Gebühren',
                   } as Record<string, string>
-                )[name]
-              }{' '}
-              (EUR)
+                )[name] ?? name,
+              )}{' '}
+              {t('(EUR)')}{' '}
               <input name={name} type="number" min="0" step="0.01" defaultValue="0" required />
             </label>
           ))}
-          <button disabled={busy}>Abrechnung als Entwurf erstellen</button>
+          <button disabled={busy}>{t('Abrechnung als Entwurf erstellen')} </button>
         </form>
       </div>
-      {!data ? <p aria-busy="true">Finanzdaten werden geladen …</p> : null}
+      {!data ? <p aria-busy="true">{t('Finanzdaten werden geladen …')} </p> : null}
       {data?.agreements.length === 0 ? (
-        <p>Noch keine Vertragsversion vorhanden.</p>
+        <p>{t('Noch keine Vertragsversion vorhanden.')} </p>
       ) : (
         data?.agreements.map((agreement) => (
           <article key={agreement.id}>
-            <strong>Version {agreement.version}</strong> · {agreement.status} ·{' '}
-            {money(agreement.fixedFeeCents)} · Pool {agreement.participatesInPool ? 'ja' : 'nein'}{' '}
+            <strong>
+              {t('Version')} {agreement.version}
+            </strong>{' '}
+            · {t(agreement.status)} · {money(agreement.fixedFeeCents)} {t('· Pool')}{' '}
+            {agreement.participatesInPool ? t('ja') : t('nein')}{' '}
             {agreement.status === 'DRAFT' ? (
               <button
                 disabled={busy}
@@ -225,7 +225,7 @@ export function TrainerFinancePanel({ trainers }: { trainers: Trainer[] }) {
                   void submit(`/admin/trainer-finance/agreements/${agreement.id}/activate`)
                 }
               >
-                Aktivieren
+                {t('Aktivieren')}{' '}
               </button>
             ) : null}
           </article>
@@ -234,13 +234,14 @@ export function TrainerFinancePanel({ trainers }: { trainers: Trainer[] }) {
       {data?.periods.map((period) => (
         <section key={period.id}>
           <h3>
-            {period.month} · Pool {money(period.distributablePoolCents)}
+            {period.month} {t('· Pool')} {money(period.distributablePoolCents)}
           </h3>
           {period.reports.map((report) => (
             <article key={report.id}>
               <span>
-                {report.trainer.trainerProfile?.displayName ?? 'Trainer'} · {report.status} ·
-                zahlbar {money(report.payableCents)} · Vortrag {money(report.carriedOutCents)}
+                {report.trainer.trainerProfile?.displayName ?? t('Trainer')} · {t(report.status)}{' '}
+                {t('· zahlbar')} {money(report.payableCents)} {t('· Vortrag')}{' '}
+                {money(report.carriedOutCents)}
               </span>
               <ReportActions report={report} busy={busy} submit={submit} />
             </article>
@@ -260,6 +261,7 @@ function ReportActions({
   busy: boolean;
   submit(path: string, body: object): Promise<boolean>;
 }) {
+  useAdminLanguage();
   if (report.status === 'DRAFT')
     return (
       <button
@@ -268,7 +270,7 @@ function ReportActions({
           void submit(`/admin/trainer-finance/reports/${report.id}/status`, { status: 'REVIEWED' })
         }
       >
-        Geprüft
+        {t('Geprüft')}{' '}
       </button>
     );
   if (report.status === 'REVIEWED')
@@ -279,7 +281,7 @@ function ReportActions({
           void submit(`/admin/trainer-finance/reports/${report.id}/status`, { status: 'APPROVED' })
         }
       >
-        Freigeben
+        {t('Freigeben')}{' '}
       </button>
     );
   if (report.status === 'APPROVED' && report.payableCents > 0)
@@ -287,7 +289,7 @@ function ReportActions({
       <button
         disabled={busy}
         onClick={() => {
-          const reference = window.prompt('Externe Zahlungsreferenz');
+          const reference = window.prompt(t('Externe Zahlungsreferenz'));
           if (reference)
             void submit(`/admin/trainer-finance/reports/${report.id}/status`, {
               status: 'PAID',
@@ -295,12 +297,14 @@ function ReportActions({
             });
         }}
       >
-        Als bezahlt markieren
+        {t('Als bezahlt markieren')}{' '}
       </button>
     );
   return null;
 }
 
 function money(cents: number) {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
+  return new Intl.NumberFormat(adminLocale(), { style: 'currency', currency: 'EUR' }).format(
+    cents / 100,
+  );
 }

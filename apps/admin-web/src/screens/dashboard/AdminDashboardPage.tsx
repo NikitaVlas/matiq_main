@@ -1,5 +1,5 @@
 'use client';
-
+import { t, useAdminLanguage } from '../../shared/i18n';
 import type { UserApiPath } from '@matiq/contracts';
 import { FormEvent, useState } from 'react';
 import { adminApi, adminIdentityApi } from '../../shared/api/client';
@@ -46,6 +46,7 @@ async function responseError(response: Response, fallback: string) {
 }
 
 export default function AdminHome() {
+  useAdminLanguage();
   const [mfaSetupSecret, setMfaSetupSecret] = useState('');
   const [stats, setStats] = useState<{
     users: number;
@@ -215,24 +216,22 @@ export default function AdminHome() {
 
   return (
     <main style={{ padding: 48 }}>
-      <p style={{ color: '#c63d32', fontWeight: 800 }}>MATIQ ADMIN</p>
-      <h1>Redaktion und Verwaltung</h1>
-      <p>Redaktion für MATIQ-Inhalte und Assessment-Regeln.</p>
+      <p style={{ color: '#c63d32', fontWeight: 800 }}>{t('MATIQ ADMIN')} </p>
+      <h1>{t('Redaktion und Verwaltung')} </h1>
+      <p>{t('Redaktion für MATIQ-Inhalte und Assessment-Regeln.')} </p>
       <form onSubmit={load} style={{ display: 'grid', gap: 12, maxWidth: 420 }}>
         <label>
-          E-Mail
-          <input name="email" type="email" autoComplete="email" required />
+          {t('E-Mail')} <input name="email" type="email" autoComplete="email" required />
         </label>
         <label>
-          Passwort
+          {t('Passwort')}{' '}
           <input name="password" type="password" autoComplete="current-password" required />
         </label>
         <label>
-          MFA-Code
-          <input name="mfaCode" inputMode="numeric" autoComplete="one-time-code" />
+          {t('MFA-Code')} <input name="mfaCode" inputMode="numeric" autoComplete="one-time-code" />
         </label>
         <button disabled={isSubmitting}>
-          {isSubmitting ? 'Bitte warten…' : 'Dashboard laden'}
+          {isSubmitting ? t('Bitte warten…') : t('Dashboard laden')}
         </button>
       </form>
       {mfaSetupSecret && (
@@ -241,11 +240,11 @@ export default function AdminHome() {
           style={{ display: 'grid', gap: 12, maxWidth: 420, marginTop: 24 }}
         >
           <p>
-            Füge diesen geheimen Schlüssel in deine Authenticator-App ein:{' '}
+            {t('Füge diesen geheimen Schlüssel in deine Authenticator-App ein:')}{' '}
             <code>{mfaSetupSecret}</code>
           </p>
           <label>
-            Bestätigungscode
+            {t('Bestätigungscode')}{' '}
             <input
               name="code"
               inputMode="numeric"
@@ -253,22 +252,22 @@ export default function AdminHome() {
               pattern="[0-9]{6}"
               minLength={6}
               maxLength={6}
-              placeholder="123456"
-              title="Sechsstelliger Code aus der Authenticator-App"
+              placeholder={t('123456')}
+              title={t('Sechsstelliger Code aus der Authenticator-App')}
               required
             />
           </label>
           <button disabled={isSubmitting}>
-            {isSubmitting ? 'Bitte warten…' : 'MFA aktivieren'}
+            {isSubmitting ? t('Bitte warten…') : t('MFA aktivieren')}
           </button>
         </form>
       )}
-      {error && <p style={{ color: '#a5221a' }}>{error}</p>}
+      {error && <p style={{ color: '#a5221a' }}>{t(error)}</p>}
       {stats && <AdminStats stats={stats} />}
       {privacyOperations && (
         <section aria-labelledby="privacy-operations-heading" style={{ marginTop: 32 }}>
-          <h2 id="privacy-operations-heading">GDPR-Betriebsstatus</h2>
-          <p>Nur aggregierte technische Zustände, ohne Personen- oder Zahlungsdaten.</p>
+          <h2 id="privacy-operations-heading">{t('GDPR-Betriebsstatus')} </h2>
+          <p>{t('Nur aggregierte technische Zustände, ohne Personen- oder Zahlungsdaten.')} </p>
           <dl
             style={{
               display: 'grid',
@@ -278,44 +277,46 @@ export default function AdminHome() {
             }}
           >
             <div>
-              <dt>Geplante Löschungen</dt>
+              <dt>{t('Geplante Löschungen')} </dt>
               <dd>{privacyOperations.scheduled}</dd>
             </div>
             <div>
-              <dt>Fällige Zeitpläne</dt>
+              <dt>{t('Fällige Zeitpläne')} </dt>
               <dd>{privacyOperations.dueSchedules}</dd>
             </div>
             <div>
-              <dt>Löschung ausstehend</dt>
+              <dt>{t('Löschung ausstehend')} </dt>
               <dd>{privacyOperations.pendingDeletion}</dd>
             </div>
             <div>
-              <dt>Outbox ausstehend</dt>
+              <dt>{t('Outbox ausstehend')} </dt>
               <dd>{privacyOperations.pendingOutbox}</dd>
             </div>
             <div>
-              <dt>Verarbeitung festgefahren</dt>
+              <dt>{t('Verarbeitung festgefahren')} </dt>
               <dd>{privacyOperations.staleProcessing}</dd>
             </div>
             <div>
-              <dt>Fehlgeschlagene Inbox</dt>
+              <dt>{t('Fehlgeschlagene Inbox')} </dt>
               <dd>{privacyOperations.failedInbox}</dd>
             </div>
             <div>
-              <dt>Dead Letter</dt>
+              <dt>{t('Dead Letter')} </dt>
               <dd>{privacyOperations.privacyDeadLetters}</dd>
             </div>
             <div>
-              <dt>Verlängerung ausstehend</dt>
+              <dt>{t('Verlängerung ausstehend')} </dt>
               <dd>{privacyOperations.renewalPending}</dd>
             </div>
             <div>
-              <dt>Manuelle Prüfung</dt>
+              <dt>{t('Manuelle Prüfung')} </dt>
               <dd>{privacyOperations.renewalReviewRequired}</dd>
             </div>
             <div>
-              <dt>Ältester Vorgang</dt>
-              <dd>{privacyOperations.oldestPendingSeconds} Sekunden</dd>
+              <dt>{t('Ältester Vorgang')} </dt>
+              <dd>
+                {privacyOperations.oldestPendingSeconds} {t('Sekunden')}{' '}
+              </dd>
             </div>
           </dl>
           <form
@@ -323,17 +324,16 @@ export default function AdminHome() {
             style={{ display: 'grid', gap: 12, maxWidth: 420 }}
           >
             <label>
-              Bestätigung: RETRY
-              <input name="confirmation" autoComplete="off" required />
+              {t('Bestätigung: RETRY')} <input name="confirmation" autoComplete="off" required />
             </label>
             <button disabled={isSubmitting}>
-              {isSubmitting ? 'Bitte warten…' : 'Sichere Wiederholung starten'}
+              {isSubmitting ? t('Bitte warten…') : t('Sichere Wiederholung starten')}
             </button>
           </form>
-          {privacyMessage && <p role="status">{privacyMessage}</p>}
+          {privacyMessage && <p role="status">{t(privacyMessage)}</p>}
         </section>
       )}
-      {stats && !analyticsLoaded && <p>Wiedergabestatistik wird geladen…</p>}
+      {stats && !analyticsLoaded && <p>{t('Wiedergabestatistik wird geladen…')} </p>}
       {viewingAnalytics && <ViewingAnalytics data={viewingAnalytics} />}
     </main>
   );

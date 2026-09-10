@@ -147,8 +147,9 @@ models.
 
 ## Languages
 
-- All product interfaces, assessments, the administration interface, the
-  trainer area, emails, and payment pages use German.
+- Public/Athlete Web, assessments, Trainer Web, emails and payment pages use
+  German. Only Admin Web supports persisted German/Russian switching;
+  athlete-facing editorial content remains German.
 - Permanent project documentation is maintained in separate Russian and
   English files.
 
@@ -175,5 +176,5 @@ models.
 
 - Status: Approved product baseline
 - Owner: MATIQ team
-- Last reviewed: 2026-08-26
+- Last reviewed: 2026-09-10
 - Related code: Repository-wide; implementation is partial

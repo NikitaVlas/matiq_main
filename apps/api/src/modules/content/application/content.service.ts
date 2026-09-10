@@ -19,6 +19,7 @@ import { Database } from '../../../shared/infrastructure/database';
 import { VideoStorageService } from '../infrastructure/video-storage.service';
 import { SubscriptionService } from '../../subscription/application/subscription.service';
 import { PlaybackHeartbeatDto } from '../dto/playback-heartbeat.dto';
+import { publicVideoSelect, publicVideoSummary } from './public-video-catalog';
 
 @Injectable()
 export class ContentService {
@@ -27,6 +28,15 @@ export class ContentService {
     @Inject(VideoStorageService) private readonly storage: VideoStorageService,
     @Inject(SubscriptionService) private readonly subscriptions: SubscriptionService,
   ) {}
+
+  async publicVideos() {
+    const videos = await this.db.video.findMany({
+      where: { published: true },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      select: publicVideoSelect,
+    });
+    return videos.map(publicVideoSummary);
+  }
 
   async courses() {
     const courses = await this.db.course.findMany({

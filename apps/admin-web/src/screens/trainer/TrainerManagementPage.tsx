@@ -1,5 +1,5 @@
 'use client';
-
+import { t, useAdminLanguage } from '../../shared/i18n';
 import type { AdminApiPath } from '@matiq/contracts';
 import { FormEvent, useEffect, useState } from 'react';
 import { adminApi } from '../../shared/api/client';
@@ -51,6 +51,7 @@ const emptyProfile: Profile = {
 };
 
 export default function TrainerManagementPage() {
+  useAdminLanguage();
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [profile, setProfile] = useState<Profile>(emptyProfile);
@@ -119,14 +120,15 @@ export default function TrainerManagementPage() {
   const selected = trainers.find((trainer) => trainer.id === selectedId);
   return (
     <main style={{ margin: '40px auto', maxWidth: 1100, padding: 24 }}>
-      <p>MATIQ Redaktion</p>
-      <h1>Sportlerprofile der Trainer</h1>
+      <p>{t('MATIQ Redaktion')} </p>
+      <h1>{t('Sportlerprofile der Trainer')} </h1>
       <p>
-        Hier wird die Geschichte des Autors gepflegt. Upload und Veröffentlichung der Inhalte
-        bleiben bei MATIQ.
+        {t(
+          'Hier wird die Geschichte des Autors gepflegt. Upload und Veröffentlichung der Inhalte bleiben bei MATIQ.',
+        )}{' '}
       </p>
       <label>
-        Trainer
+        {t('Trainer')}{' '}
         <select value={selectedId} onChange={(event) => choose(event.target.value)}>
           {trainers.map((trainer) => (
             <option key={trainer.id} value={trainer.id}>
@@ -137,74 +139,74 @@ export default function TrainerManagementPage() {
       </label>
       {selected ? (
         <p>
-          {selected._count.authoredCourses} Kurse · {selected._count.authoredVideos} Videos ·{' '}
-          {profile.published ? 'Veröffentlicht' : 'Entwurf'}
+          {selected._count.authoredCourses} {t('Kurse ·')} {selected._count.authoredVideos}{' '}
+          {t('Videos ·')} {profile.published ? t('Veröffentlicht') : t('Entwurf')}
         </p>
       ) : null}
       {selected ? (
         <form onSubmit={save} style={{ display: 'grid', gap: 14 }}>
           <Field
-            label="Anzeigename"
+            label={t('Anzeigename')}
             value={profile.displayName}
             set={(displayName) => setProfile({ ...profile, displayName })}
           />
           <Field
-            label="Slug"
+            label={t('Slug')}
             value={profile.slug}
             set={(slug) => setProfile({ ...profile, slug })}
           />
           <Field
-            label="Foto-URL"
+            label={t('Foto-URL')}
             value={profile.photoUrl ?? ''}
             set={(photoUrl) => setProfile({ ...profile, photoUrl: photoUrl || undefined })}
           />
           <TextArea
-            label="Biografie"
+            label={t('Biografie')}
             value={profile.biography}
             set={(biography) => setProfile({ ...profile, biography })}
           />
           <TextArea
-            label="Weg als Athlet"
+            label={t('Weg als Athlet')}
             value={profile.athleteJourney}
             set={(athleteJourney) => setProfile({ ...profile, athleteJourney })}
           />
           <TextArea
-            label="Wettkampferfahrung und Analysen"
+            label={t('Wettkampferfahrung und Analysen')}
             value={profile.competitionExperience ?? ''}
             set={(competitionExperience) => setProfile({ ...profile, competitionExperience })}
           />
           <TextArea
-            label="Trainingsprinzipien"
+            label={t('Trainingsprinzipien')}
             value={profile.trainingPrinciples}
             set={(trainingPrinciples) => setProfile({ ...profile, trainingPrinciples })}
           />
           <Field
-            label="Stadt"
+            label={t('Stadt')}
             value={profile.city}
             set={(city) => setProfile({ ...profile, city })}
           />
           <Field
-            label="Lokale Verfügbarkeit"
+            label={t('Lokale Verfügbarkeit')}
             value={profile.localAvailability ?? ''}
             set={(localAvailability) => setProfile({ ...profile, localAvailability })}
           />
           <CsvField
-            label="Qualifikationen"
+            label={t('Qualifikationen')}
             value={profile.qualifications}
             set={(qualifications) => setProfile({ ...profile, qualifications })}
           />
           <CsvField
-            label="Meilensteine"
+            label={t('Meilensteine')}
             value={profile.achievements}
             set={(achievements) => setProfile({ ...profile, achievements })}
           />
           <CsvField
-            label="Sprachen"
+            label={t('Sprachen')}
             value={profile.languages}
             set={(languages) => setProfile({ ...profile, languages })}
           />
           <label>
-            Disziplinen
+            {t('Disziplinen')}{' '}
             <select
               multiple
               value={profile.disciplines}
@@ -215,36 +217,36 @@ export default function TrainerManagementPage() {
                 })
               }
             >
-              <option value="BJJ_GI">BJJ Gi</option>
-              <option value="NO_GI_GRAPPLING">No-Gi Grappling</option>
+              <option value="BJJ_GI">{t('BJJ Gi')} </option>
+              <option value="NO_GI_GRAPPLING">{t('No-Gi Grappling')} </option>
             </select>
           </label>
           <div style={{ display: 'flex', gap: 12 }}>
-            <button type="submit">Entwurf speichern</button>
+            <button type="submit">{t('Entwurf speichern')} </button>
             <button
               type="button"
               onClick={() => void publication(profile.published ? 'unpublish' : 'publish')}
             >
-              {profile.published ? 'Veröffentlichung zurückziehen' : 'Profil veröffentlichen'}
+              {profile.published ? t('Veröffentlichung zurückziehen') : t('Profil veröffentlichen')}
             </button>
           </div>
           <ContentAssignments
-            title="Kurse dieses Athleten"
+            title={t('Kurse dieses Athleten')}
             items={courses}
             trainerId={selectedId}
             assign={(id, assigned) => void assignAuthor('course', id, assigned)}
           />
           <ContentAssignments
-            title="Videos dieses Athleten"
+            title={t('Videos dieses Athleten')}
             items={videos}
             trainerId={selectedId}
             assign={(id, assigned) => void assignAuthor('video', id, assigned)}
           />
         </form>
       ) : (
-        <p>Es gibt noch keinen Benutzer mit der Rolle Trainer.</p>
+        <p>{t('Es gibt noch keinen Benutzer mit der Rolle Trainer.')} </p>
       )}
-      {message ? <p role="status">{message}</p> : null}
+      {message ? <p role="status">{t(message)}</p> : null}
       <TrainerFinancePanel trainers={trainers} />
     </main>
   );
@@ -261,6 +263,7 @@ function ContentAssignments({
   trainerId: string;
   assign(id: string, assigned: boolean): void;
 }) {
+  useAdminLanguage();
   return (
     <fieldset>
       <legend>{title}</legend>
@@ -279,16 +282,17 @@ function ContentAssignments({
           );
         })
       ) : (
-        <p>Noch keine Inhalte vorhanden.</p>
+        <p>{t('Noch keine Inhalte vorhanden.')} </p>
       )}
     </fieldset>
   );
 }
 
 function Field({ label, value, set }: { label: string; value: string; set(value: string): void }) {
+  useAdminLanguage();
   return (
     <label>
-      {label}
+      {t(label)}
       <input value={value} onChange={(event) => set(event.target.value)} />
     </label>
   );
@@ -303,9 +307,10 @@ function TextArea({
   value: string;
   set(value: string): void;
 }) {
+  useAdminLanguage();
   return (
     <label>
-      {label}
+      {t(label)}
       <textarea rows={5} value={value} onChange={(event) => set(event.target.value)} />
     </label>
   );
@@ -320,9 +325,10 @@ function CsvField({
   value: string[];
   set(value: string[]): void;
 }) {
+  useAdminLanguage();
   return (
     <Field
-      label={`${label} (durch Komma getrennt)`}
+      label={t(`${t(label)} (durch Komma getrennt)`)}
       value={value.join(', ')}
       set={(next) =>
         set(

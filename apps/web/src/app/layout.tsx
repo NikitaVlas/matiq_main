@@ -11,6 +11,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="de">
       <body>
         <nav className="navigation" aria-label="Hauptnavigation">
+          <a href="/">MATIQ</a>
           <a href="/dashboard">Dashboard</a>
           <a href="/roadmap">Roadmap</a>
           <a href="/videos">Videos</a>

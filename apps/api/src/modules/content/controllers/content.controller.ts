@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CatalogVideoDto } from '../dto/catalog-video.dto';
 import { ContentService } from '../application/content.service';
 import { AuthenticatedRequest } from '../../identity/infrastructure/auth.guard';
 import { ContentSessionGuard } from '../../identity/infrastructure/admin-session.guard';
@@ -15,6 +16,12 @@ export class ContentController {
 
   @Get('catalog') catalog() {
     return this.content.catalog();
+  }
+
+  @Get('videos')
+  @ApiOkResponse({ type: [CatalogVideoDto] })
+  videos() {
+    return this.content.publicVideos();
   }
 
   @Get('trainers')

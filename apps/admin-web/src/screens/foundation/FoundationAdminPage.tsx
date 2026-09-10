@@ -1,5 +1,5 @@
 'use client';
-
+import { t, useAdminLanguage } from '../../shared/i18n';
 import { FormEvent, useEffect, useState } from 'react';
 import { adminApi } from '../../shared/api/client';
 
@@ -35,6 +35,7 @@ const slug = (value: string) =>
     .replace(/^-|-$/g, '');
 
 export default function FoundationAdminPage() {
+  useAdminLanguage();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [topics, setTopics] = useState<RoadmapTopic[]>([]);
   const [status, setStatus] = useState('');
@@ -103,20 +104,23 @@ export default function FoundationAdminPage() {
   return (
     <main style={{ maxWidth: 1000, margin: '40px auto', padding: 24 }}>
       <p>
-        <a href="/">← Content administration</a>
+        <a href="/">{t('← Content administration')} </a>
       </p>
-      <h1>Beginner Foundation Roadmap</h1>
+      <h1>{t('Beginner Foundation Roadmap')} </h1>
       <p>
-        Ordered fundamentals assigned to white belts with no more than six months of experience.
+        {t(
+          'Ordered fundamentals assigned to white belts with no more than six months of experience.',
+        )}{' '}
       </p>
-      {status ? <p role="status">{status}</p> : null}
+      {status ? <p role="status">{t(status)}</p> : null}
       {templates.map((template) => (
         <section key={template.id} style={{ borderTop: '2px solid #111', marginTop: 32 }}>
           <h2>
-            {template.name} · {template.discipline}
+            {template.name} · {t(template.discipline)}
           </h2>
           <p>
-            Eligibility: {template.minExperienceMonths}–{template.maxExperienceMonths} months
+            {t('Eligibility:')} {template.minExperienceMonths}–{template.maxExperienceMonths}{' '}
+            {t('months')}{' '}
           </p>
           <div
             aria-hidden="true"
@@ -128,11 +132,11 @@ export default function FoundationAdminPage() {
               marginBottom: 8,
             }}
           >
-            <span>Order</span>
-            <span>Step title</span>
-            <span>Roadmap topic</span>
-            <span>Status</span>
-            <span>Action</span>
+            <span>{t('Order')} </span>
+            <span>{t('Step title')} </span>
+            <span>{t('Roadmap topic')} </span>
+            <span>{t('Status')} </span>
+            <span>{t('Action')} </span>
           </div>
           {template.steps.map((step) => (
             <div
@@ -145,7 +149,7 @@ export default function FoundationAdminPage() {
               }}
             >
               <input
-                aria-label={`${step.title} position`}
+                aria-label={t(`${step.title} position`)}
                 type="number"
                 min="0"
                 max="200"
@@ -155,12 +159,12 @@ export default function FoundationAdminPage() {
                 }
               />
               <input
-                aria-label={`${step.title} title`}
+                aria-label={t(`${step.title} title`)}
                 value={step.title}
                 onChange={(event) => change(template.id, step.id, { title: event.target.value })}
               />
               <select
-                aria-label={`${step.title} topic`}
+                aria-label={t(`${step.title} topic`)}
                 value={step.skillKey}
                 onChange={(event) => change(template.id, step.id, { skillKey: event.target.value })}
               >
@@ -178,10 +182,10 @@ export default function FoundationAdminPage() {
                     change(template.id, step.id, { active: event.target.checked })
                   }
                 />{' '}
-                Active
+                {t('Active')}{' '}
               </label>
               <button type="button" onClick={() => void saveStep(step)}>
-                Save
+                {t('Save')}{' '}
               </button>
             </div>
           ))}
@@ -189,40 +193,46 @@ export default function FoundationAdminPage() {
             onSubmit={(event) => void addStep(event, template.id)}
             style={{ display: 'grid', gap: 8, marginTop: 20 }}
           >
-            <h3>Add step</h3>
+            <h3>{t('Add step')} </h3>
             <label>
-              Step title
+              {t('Step title')}{' '}
               <input
                 name="title"
-                placeholder="For example: Closed Guard basics"
+                placeholder={t('For example: Closed Guard basics')}
                 maxLength={160}
                 required
               />
             </label>
             <label>
-              Roadmap topic
+              {t('Roadmap topic')}{' '}
               <select name="skillKey" required defaultValue="">
                 <option value="" disabled>
-                  Select what this step teaches
+                  {t('Select what this step teaches')}{' '}
                 </option>
                 {topics.map((topic) => (
                   <option key={topic.id} value={topic.key}>
-                    {topic.name} ({topic.publishedVideoCount} published videos)
+                    {topic.name} ({topic.publishedVideoCount} {t('published videos)')}{' '}
                   </option>
                 ))}
               </select>
             </label>
-            <p>The Roadmap topic connects this step to matching courses and published videos.</p>
+            <p>
+              {t(
+                'The Roadmap topic connects this step to matching courses and published videos.',
+              )}{' '}
+            </p>
             <label>
-              Training focus (optional)
+              {t('Training focus (optional)')}{' '}
               <textarea
                 name="description"
-                placeholder="Explain what the athlete should understand or practise in this step."
+                placeholder={t(
+                  'Explain what the athlete should understand or practise in this step.',
+                )}
                 maxLength={500}
                 rows={3}
               />
             </label>
-            <button>Add foundation step</button>
+            <button>{t('Add foundation step')} </button>
           </form>
         </section>
       ))}

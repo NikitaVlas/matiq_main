@@ -2,3 +2,95 @@ button {
   min-height: 44px;
   padding: 8px 14px;
 }
+
+* {
+  box-sizing: border-box;
+}
+body {
+  color: #151918;
+  background: #fafaf8;
+}
+.admin-language-bar {
+  padding: 20px 28px 14px;
+  border-bottom: 1px solid #d4d9d4;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  background: white;
+}
+.admin-brand {
+  font-size: 20px;
+  font-weight: 800;
+  text-decoration: none;
+  color: #17251e;
+}
+.admin-brand span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+}
+.admin-language-bar nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  flex: 1;
+}
+.admin-language-bar a {
+  color: #243b2d;
+}
+.admin-language-bar label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.admin-language-bar select {
+  min-width: 130px;
+  min-height: 40px;
+  padding: 8px;
+  font: inherit;
+  background: white;
+  color: #17251e;
+  border: 1px solid #647469;
+}
+.admin-language-bar p {
+  width: 100%;
+  font-size: 12px;
+  color: #525b55;
+  margin: 0;
+}
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+button,
+a,
+input,
+select,
+textarea {
+  scroll-margin-top: 16px;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #265d40;
+  outline-offset: 3px;
+}
+@media (max-width: 640px) {
+  .admin-language-bar {
+    padding: 16px;
+    gap: 16px;
+  }
+  .admin-language-bar nav {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .admin-language-bar label {
+    margin-left: auto;
+  }
+}

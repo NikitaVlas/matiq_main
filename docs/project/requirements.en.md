@@ -165,8 +165,9 @@
 - `FR-ADMIN-008`: Published content shall be changed through a new draft
   revision and renewed `Admin` approval.
 - `FR-ADMIN-009`: Unpublishing content shall require a reason.
-- `FR-LANG-001`: The user interface, assessments, administration interface,
-  trainer area, emails, and payment pages shall be in German.
+- `FR-LANG-001`: The user interface, assessments, trainer area, emails and payment
+  pages shall be in German. Only Admin Web supports persisted German/Russian
+  switching, defaulting to German. The switch never translates editorial content.
 - `FR-LANG-002`: The catalogue and author profiles shall highlight the
   German-speaking BJJ community, local availability, and attainable role
   models.
@@ -284,5 +285,5 @@
 
 - Status: Approved product baseline
 - Owner: MATIQ team
-- Last reviewed: 2026-09-08
+- Last reviewed: 2026-09-10
 - Related code: Repository-wide; implementation is partial

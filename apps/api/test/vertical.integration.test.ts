@@ -218,6 +218,12 @@ describe('registration to athlete profile', () => {
       },
     });
     playbackVideoId = playbackVideo.id;
+    const publicVideos = await request(app.getHttpServer()).get('/content/videos').expect(200);
+    expect(
+      publicVideos.body.filter((video: { id: string }) => video.id === playbackVideo.id),
+    ).toHaveLength(1);
+    expect(publicVideos.text).not.toContain('storageKey');
+    expect(publicVideos.text).not.toContain(publicTrainer.email);
     const playback = await request(app.getHttpServer())
       .get(`/content/videos/${playbackVideo.id}/playback`)
       .set('Cookie', cookie)

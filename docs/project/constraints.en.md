@@ -18,7 +18,8 @@
 ## Product constraints
 
 - `PC-001`: The initial market is Germany.
-- `PC-002`: German is the primary language of every interface.
+- `PC-002`: German is the primary language of every interface. Only Admin Web
+  additionally supports Russian with a persistent user-controlled language switch.
 - `PC-003`: BJJ Gi and No-Gi Grappling are supported.
 - `PC-004`: Only the web platform exists; there is no separate landing page.
 - `PC-005`: Native mobile applications are out of scope for the first version.
@@ -84,5 +85,5 @@
 
 - Status: Approved baseline
 - Owner: MATIQ team
-- Last reviewed: 2026-07-19
+- Last reviewed: 2026-09-10
 - Related code: Repository-wide

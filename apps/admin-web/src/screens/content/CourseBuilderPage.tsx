@@ -1,5 +1,5 @@
 'use client';
-
+import { t, useAdminLanguage } from '../../shared/i18n';
 import type { AdminApiPath } from '@matiq/contracts';
 import { FormEvent, useEffect, useState } from 'react';
 import { adminApi } from '../../shared/api/client';
@@ -36,20 +36,23 @@ type CourseValidation = {
   issues: { code: string; message: string; lessonId?: string }[];
 };
 
-const ValidationReport = ({ title, report }: { title: string; report: CourseValidation }) => (
-  <section aria-label={`Validation report for ${title}`}>
-    <strong>
-      {report.valid ? 'Course is ready to publish.' : 'Course cannot be published yet:'}
-    </strong>
-    {!report.valid && (
-      <ul>
-        {report.issues.map((issue, index) => (
-          <li key={`${issue.code}-${issue.lessonId ?? index}`}>{issue.message}</li>
-        ))}
-      </ul>
-    )}
-  </section>
-);
+const ValidationReport = ({ title, report }: { title: string; report: CourseValidation }) => {
+  useAdminLanguage();
+  return (
+    <section aria-label={t(`Validation report for ${title}`)}>
+      <strong>
+        {report.valid ? t('Course is ready to publish.') : t('Course cannot be published yet:')}
+      </strong>
+      {!report.valid && (
+        <ul>
+          {report.issues.map((issue, index) => (
+            <li key={`${issue.code}-${issue.lessonId ?? index}`}>{t(issue.message)}</li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+};
 
 const slug = (value: string) =>
   value
@@ -59,6 +62,7 @@ const slug = (value: string) =>
     .replace(/^-|-$/g, '');
 
 export default function CourseBuilderPage() {
+  useAdminLanguage();
   const [courses, setCourses] = useState<Course[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [branchTriggers, setBranchTriggers] = useState<BranchTrigger[]>([]);
@@ -144,7 +148,7 @@ export default function CourseBuilderPage() {
       module: 'This also deletes every lesson and lesson path in the module.',
       lesson: 'Its video is kept and becomes available for another lesson.',
     };
-    if (!window.confirm(`Delete ${kind} "${label}"? ${consequences[kind]}`)) return;
+    if (!window.confirm(t(`Delete ${t(kind)} "${label}"? ${t(consequences[kind])}`))) return;
     const paths: Record<typeof kind, AdminApiPath> = {
       course: `/admin/content/courses/${id}`,
       module: `/admin/content/modules/${id}`,
@@ -218,49 +222,50 @@ export default function CourseBuilderPage() {
   return (
     <main style={{ maxWidth: 960, margin: '40px auto', padding: 24 }}>
       <nav>
-        <a href="/">Courses</a> - <a href="/videos">Upload video</a> -{' '}
-        <a href="/assessment">Assessment</a> - <a href="/foundation">Foundation Roadmap</a>
+        <a href="/">{t('Courses')} </a> - <a href="/videos">{t('Upload video')} </a> -{' '}
+        <a href="/assessment">{t('Assessment')} </a> -{' '}
+        <a href="/foundation">{t('Foundation Roadmap')} </a>
       </nav>
-      <h1>MATIQ Content Builder</h1>
+      <h1>{t('MATIQ Content Builder')} </h1>
 
       <form onSubmit={createCourse}>
         <input
           required
-          placeholder="Course title"
+          placeholder={t('Course title')}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <button>Create course</button>
+        <button>{t('Create course')} </button>
       </form>
 
-      {error && <p role="alert">{error}</p>}
+      {error && <p role="alert">{t(error)}</p>}
 
       {courses.map((course) => (
         <article key={course.id} style={{ border: '1px solid #ddd', padding: 16, marginTop: 16 }}>
           <h2>{course.title}</h2>
           <small>
-            {course.key} - {course.published ? 'published' : 'draft'}
+            {course.key} - {course.published ? t('published') : t('draft')}
           </small>{' '}
           <button
             type="button"
             onClick={() => setSelected((current) => (current === course.id ? '' : course.id))}
           >
-            {selected === course.id ? 'Close course editor' : 'Open course editor'}
+            {selected === course.id ? t('Close course editor') : t('Open course editor')}
           </button>{' '}
           <button type="button" onClick={() => void publishCourse(course.id)}>
-            {course.published ? 'Publish updates' : 'Publish course'}
+            {course.published ? t('Publish updates') : t('Publish course')}
           </button>{' '}
           <button type="button" onClick={() => void validateCourse(course.id)}>
-            Validate course
+            {t('Validate course')}{' '}
           </button>{' '}
           <button
             type="button"
             onClick={() => setEditingTitle({ kind: 'course', id: course.id, title: course.title })}
           >
-            Edit course
+            {t('Edit course')}{' '}
           </button>{' '}
           <button type="button" onClick={() => void remove('course', course.id, course.title)}>
-            Delete course
+            {t('Delete course')}{' '}
           </button>
           {validationReports[course.id] && (
             <ValidationReport title={course.title} report={validationReports[course.id]!} />
@@ -273,7 +278,7 @@ export default function CourseBuilderPage() {
               }}
             >
               <input
-                aria-label="Course title to edit"
+                aria-label={t('Course title to edit')}
                 value={editingTitle.title}
                 onChange={(event) =>
                   setEditingTitle((current) =>
@@ -281,9 +286,9 @@ export default function CourseBuilderPage() {
                   )
                 }
               />
-              <button disabled={!editingTitle.title.trim()}>Save course</button>
+              <button disabled={!editingTitle.title.trim()}>{t('Save course')} </button>
               <button type="button" onClick={() => setEditingTitle(undefined)}>
-                Cancel
+                {t('Cancel')}{' '}
               </button>
             </form>
           )}
@@ -303,11 +308,11 @@ export default function CourseBuilderPage() {
             >
               <input
                 required
-                placeholder="New module"
+                placeholder={t('New module')}
                 value={moduleTitle}
                 onChange={(event) => setModuleTitle(event.target.value)}
               />
-              <button>Add module</button>
+              <button>{t('Add module')} </button>
             </form>
           )}
           {course.modules.map((module, moduleIndex) => (
@@ -327,7 +332,7 @@ export default function CourseBuilderPage() {
                   )
                 }
               >
-                Move module up
+                {t('Move module up')}{' '}
               </button>{' '}
               <button
                 type="button"
@@ -341,7 +346,7 @@ export default function CourseBuilderPage() {
                   )
                 }
               >
-                Move module down
+                {t('Move module down')}{' '}
               </button>{' '}
               <button
                 type="button"
@@ -349,10 +354,10 @@ export default function CourseBuilderPage() {
                   setEditingTitle({ kind: 'module', id: module.id, title: module.title })
                 }
               >
-                Edit module
+                {t('Edit module')}{' '}
               </button>{' '}
               <button type="button" onClick={() => void remove('module', module.id, module.title)}>
-                Delete module
+                {t('Delete module')}{' '}
               </button>
               {editingTitle?.kind === 'module' && editingTitle.id === module.id && (
                 <form
@@ -362,7 +367,7 @@ export default function CourseBuilderPage() {
                   }}
                 >
                   <input
-                    aria-label="Module title to edit"
+                    aria-label={t('Module title to edit')}
                     value={editingTitle.title}
                     onChange={(event) =>
                       setEditingTitle((current) =>
@@ -370,9 +375,9 @@ export default function CourseBuilderPage() {
                       )
                     }
                   />
-                  <button disabled={!editingTitle.title.trim()}>Save module</button>
+                  <button disabled={!editingTitle.title.trim()}>{t('Save module')} </button>
                   <button type="button" onClick={() => setEditingTitle(undefined)}>
-                    Cancel
+                    {t('Cancel')}{' '}
                   </button>
                 </form>
               )}
@@ -381,7 +386,7 @@ export default function CourseBuilderPage() {
                   <li key={lesson.id}>
                     {lesson.position + 1}. {lesson.title}
                     {lesson.video ? ` - ${lesson.video.title}` : ''}{' '}
-                    {lesson.published ? 'published' : '(draft)'}{' '}
+                    {lesson.published ? t('published') : t('(draft)')}{' '}
                     {!lesson.published && (
                       <button
                         type="button"
@@ -389,7 +394,7 @@ export default function CourseBuilderPage() {
                           void request(`/admin/content/lessons/${lesson.id}/publish`, 'POST')
                         }
                       >
-                        Publish lesson
+                        {t('Publish lesson')}{' '}
                       </button>
                     )}{' '}
                     <button
@@ -404,7 +409,7 @@ export default function CourseBuilderPage() {
                         )
                       }
                     >
-                      Move lesson up
+                      {t('Move lesson up')}{' '}
                     </button>{' '}
                     <button
                       type="button"
@@ -418,7 +423,7 @@ export default function CourseBuilderPage() {
                         )
                       }
                     >
-                      Move lesson down
+                      {t('Move lesson down')}{' '}
                     </button>{' '}
                     <button
                       type="button"
@@ -426,13 +431,13 @@ export default function CourseBuilderPage() {
                         setEditingTitle({ kind: 'lesson', id: lesson.id, title: lesson.title })
                       }
                     >
-                      Edit lesson
+                      {t('Edit lesson')}{' '}
                     </button>{' '}
                     <button
                       type="button"
                       onClick={() => void remove('lesson', lesson.id, lesson.title)}
                     >
-                      Delete lesson
+                      {t('Delete lesson')}{' '}
                     </button>{' '}
                     <button
                       type="button"
@@ -444,15 +449,18 @@ export default function CourseBuilderPage() {
                         setRelationTriggerId(branchTriggers[0]?.id ?? '');
                       }}
                     >
-                      Add lesson path
+                      {t('Add lesson path')}{' '}
                     </button>
                     {lesson.outgoingRelations?.length ? (
-                      <small> ({lesson.outgoingRelations.length} lesson paths)</small>
+                      <small>
+                        {' '}
+                        ({lesson.outgoingRelations.length} {t('lesson paths)')}{' '}
+                      </small>
                     ) : null}
                     {lesson.outgoingRelations?.map((relation) => (
                       <div key={relation.id} style={{ marginTop: 8, paddingLeft: 12 }}>
                         <strong>
-                          {relation.type === 'PRIMARY' ? 'Primary path' : 'Conditional path'}
+                          {relation.type === 'PRIMARY' ? t('Primary path') : t('Conditional path')}
                         </strong>
                         {' → '}
                         {relation.toLesson.title}
@@ -469,12 +477,12 @@ export default function CourseBuilderPage() {
                             );
                           }}
                         >
-                          Edit path
+                          {t('Edit path')}{' '}
                         </button>{' '}
                         <button
                           type="button"
                           onClick={async () => {
-                            if (!window.confirm(`Delete path to "${relation.toLesson.title}"?`))
+                            if (!window.confirm(t(`Delete path to "${relation.toLesson.title}"?`)))
                               return;
                             await request(
                               `/admin/content/lesson-relations/${relation.id}`,
@@ -482,7 +490,7 @@ export default function CourseBuilderPage() {
                             );
                           }}
                         >
-                          Delete path
+                          {t('Delete path')}{' '}
                         </button>
                       </div>
                     ))}
@@ -494,7 +502,7 @@ export default function CourseBuilderPage() {
                         }}
                       >
                         <input
-                          aria-label="Lesson title to edit"
+                          aria-label={t('Lesson title to edit')}
                           value={editingTitle.title}
                           onChange={(event) =>
                             setEditingTitle((current) =>
@@ -502,9 +510,9 @@ export default function CourseBuilderPage() {
                             )
                           }
                         />
-                        <button disabled={!editingTitle.title.trim()}>Save lesson</button>
+                        <button disabled={!editingTitle.title.trim()}>{t('Save lesson')} </button>
                         <button type="button" onClick={() => setEditingTitle(undefined)}>
-                          Cancel
+                          {t('Cancel')}{' '}
                         </button>
                       </form>
                     )}
@@ -538,18 +546,19 @@ export default function CourseBuilderPage() {
                       >
                         <fieldset style={{ marginTop: 12 }}>
                           <legend>
-                            {editingRelationId ? 'Edit' : 'Create'} a path from &quot;{lesson.title}
+                            {editingRelationId ? t('Edit') : t('Create')} {t('a path from "')}{' '}
+                            {lesson.title}
                             &quot;
                           </legend>
                           <label>
-                            1. Target lesson — where should the athlete continue?
+                            {t('1. Target lesson — where should the athlete continue?')}{' '}
                             <select
                               required
-                              aria-label="Target lesson"
+                              aria-label={t('Target lesson')}
                               value={relationTarget}
                               onChange={(event) => setRelationTarget(event.target.value)}
                             >
-                              <option value="">Select target lesson</option>
+                              <option value="">{t('Select target lesson')} </option>
                               {course.modules.flatMap((courseModule) =>
                                 courseModule.lessons
                                   .filter((target) => target.id !== lesson.id)
@@ -562,31 +571,34 @@ export default function CourseBuilderPage() {
                             </select>
                           </label>
                           <label>
-                            2. Path type
+                            {t('2. Path type')}{' '}
                             <select
-                              aria-label="Path type"
+                              aria-label={t('Path type')}
                               value={relationType}
                               onChange={(event) =>
                                 setRelationType(event.target.value as 'PRIMARY' | 'BRANCH')
                               }
                             >
-                              <option value="PRIMARY">Primary path — normal continuation</option>
-                              <option value="BRANCH">Conditional path — situation dependent</option>
+                              <option value="PRIMARY">
+                                {t('Primary path — normal continuation')}{' '}
+                              </option>
+                              <option value="BRANCH">
+                                {t('Conditional path — situation dependent')}{' '}
+                              </option>
                             </select>
                           </label>
                           <p>
-                            Paths are optional because every lesson can be opened independently. Use
-                            at most one primary path when you want to suggest a normal next lesson.
-                            Use conditional paths when the suggestion depends on an opponent
-                            reaction or another situation.
+                            {t(
+                              'Paths are optional because every lesson can be opened independently. Use at most one primary path when you want to suggest a normal next lesson. Use conditional paths when the suggestion depends on an opponent reaction or another situation.',
+                            )}{' '}
                           </p>
                           {relationType === 'BRANCH' && (
                             <>
                               <label>
-                                3. Branch trigger — when should this path be shown?
+                                {t('3. Branch trigger — when should this path be shown?')}{' '}
                                 <select
                                   required
-                                  aria-label="Branch trigger"
+                                  aria-label={t('Branch trigger')}
                                   value={relationTriggerId}
                                   onChange={(event) => setRelationTriggerId(event.target.value)}
                                 >
@@ -598,8 +610,8 @@ export default function CourseBuilderPage() {
                                 </select>
                               </label>
                               <input
-                                aria-label="New branch trigger"
-                                placeholder="New trigger, for example Opponent sprawls"
+                                aria-label={t('New branch trigger')}
+                                placeholder={t('New trigger, for example Opponent sprawls')}
                                 value={newTriggerName}
                                 onChange={(event) => setNewTriggerName(event.target.value)}
                               />
@@ -628,12 +640,12 @@ export default function CourseBuilderPage() {
                                   setRelationTriggerId(trigger.id);
                                 }}
                               >
-                                Add new trigger
+                                {t('Add new trigger')}{' '}
                               </button>
                             </>
                           )}
                           <button>
-                            {editingRelationId ? 'Save lesson path' : 'Create lesson path'}
+                            {editingRelationId ? t('Save lesson path') : t('Create lesson path')}
                           </button>
                           <button
                             type="button"
@@ -642,7 +654,7 @@ export default function CourseBuilderPage() {
                               setEditingRelationId('');
                             }}
                           >
-                            Cancel
+                            {t('Cancel')}{' '}
                           </button>
                         </fieldset>
                       </form>
@@ -683,7 +695,7 @@ export default function CourseBuilderPage() {
                 >
                   <input
                     required
-                    placeholder="Lesson title"
+                    placeholder={t('Lesson title')}
                     value={lessonDrafts[module.id]?.title ?? ''}
                     onChange={(event) =>
                       updateLessonDraft(module.id, { title: event.target.value })
@@ -691,13 +703,13 @@ export default function CourseBuilderPage() {
                   />
                   <select
                     required
-                    aria-label="Published video"
+                    aria-label={t('Published video')}
                     value={lessonDrafts[module.id]?.videoId ?? ''}
                     onChange={(event) =>
                       updateLessonDraft(module.id, { videoId: event.target.value })
                     }
                   >
-                    <option value="">Select an unused published video</option>
+                    <option value="">{t('Select an unused published video')} </option>
                     {videos
                       .filter(
                         (video) =>
@@ -716,7 +728,7 @@ export default function CourseBuilderPage() {
                       ))}
                   </select>
                   <button disabled={submittingModuleId === module.id}>
-                    {submittingModuleId === module.id ? 'Adding lesson...' : 'Add lesson'}
+                    {submittingModuleId === module.id ? t('Adding lesson...') : t('Add lesson')}
                   </button>
                   {videos.length > 0 &&
                     videos.every((video) =>
@@ -729,8 +741,9 @@ export default function CourseBuilderPage() {
                       ),
                     ) && (
                       <small>
-                        All published videos are already assigned. Upload and publish another video
-                        before adding a lesson.
+                        {t(
+                          'All published videos are already assigned. Upload and publish another video before adding a lesson.',
+                        )}{' '}
                       </small>
                     )}
                 </form>

@@ -1,3 +1,5 @@
+'use client';
+import { t, useAdminLanguage, adminLocale } from '../../../shared/i18n';
 export type ViewingAnalyticsData = {
   totals: { paidMs: number; trialMs: number };
   trainers: {
@@ -15,40 +17,48 @@ export type ViewingAnalyticsData = {
   }[];
 };
 
-const seconds = (milliseconds: number) => Math.floor(milliseconds / 1000).toLocaleString('de-DE');
+const seconds = (milliseconds: number) =>
+  Math.floor(milliseconds / 1000).toLocaleString(adminLocale());
 
 export function ViewingAnalytics({ data }: { data: ViewingAnalyticsData }) {
+  useAdminLanguage();
   return (
     <section style={{ marginTop: 40 }} aria-labelledby="viewing-analytics-title">
-      <h2 id="viewing-analytics-title">Bestätigte Wiedergabezeit</h2>
+      <h2 id="viewing-analytics-title">{t('Bestätigte Wiedergabezeit')} </h2>
       <p>
-        Bezahlt: {seconds(data.totals.paidMs)} Sek. · Trial: {seconds(data.totals.trialMs)} Sek.
+        {t('Bezahlt:')} {seconds(data.totals.paidMs)} {t('Sek. · Trial:')}{' '}
+        {seconds(data.totals.trialMs)} {t('Sek.')}{' '}
       </p>
       {data.trainers.length === 0 ? (
-        <p>Noch keine bestätigten Wiedergabeintervalle.</p>
+        <p>{t('Noch keine bestätigten Wiedergabeintervalle.')} </p>
       ) : (
         data.trainers.map((trainer) => (
           <article className="shell" key={trainer.trainerId ?? 'unassigned'}>
             <h3>{trainer.displayName}</h3>
             <p>
-              Paid {seconds(trainer.paidMs)} Sek. · Trial {seconds(trainer.trialMs)} Sek.
+              {t('Paid')} {seconds(trainer.paidMs)} {t('Sek. · Trial')} {seconds(trainer.trialMs)}{' '}
+              {t('Sek.')}{' '}
             </p>
             <table>
               <thead>
                 <tr>
-                  <th>Video</th>
-                  <th>Kurs</th>
-                  <th>Paid</th>
-                  <th>Trial</th>
+                  <th>{t('Video')} </th>
+                  <th>{t('Kurs')} </th>
+                  <th>{t('Paid')} </th>
+                  <th>{t('Trial')} </th>
                 </tr>
               </thead>
               <tbody>
                 {trainer.videos.map((video) => (
                   <tr key={video.videoId}>
                     <td>{video.title}</td>
-                    <td>{video.course?.title ?? 'Standalone'}</td>
-                    <td>{seconds(video.paidMs)} Sek.</td>
-                    <td>{seconds(video.trialMs)} Sek.</td>
+                    <td>{video.course?.title ?? t('Standalone')}</td>
+                    <td>
+                      {seconds(video.paidMs)} {t('Sek.')}{' '}
+                    </td>
+                    <td>
+                      {seconds(video.trialMs)} {t('Sek.')}{' '}
+                    </td>
                   </tr>
                 ))}
               </tbody>

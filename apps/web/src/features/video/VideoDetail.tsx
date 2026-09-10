@@ -49,6 +49,8 @@ type WatchProgress = {
 };
 
 export default function VideoDetail({ id }: { id: string }) {
+  const [publicVideo, setPublicVideo] = useState<{ title: string; description: string | null }>();
+  const [visitor, setVisitor] = useState(false);
   const [data, setData] = useState<Playback>();
   const [error, setError] = useState('');
   const [locked, setLocked] = useState(false);
@@ -69,7 +71,18 @@ export default function VideoDetail({ id }: { id: string }) {
         const response = await userApiResponse(`/content/videos/${id}/playback`, {
           signal: controller.signal,
         });
-        if (response.status === 403) {
+        if (response.status === 401 || response.status === 403) {
+          setVisitor(response.status === 401);
+          const catalog = await userApiResponse('/content/videos', { signal: controller.signal });
+          if (!catalog.ok) throw new Error();
+          const videos = (await catalog.json()) as {
+            id: string;
+            title: string;
+            description: string | null;
+          }[];
+          const summary = videos.find((video) => video.id === id);
+          if (!summary) throw new Error();
+          setPublicVideo(summary);
           setLocked(true);
           return;
         }
@@ -162,7 +175,7 @@ export default function VideoDetail({ id }: { id: string }) {
     }
   }
 
-  if (locked) return <LockedLesson />;
+  if (locked) return <LockedLesson video={publicVideo} visitor={visitor} />;
   if (error) return <LessonError message={error} />;
   if (!data) return <LessonSkeleton />;
 
@@ -429,16 +442,28 @@ function LessonSkeleton() {
   );
 }
 
-function LockedLesson() {
+function LockedLesson({
+  video,
+  visitor,
+}: {
+  video?: { title: string; description: string | null };
+  visitor: boolean;
+}) {
   return (
     <main className="lesson-state-page">
       <section className="lesson-state-panel">
         <p className="eyebrow">Mitgliedschaft erforderlich</p>
-        <h1>Dieses Video ist geschützt.</h1>
+        <h1>{video?.title ?? 'Dieses Video ist geschützt.'}</h1>
+        {video?.description && <p>{video.description}</p>}
         <p>Starte deinen Testzugang oder wähle eine Mitgliedschaft, um die Lektion anzusehen.</p>
-        <Link className="action-link" href="/subscription">
-          Zugang freischalten
+        <Link className="action-link" href={visitor ? '/register' : '/subscription'}>
+          {visitor ? 'Registrieren und Testphase entdecken' : 'Zugang freischalten'}
         </Link>
+        {visitor && (
+          <p>
+            Schon registriert? <Link href="/login">Anmelden</Link>
+          </p>
+        )}
       </section>
     </main>
   );

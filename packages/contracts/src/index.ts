@@ -19,3 +19,4 @@ export interface AthleteProfile {
 }
 
 export type { AdminApiPath, UserApiPath } from './openapi-paths.js';
+export type { components as UserApiSchemas } from './generated/user-api.js';

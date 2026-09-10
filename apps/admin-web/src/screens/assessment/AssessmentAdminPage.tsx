@@ -1,5 +1,5 @@
 'use client';
-
+import { t, useAdminLanguage } from '../../shared/i18n';
 import type { AdminApiPath } from '@matiq/contracts';
 import { FormEvent, useEffect, useState } from 'react';
 import { adminApi } from '../../shared/api/client';
@@ -49,6 +49,7 @@ const emptyQuestion = (): QuestionDraft => ({
 });
 
 export default function AssessmentAdminPage() {
+  useAdminLanguage();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [unmapped, setUnmapped] = useState<Unmapped[]>([]);
   const [roadmapTopics, setRoadmapTopics] = useState<RoadmapTopic[]>([]);
@@ -91,14 +92,19 @@ export default function AssessmentAdminPage() {
   return (
     <main style={{ maxWidth: 1000, margin: '40px auto', padding: 24 }}>
       <nav>
-        <a href="/">Courses</a> - <a href="/videos">Videos</a> - <strong>Assessment</strong>
+        <a href="/">{t('Courses')} </a> - <a href="/videos">{t('Videos')} </a> -{' '}
+        <strong>{t('Assessment')} </strong>
       </nav>
-      <h1>Assessment management</h1>
-      <p>Confidence finds gaps, Preference builds the core game, and Goal adds areas to explore.</p>
-      {status && <p role="status">{status}</p>}
+      <h1>{t('Assessment management')} </h1>
+      <p>
+        {t(
+          'Confidence finds gaps, Preference builds the core game, and Goal adds areas to explore.',
+        )}{' '}
+      </p>
+      {status && <p role="status">{t(status)}</p>}
 
       <section>
-        <h2>Create question</h2>
+        <h2>{t('Create question')} </h2>
         <form
           onSubmit={async (event: FormEvent) => {
             event.preventDefault();
@@ -106,12 +112,12 @@ export default function AssessmentAdminPage() {
           }}
         >
           <QuestionFields value={draft} onChange={setDraft} roadmapTopics={roadmapTopics} />
-          <button>Create question</button>
+          <button>{t('Create question')} </button>
         </form>
       </section>
 
       <section>
-        <h2>Existing questions</h2>
+        <h2>{t('Existing questions')} </h2>
         {questions.map((question) => (
           <QuestionEditor
             key={question.id}
@@ -123,21 +129,21 @@ export default function AssessmentAdminPage() {
       </section>
 
       <section>
-        <h2>Answers waiting for mapping</h2>
-        <p>They do not influence a Roadmap until an administrator assigns a topic key.</p>
-        {!unmapped.length && <p>No unmapped answers.</p>}
+        <h2>{t('Answers waiting for mapping')} </h2>
+        <p>{t('They do not influence a Roadmap until an administrator assigns a topic key.')} </p>
+        {!unmapped.length && <p>{t('No unmapped answers.')} </p>}
         {unmapped.map((answer) => (
           <article key={answer.id} style={{ border: '1px solid #ddd', padding: 12, marginTop: 8 }}>
             <strong>{answer.customText}</strong>
             <p>{answer.question.text}</p>
             <select
-              aria-label={`Topic for ${answer.customText}`}
+              aria-label={t(`Topic for ${answer.customText}`)}
               value={mapping[answer.id] ?? ''}
               onChange={(event) =>
                 setMapping((current) => ({ ...current, [answer.id]: event.target.value }))
               }
             >
-              <option value="">Select Roadmap topic</option>
+              <option value="">{t('Select Roadmap topic')} </option>
               {roadmapTopics.map((topic) => (
                 <option key={topic.id} value={topic.key}>
                   {topic.name}
@@ -152,7 +158,7 @@ export default function AssessmentAdminPage() {
                 })
               }
             >
-              Map answer
+              {t('Map answer')}{' '}
             </button>
           </article>
         ))}
@@ -170,6 +176,7 @@ function QuestionEditor({
   roadmapTopics: RoadmapTopic[];
   save: (path: AdminApiPath, method: 'POST' | 'PATCH', body: unknown) => Promise<boolean>;
 }) {
+  useAdminLanguage();
   const [draft, setDraft] = useState(question);
   useEffect(() => setDraft(question), [question]);
   return (
@@ -188,9 +195,9 @@ function QuestionEditor({
           checked={draft.active}
           onChange={(event) => setDraft({ ...draft, active: event.target.checked })}
         />{' '}
-        Active
+        {t('Active')}{' '}
       </label>
-      <button>Save question</button>
+      <button>{t('Save question')} </button>
     </form>
   );
 }
@@ -206,6 +213,7 @@ function QuestionFields<T extends QuestionDraft>({
   roadmapTopics: RoadmapTopic[];
   hideKey?: boolean;
 }) {
+  useAdminLanguage();
   const patch = (change: Partial<T>) => onChange({ ...value, ...change });
   const option = (index: number, change: Partial<Option>) =>
     patch({
@@ -215,10 +223,10 @@ function QuestionFields<T extends QuestionDraft>({
     } as Partial<T>);
   return (
     <fieldset>
-      <legend>Question definition</legend>
+      <legend>{t('Question definition')} </legend>
       {!hideKey && (
         <label>
-          Stable key{' '}
+          {t('Stable key')}{' '}
           <input
             required
             pattern="[a-z0-9-]+"
@@ -228,7 +236,7 @@ function QuestionFields<T extends QuestionDraft>({
         </label>
       )}
       <label>
-        Athlete-facing question{' '}
+        {t('Athlete-facing question')}{' '}
         <input
           required
           maxLength={240}
@@ -237,7 +245,7 @@ function QuestionFields<T extends QuestionDraft>({
         />
       </label>
       <label>
-        Purpose{' '}
+        {t('Purpose')}{' '}
         <select
           value={value.kind}
           onChange={(event) => {
@@ -254,31 +262,31 @@ function QuestionFields<T extends QuestionDraft>({
             } as Partial<T>);
           }}
         >
-          <option value="CONFIDENCE">Confidence / gap</option>
-          <option value="PREFERENCE">Preferred game / core</option>
-          <option value="GOAL">Goal / explore</option>
+          <option value="CONFIDENCE">{t('Confidence / gap')} </option>
+          <option value="PREFERENCE">{t('Preferred game / core')} </option>
+          <option value="GOAL">{t('Goal / explore')} </option>
         </select>
       </label>
       <label>
-        Context{' '}
+        {t('Context')}{' '}
         <select
           value={value.context}
           onChange={(event) => patch({ context: event.target.value as Context } as Partial<T>)}
         >
-          <option value="STANDING">Standing</option>
-          <option value="TOP">Top</option>
-          <option value="BOTTOM">Bottom</option>
+          <option value="STANDING">{t('Standing')} </option>
+          <option value="TOP">{t('Top')} </option>
+          <option value="BOTTOM">{t('Bottom')} </option>
         </select>
       </label>
       {value.kind === 'CONFIDENCE' && (
         <label>
-          Roadmap topic measured by this question{' '}
+          {t('Roadmap topic measured by this question')}{' '}
           <select
             required
             value={value.skillKey}
             onChange={(event) => patch({ skillKey: event.target.value } as Partial<T>)}
           >
-            <option value="">Select topic</option>
+            <option value="">{t('Select topic')} </option>
             {roadmapTopics.map((topic) => (
               <option key={topic.id} value={topic.key}>
                 {topic.name}
@@ -293,7 +301,7 @@ function QuestionFields<T extends QuestionDraft>({
           checked={value.multiple}
           onChange={(event) => patch({ multiple: event.target.checked } as Partial<T>)}
         />{' '}
-        Multiple choices
+        {t('Multiple choices')}{' '}
       </label>
       <label>
         <input
@@ -301,15 +309,15 @@ function QuestionFields<T extends QuestionDraft>({
           checked={value.allowCustom}
           onChange={(event) => patch({ allowCustom: event.target.checked } as Partial<T>)}
         />{' '}
-        Allow custom unmapped answer
+        {t('Allow custom unmapped answer')}{' '}
       </label>
-      <h4>Answer options</h4>
+      <h4>{t('Answer options')} </h4>
       {value.options.map((item, index) => (
         <div key={index} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           <input
             required
             maxLength={160}
-            placeholder="Answer shown to the athlete"
+            placeholder={t('Answer shown to the athlete')}
             value={item.label}
             onChange={(event) => {
               const label = event.target.value;
@@ -323,9 +331,11 @@ function QuestionFields<T extends QuestionDraft>({
               });
             }}
           />
-          <small>Internal key: {item.key || 'generated automatically'}</small>
+          <small>
+            {t('Internal key:')} {item.key || t('generated automatically')}
+          </small>
           <input
-            aria-label="score"
+            aria-label={t('score')}
             type="number"
             min={0}
             max={5}
@@ -339,7 +349,7 @@ function QuestionFields<T extends QuestionDraft>({
                 value={item.skillKey ?? ''}
                 onChange={(event) => option(index, { skillKey: event.target.value })}
               >
-                <option value="">Select Roadmap topic</option>
+                <option value="">{t('Select Roadmap topic')} </option>
                 {roadmapTopics.map((topic) => (
                   <option key={topic.id} value={topic.key}>
                     {topic.name}
@@ -356,9 +366,9 @@ function QuestionFields<T extends QuestionDraft>({
                   })
                 }
               >
-                <option value="CORE">Core</option>
-                <option value="GAP">Gap</option>
-                <option value="EXPLORE">Explore</option>
+                <option value="CORE">{t('Core')} </option>
+                <option value="GAP">{t('Gap')} </option>
+                <option value="EXPLORE">{t('Explore')} </option>
               </select>
             </>
           )}
@@ -371,7 +381,7 @@ function QuestionFields<T extends QuestionDraft>({
               } as Partial<T>)
             }
           >
-            Remove
+            {t('Remove')}{' '}
           </button>
         </div>
       ))}
@@ -379,7 +389,7 @@ function QuestionFields<T extends QuestionDraft>({
         type="button"
         onClick={() => patch({ options: [...value.options, emptyOption()] } as Partial<T>)}
       >
-        Add option
+        {t('Add option')}{' '}
       </button>
     </fieldset>
   );
