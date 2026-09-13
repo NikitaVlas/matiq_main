@@ -318,6 +318,7 @@ function QuestionFields<T extends QuestionDraft>({
             required
             maxLength={160}
             placeholder={t('Answer shown to the athlete')}
+            aria-label={`${t('Answer shown to the athlete')} ${index + 1}`}
             value={item.label}
             onChange={(event) => {
               const label = event.target.value;
@@ -346,6 +347,7 @@ function QuestionFields<T extends QuestionDraft>({
             <>
               <select
                 required
+                aria-label={`${t('Roadmap topic')} ${index + 1}`}
                 value={item.skillKey ?? ''}
                 onChange={(event) => option(index, { skillKey: event.target.value })}
               >
@@ -357,6 +359,7 @@ function QuestionFields<T extends QuestionDraft>({
                 ))}
               </select>
               <select
+                aria-label={`${t('Recommendation type')} ${index + 1}`}
                 value={
                   item.recommendationType ?? (value.kind === 'PREFERENCE' ? 'CORE' : 'EXPLORE')
                 }

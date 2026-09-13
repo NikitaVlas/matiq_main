@@ -16,7 +16,10 @@ This checklist is not security certification or production authorization.
       mobile, accessibility and network error states. Synthetic Chromium scenarios
       cover these flows, including data export. Automated WCAG 2.1 A/AA and contrast
       scans pass on key User Web and Admin Web states, and both suites are included
-      in CI. A successful remote CI run and manual screen-reader, zoom, and
+      in CI. Regression coverage now includes six Admin sections in DE/RU at
+      320 CSS px: explicit control names, populated Foundation, the course editor,
+      assessment choices, and keyboard skip navigation.
+      A successful remote CI run and manual screen-reader, zoom, and
       high-contrast checks remain required to close the gate.
 - [ ] Recovery: local dump/restore and ledger replay are verified, with 15-minute
       RPO and 4-hour RTO objectives recorded. Production-like restore, independent
@@ -37,5 +40,5 @@ Partial verification and open risks:
 
 - Status: Active checklist; review not completed
 - Owner: MATIQ team
-- Last reviewed: 2026-09-08
+- Last reviewed: 2026-09-13
 - Related code: Repository-wide

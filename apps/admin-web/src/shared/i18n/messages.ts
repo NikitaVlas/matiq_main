@@ -1,5 +1,6 @@
 // Source phrases are stable UI keys. Editorial content is never passed here.
 const rows = `
+Recommendation type|Empfehlungstyp|Тип рекомендации
 published videos|veröffentlichte Videos|опубликованных видео
 published|veröffentlicht|опубликовано
 draft|Entwurf|черновик

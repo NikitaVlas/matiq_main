@@ -21,7 +21,10 @@
       keyboard/focus, mobile, accessibility и ошибки сети. Синтетические Chromium
       сценарии покрывают эти пути, включая экспорт данных. Автоматический WCAG 2.1
       A/AA и contrast scan проходит на ключевых состояниях User Web и Admin Web;
-      оба набора включены в CI. Для закрытия gate остаются успешный удалённый CI run
+      оба набора включены в CI. Добавлена регрессия для шести разделов админки на
+      DE/RU при ширине 320 CSS px, включая подписи полей, заполненный Foundation,
+      редактор курса, варианты assessment и переход к содержимому с клавиатуры.
+      Для закрытия gate остаются успешный удалённый CI run
       и ручная проверка screen reader/zoom/high contrast.
 - [ ] Recovery: local dump/restore и повторное применение ledger подтверждены;
       ориентиры RPO 15 минут/RTO 4 часа зафиксированы. До закрытия gate остаются
@@ -43,5 +46,5 @@ accessibility audit и recovery/observability evidence. Пустые пункт�
 
 - Status: Active checklist; review not completed
 - Owner: MATIQ team
-- Last reviewed: 2026-09-08
+- Last reviewed: 2026-09-13
 - Related code: Repository-wide

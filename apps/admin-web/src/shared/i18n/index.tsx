@@ -75,6 +75,9 @@ export function AdminLanguageBar() {
   }, []);
   return (
     <header className="admin-language-bar">
+      <a className="skip-link" href="#main-content">
+        {selected === 'ru' ? 'Перейти к содержимому' : 'Zum Inhalt springen'}
+      </a>
       <a className="admin-brand" href="/">
         MATIQ <span>ADMIN</span>
       </a>

@@ -63,6 +63,10 @@ test('login exposes its form and error state to keyboard users', async ({ page }
     route.fulfill({ status: 401, json: { message: 'INVALID_CREDENTIALS' } }),
   );
   await page.goto('/login');
+  await page.keyboard.press('Tab');
+  await expect(page.locator('.skip-link')).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#main-content')).toBeFocused();
   await expectAccessibilityBaseline(page);
   await expectNoWcagViolations(page);
   await page.getByLabel('E-Mail').fill('athlete@matiq.local');

@@ -124,9 +124,9 @@ export default function FoundationAdminPage() {
           </p>
           <div
             aria-hidden="true"
+            className="foundation-step-grid foundation-step-headings"
             style={{
               display: 'grid',
-              gridTemplateColumns: '60px 1fr 1fr 90px 90px',
               gap: 8,
               fontWeight: 700,
               marginBottom: 8,
@@ -141,39 +141,50 @@ export default function FoundationAdminPage() {
           {template.steps.map((step) => (
             <div
               key={step.id}
+              className="foundation-step-grid"
               style={{
                 display: 'grid',
-                gridTemplateColumns: '60px 1fr 1fr 90px 90px',
                 gap: 8,
                 marginBottom: 8,
               }}
             >
-              <input
-                aria-label={t(`${step.title} position`)}
-                type="number"
-                min="0"
-                max="200"
-                value={step.position}
-                onChange={(event) =>
-                  change(template.id, step.id, { position: Number(event.target.value) })
-                }
-              />
-              <input
-                aria-label={t(`${step.title} title`)}
-                value={step.title}
-                onChange={(event) => change(template.id, step.id, { title: event.target.value })}
-              />
-              <select
-                aria-label={t(`${step.title} topic`)}
-                value={step.skillKey}
-                onChange={(event) => change(template.id, step.id, { skillKey: event.target.value })}
-              >
-                {topics.map((topic) => (
-                  <option key={topic.id} value={topic.key}>
-                    {topic.name}
-                  </option>
-                ))}
-              </select>
+              <label>
+                <span className="foundation-mobile-label">{t('Order')}</span>
+                <input
+                  aria-label={`${t('Order')}: ${step.title}`}
+                  type="number"
+                  min="0"
+                  max="200"
+                  value={step.position}
+                  onChange={(event) =>
+                    change(template.id, step.id, { position: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                <span className="foundation-mobile-label">{t('Step title')}</span>
+                <input
+                  aria-label={`${t('Step title')}: ${step.title}`}
+                  value={step.title}
+                  onChange={(event) => change(template.id, step.id, { title: event.target.value })}
+                />
+              </label>
+              <label>
+                <span className="foundation-mobile-label">{t('Roadmap topic')}</span>
+                <select
+                  aria-label={`${t('Roadmap topic')}: ${step.title}`}
+                  value={step.skillKey}
+                  onChange={(event) =>
+                    change(template.id, step.id, { skillKey: event.target.value })
+                  }
+                >
+                  {topics.map((topic) => (
+                    <option key={topic.id} value={topic.key}>
+                      {topic.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label>
                 <input
                   type="checkbox"

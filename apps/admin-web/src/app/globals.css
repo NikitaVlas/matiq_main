@@ -1,3 +1,17 @@
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 1000;
+  padding: 12px 18px;
+  background: #fff;
+  color: #111;
+  transform: translateY(-200%);
+}
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 3px solid #265d40;
+}
 button {
   min-height: 44px;
   padding: 8px 14px;
@@ -9,6 +23,29 @@ button {
 body {
   color: #151918;
   background: #fafaf8;
+}
+main {
+  overflow-wrap: anywhere;
+}
+main input,
+main select,
+main textarea,
+main label {
+  max-width: 100%;
+  min-width: 0;
+}
+fieldset {
+  min-inline-size: 0;
+}
+.foundation-step-grid {
+  grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1fr) 100px 110px;
+}
+.foundation-step-grid label > input:not([type='checkbox']),
+.foundation-step-grid select {
+  width: 100%;
+}
+.foundation-mobile-label {
+  display: none;
 }
 .admin-language-bar {
   padding: 20px 28px 14px;
@@ -82,6 +119,18 @@ textarea:focus-visible {
   outline-offset: 3px;
 }
 @media (max-width: 640px) {
+  .foundation-step-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: 12px;
+    border-bottom: 1px solid #d4d9d4;
+  }
+  .foundation-step-headings {
+    display: none !important;
+  }
+  .foundation-mobile-label {
+    display: block;
+    margin-bottom: 4px;
+  }
   .admin-language-bar {
     padding: 16px;
     gap: 16px;

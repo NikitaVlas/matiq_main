@@ -124,7 +124,10 @@ export function TrainerFinancePanel({ trainers }: { trainers: Trainer[] }) {
       <h2 id="trainer-finance-title">{t('Trainerverträge und Abrechnungen')} </h2>
       {error ? <p role="alert">{t(error)}</p> : null}
       {message ? <p role="status">{t(message)}</p> : null}
-      <form onSubmit={reauthenticate} style={{ display: 'flex', gap: 10, alignItems: 'end' }}>
+      <form
+        onSubmit={reauthenticate}
+        style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'end' }}
+      >
         <label>
           {t('Admin-Passwort bestätigen')}{' '}
           <input
@@ -140,7 +143,7 @@ export function TrainerFinancePanel({ trainers }: { trainers: Trainer[] }) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))',
+          gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,300px),1fr))',
           gap: 24,
         }}
       >

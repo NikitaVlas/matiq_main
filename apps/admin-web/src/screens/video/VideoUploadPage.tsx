@@ -183,6 +183,7 @@ export default function VideoUploadPage() {
       <form onSubmit={upload}>
         <input
           type="file"
+          aria-label={t('Upload video')}
           accept="video/mp4,video/webm"
           required
           onChange={(event) => setFile(event.target.files?.[0])}
@@ -343,6 +344,7 @@ export default function VideoUploadPage() {
                     </label>
                     <input
                       placeholder={t(`Add value to ${field.name}`)}
+                      aria-label={t(`Add value to ${field.name}`)}
                       value={newOptions[field.id] ?? ''}
                       onChange={(event) =>
                         setNewOptions((current) => ({

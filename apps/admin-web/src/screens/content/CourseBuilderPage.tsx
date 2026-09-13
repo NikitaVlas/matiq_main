@@ -232,6 +232,7 @@ export default function CourseBuilderPage() {
         <input
           required
           placeholder={t('Course title')}
+          aria-label={t('Course title')}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
@@ -309,6 +310,7 @@ export default function CourseBuilderPage() {
               <input
                 required
                 placeholder={t('New module')}
+                aria-label={t('New module')}
                 value={moduleTitle}
                 onChange={(event) => setModuleTitle(event.target.value)}
               />
@@ -696,6 +698,7 @@ export default function CourseBuilderPage() {
                   <input
                     required
                     placeholder={t('Lesson title')}
+                    aria-label={t('Lesson title')}
                     value={lessonDrafts[module.id]?.title ?? ''}
                     onChange={(event) =>
                       updateLessonDraft(module.id, { title: event.target.value })

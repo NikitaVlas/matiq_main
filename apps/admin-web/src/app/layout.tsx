@@ -12,7 +12,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="de">
       <body style={{ fontFamily: 'Arial', margin: 0 }}>
         <AdminLanguageBar />
-        {children}
+        <div id="main-content" tabIndex={-1}>
+          {children}
+        </div>
       </body>
     </html>
   );

@@ -10,6 +10,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="de">
       <body>
+        <a className="skip-link" href="#main-content">
+          Zum Inhalt springen
+        </a>
         <nav className="navigation" aria-label="Hauptnavigation">
           <a href="/">MATIQ</a>
           <a href="/dashboard">Dashboard</a>
@@ -21,7 +24,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <a href="/subscription">Mitgliedschaft</a>
           <a href="/settings">Einstellungen</a>
         </nav>
-        {children}
+        <div id="main-content" tabIndex={-1}>
+          {children}
+        </div>
       </body>
     </html>
   );
