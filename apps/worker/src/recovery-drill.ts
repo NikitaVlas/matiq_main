@@ -20,6 +20,7 @@ import {
   RenewalCancellationService,
   PostgresDeletionSchedule,
 } from '@matiq/backend';
+import { createAccountDeletionHandler } from './privacy.js';
 
 // Intentionally fixed to the repository's local Compose service, never DATABASE_URL.
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -363,9 +364,41 @@ try {
     'schedule_due_single_claim',
   );
   stage = 'suppression';
+  const restoredEvent = await restored.outboxEvent.findUniqueOrThrow({
+    where: {
+      idempotencyKey: `privacy.account-delete.v1:restore:${user.privacySubjectId}`,
+    },
+  });
+  await restored.outboxEvent.update({
+    where: { id: restoredEvent.id },
+    data: { status: 'PUBLISHED', payload: { purged: true } },
+  });
+  await restored.inboxJob.create({
+    data: {
+      outboxEventId: restoredEvent.id,
+      topic: restoredEvent.topic,
+      status: 'DEAD_LETTER',
+      attempts: 12,
+      deadLetter: { create: { topic: restoredEvent.topic, error: 'synthetic' } },
+    },
+  });
   for (let attempt = 0; attempt < 2; attempt++) {
     stage = 'suppression';
     await reapplyDeletionLedger(restored, parseDeletionLedger(JSON.parse(ledger)));
+    const retried: {
+      status: string;
+      payload: unknown;
+      inboxJob: { status: string; deadLetter: unknown } | null;
+    } = await restored.outboxEvent.findUniqueOrThrow({
+      where: { id: restoredEvent.id },
+      include: { inboxJob: { include: { deadLetter: true } } },
+    });
+    assert.equal(retried.status, 'PENDING');
+    assert.ok(
+      retried.payload && typeof retried.payload === 'object' && 'requestId' in retried.payload,
+    );
+    assert.equal(retried.inboxJob?.status, 'FAILED');
+    assert.equal(retried.inboxJob?.deadLetter, null);
     assert.equal(await restored.athleteProfile.findUnique({ where: { userId: user.id } }), null);
     const deleted = await restored.user.findUniqueOrThrow({ where: { id: user.id } });
     assert.ok(deleted.deletedAt);
@@ -410,6 +443,114 @@ try {
     'audit_pseudonymised',
     'playback_heartbeats_and_intervals_erased',
     'restore_receipt_waits_for_processor',
+    'restore_rearms_purged_or_dead_letter_delivery',
+  );
+  stage = 'deleted_subscription_reconciliation';
+  const snapshot = parseDeletionLedger(JSON.parse(ledger));
+  const legacy = {
+    version: 1 as const,
+    exportedAt: snapshot.exportedAt,
+    tombstones: snapshot.tombstones.map(({ subjectRef, requestedAt, retainUntil }) => ({
+      subjectRef,
+      requestedAt,
+      retainUntil,
+    })),
+  };
+  await reapplyDeletionLedger(restored, legacy);
+  assert.equal(
+    (
+      await restored.accountDeletionRequest.findUniqueOrThrow({
+        where: { subjectRef: user.privacySubjectId },
+      })
+    ).completedAt,
+    null,
+  );
+  await reapplyDeletionLedger(restored, {
+    ...snapshot,
+    tombstones: snapshot.tombstones.map((entry) => ({
+      ...entry,
+      completedAt: new Date().toISOString(),
+    })),
+  });
+  const pendingReceipt = await restored.accountDeletionRequest.findUniqueOrThrow({
+    where: { subjectRef: user.privacySubjectId },
+  });
+  assert.equal(pendingReceipt.completedAt, null);
+  const deletionOps = await restored.$queryRaw<{ id: string }[]>`
+    SELECT o."id" FROM "RenewalCancellationOperation" o JOIN "Subscription" s
+    ON s."id" = o."subscriptionId" WHERE s."userId" = ${user.id}`;
+  assert.ok(deletionOps.length >= 2);
+  const deletionPayload = { requestId: pendingReceipt.id, userId: user.id };
+  await assert.rejects(
+    createAccountDeletionHandler(restored)(deletionPayload),
+    /RENEWAL_RECONCILIATION_PENDING/,
+  );
+  for (const { id } of deletionOps) {
+    await assert.rejects(
+      new RenewalCancellationService(operations).process(id),
+      /RENEWAL_RECONCILIATION_PENDING/,
+    );
+    await restored.$executeRaw`UPDATE "RenewalCancellationOperation" SET "availableAt" = CURRENT_TIMESTAMP WHERE "id" = ${id}`;
+  }
+  const disabledIds = new Set<string>();
+  let cancellationCalls = 0;
+  const cancellation = new RenewalCancellationService(operations, {
+    isRenewalDisabled: async (id) => disabledIds.has(id),
+    disableRenewal: async (id) => {
+      disabledIds.add(id);
+      cancellationCalls++;
+      throw new Error('simulated timeout after remote success');
+    },
+  });
+  for (const { id } of deletionOps) {
+    try {
+      await cancellation.process(id);
+    } catch {
+      await restored.$executeRaw`UPDATE "RenewalCancellationOperation" SET "availableAt" = CURRENT_TIMESTAMP WHERE "id" = ${id}`;
+      assert.equal(await cancellation.process(id), 'CONFIRMED');
+    }
+    assert.equal(await cancellation.process(id), 'NOT_CLAIMED');
+  }
+  assert.equal(cancellationCalls, disabledIds.size);
+  assert.equal(await operations.deletionRenewalPending(user.id), false);
+  let processorCalls = 0;
+  await assert.rejects(
+    createAccountDeletionHandler(restored, [
+      {
+        name: 'synthetic',
+        eraseAccount: async () => {
+          processorCalls++;
+          throw new Error('synthetic-private-provider-diagnostic');
+        },
+      },
+    ])(deletionPayload),
+    /^Error: EXTERNAL_DELETION_CONFIRMATION_REQUIRED$/,
+  );
+  await assert.rejects(
+    createAccountDeletionHandler(restored, [
+      {
+        name: 'synthetic',
+        eraseAccount: async () => {
+          processorCalls++;
+        },
+      },
+    ])(deletionPayload),
+    /PROVIDER_LINK_RETENTION_REVIEW_REQUIRED/,
+  );
+  assert.equal(processorCalls, 2);
+  assert.equal(
+    (await restored.accountDeletionRequest.findUniqueOrThrow({ where: { id: pendingReceipt.id } }))
+      .completedAt,
+    null,
+  );
+  checks.push(
+    'legacy_restore_never_invents_completion',
+    'completed_snapshot_with_restored_links_reopens_receipt',
+    'restore_recreates_renewal_work',
+    'missing_provider_keeps_deletion_pending',
+    'remote_success_timeout_reconciled_without_duplicate',
+    'processor_errors_redacted',
+    'retained_provider_links_block_completion',
   );
   stage = 'remaining_privacy_review';
   const remainingMetadata = (

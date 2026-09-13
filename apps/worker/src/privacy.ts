@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
 import type { EventHandler } from './types.js';
+import { PostgresRenewalStore } from '@matiq/backend';
 
 type AccountDeletionPayload = { requestId: string; userId: string };
 
@@ -62,19 +63,50 @@ export function createAccountDeletionHandler(
     ];
 
     await db.$transaction(async (tx) => {
+      const users = await tx.$queryRaw<{ deletedAt: Date | null }[]>`
+        SELECT "deletedAt" FROM "User" WHERE "id" = ${payload.userId} FOR UPDATE`;
+      if (!users[0]?.deletedAt) throw new Error('ACCOUNT_DELETION_NOT_STARTED');
       await eraseLocalAccountData(tx, payload.userId);
+      await eraseAccountAuditIdentifiers(tx, payload.userId, request.subjectRef);
+      await new PostgresRenewalStore(tx).requestDeletion(payload.userId, `deletion:${request.id}`);
     });
+
+    if (await new PostgresRenewalStore(db).deletionRenewalPending(payload.userId))
+      throw new Error('RENEWAL_RECONCILIATION_PENDING');
 
     if (subscriptions.length && processors.length === 0) {
       throw new Error('EXTERNAL_DELETION_CONFIRMATION_REQUIRED');
     }
 
     for (const processor of processors) {
-      await processor.eraseAccount({ subjectRef: request.subjectRef, providerCustomerIds });
+      try {
+        await processor.eraseAccount({ subjectRef: request.subjectRef, providerCustomerIds });
+      } catch {
+        throw new Error('EXTERNAL_DELETION_CONFIRMATION_REQUIRED');
+      }
     }
+
+    // Provider-link retention and late-webhook matching require the separate
+    // approved provider design. Do not claim complete erasure while links remain.
+    if (subscriptions.length) throw new Error('PROVIDER_LINK_RETENTION_REVIEW_REQUIRED');
 
     const completedAt = new Date();
     await db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${payload.userId} FOR UPDATE`;
+      if (
+        await tx.subscription.count({
+          where: {
+            userId: payload.userId,
+            OR: [{ providerCustomerId: { not: null } }, { providerSubscriptionId: { not: null } }],
+          },
+        })
+      )
+        throw new Error('EXTERNAL_DELETION_CONFIRMATION_REQUIRED');
+      const completed = await tx.accountDeletionRequest.updateMany({
+        where: { id: request.id, userId: payload.userId, completedAt: null },
+        data: { userId: null, completedAt },
+      });
+      if (!completed.count) return;
       await tx.auditLog.create({
         data: {
           actor: 'system:retention-worker',
@@ -83,10 +115,6 @@ export function createAccountDeletionHandler(
           entityId: request.id,
           metadata: { processors: processors.map(({ name }) => name) },
         },
-      });
-      await tx.accountDeletionRequest.updateMany({
-        where: { id: request.id, userId: payload.userId, completedAt: null },
-        data: { userId: null, completedAt },
       });
       await eraseAccountAuditIdentifiers(tx, payload.userId, request.subjectRef);
     });

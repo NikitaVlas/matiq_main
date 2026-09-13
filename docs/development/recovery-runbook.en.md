@@ -35,11 +35,21 @@ isolated EU environment, retrieve the latest independent ledger (including
 post-backup deletions), apply suppression, verify consistency and provider state,
 record evidence, and obtain owner approval before reopening traffic.
 
+Rebuild the queue from outbox in isolated Redis before starting workers: stale
+completed BullMQ jobs must not suppress replay. Reapply restores incomplete
+deletion payloads, resets their inbox/dead-letter state, and queues subscription
+reconciliation. Never reuse the live queue during a restore drill.
+
 This drill does not certify production RPO/RTO, video recovery, external providers,
 or independent ledger storage. Those remain launch gates.
 
 ## Document status
 
+- Run `2d23275d277cc95aa71649d1` (26.874 s), 2026-09-13: 26 checks passed,
+  including legacy/v2 receipts, renewal/dead-letter recovery, timeout after remote
+  success without duplicate cancellation, and safe processor errors. Overall
+  `FAILED` remains only for `provider_identifiers_remain_linked`. Such references
+  intentionally block receipt completion. This uses a fake provider, not production.
 - Run `4318e0c8fbdbdc5192b4ec15` (28.206 s) passed 18 local checks, including
   real dump/restore, an independent post-backup ledger, safe replay, and the
   120-second synthetic budget. Overall status is `FAILED` only for deferred
@@ -67,5 +77,5 @@ or independent ledger storage. Those remain launch gates.
   now includes safe finding codes; earlier PASSED reports do not cover these checks.
 - Status: Active local runbook; production gates pending
 - Owner: MATIQ team
-- Last reviewed: 2026-09-08
+- Last reviewed: 2026-09-13
 - Related code: apps/worker/src/recovery-drill.ts

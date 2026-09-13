@@ -51,8 +51,12 @@ API только принимает операцию, не утверждая у
 
 SubscriptionService.cancel отменяет продление только последней ACTIVE/TRIAL
 подписки. У deletion worker нет billing adapter, список processors по умолчанию
-пуст. Обычный worker не завершает receipt при внешних ссылках без processors.
-Legacy restore всё ещё завершает удаление без сверки подписок. Поздний webhook
+пуст. Немедленное, отложенное и восстановленное удаление теперь ставят устойчивую
+отмену для всех связанных подписок и переводят локальный доступ в CANCELED.
+Worker очищает локальные данные, но не завершает receipt до сверки продления;
+оставшиеся внешние ссылки также блокируют завершение до согласования их хранения.
+Legacy restore не придумывает дату завершения. Даже завершённый ledger v2
+снова открывает receipt, если из backup вернулись внешние ссылки. Поздний webhook
 для удалённого аккаунта сохраняет CANCELED и ставит сверку в очередь; для
 запланированного удаления не сдвигает срок. Checkout/resume блокируются при
 расписании или незавершённой отмене, но гонки с удалённым вызовом и порядок
@@ -111,6 +115,11 @@ SQL NULL, actor/entityId псевдонимизируются. Сохраняю�
 
 ## Document status
 
+- Срез 2026-09-13: [усиление удаления и recovery](../../specs/deletion-recovery-hardening_design.md).
+  Общий billing port подключён ко всем трём путям удаления. Повторная доставка
+  после restore восстанавливается из очищенного payload/dead-letter. Вызовы
+  тестового провайдера проверены при timeout после удалённого успеха; production
+  adapter и правила разрыва платёжных связей остаются отдельным блокером.
 - Срез 2026-09-06: deletion ledger v2 восстанавливает создание и отмену расписания
   после backup; v1 остаётся читаемой. Локальная подписка восстановленного удалённого
   аккаунта больше не остаётся ACTIVE. Незавершённый receipt переносится как
@@ -142,5 +151,5 @@ SQL NULL, actor/entityId псевдонимизируются. Сохраняю�
   checkpoint fullstack-guardian; согласование billing-границы остаётся stop condition.
 - Status: Local scheduled deletion implemented; production provider and recovery gates pending
 - Owner: MATIQ team
-- Last reviewed: 2026-09-04
+- Last reviewed: 2026-09-13
 - Related code: worker/privacy.ts, worker/deletion-ledger.ts, SubscriptionService

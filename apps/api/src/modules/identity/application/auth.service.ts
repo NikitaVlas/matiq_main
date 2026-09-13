@@ -11,6 +11,7 @@ import {
   encryptTransactionalEmail,
   validatePassword,
   PostgresDeletionSchedule,
+  PostgresRenewalStore,
   accountExportTokenHash,
   buildAccountExport,
   decryptAccountExport,
@@ -458,6 +459,7 @@ export class AuthService {
           idempotencyKey: `privacy.account-delete.v1:${request.id}`,
         },
       });
+      await new PostgresRenewalStore(tx).requestDeletion(userId, `deletion:${request.id}`);
       return { requestId: request.id };
     });
     return {

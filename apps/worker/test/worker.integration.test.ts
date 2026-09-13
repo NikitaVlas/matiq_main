@@ -91,6 +91,8 @@ describe('Worker outbox lifecycle', () => {
         topic: 'system.noop',
         payload: { runId },
         idempotencyKey: `${runId}:success`,
+        // Explicitly due; host and Docker PostgreSQL clocks can differ slightly.
+        availableAt: new Date(0),
       },
     });
     await expect(dispatcher.dispatchBatch()).resolves.toBeGreaterThanOrEqual(1);
@@ -119,6 +121,7 @@ describe('Worker outbox lifecycle', () => {
         topic: 'unsupported.topic',
         payload: { privateValue: 'must-not-be-copied' },
         idempotencyKey: `${runId}:dead-letter`,
+        availableAt: new Date(0),
         status: 'PUBLISHED',
         publishedAt: new Date(),
       },
@@ -157,6 +160,7 @@ describe('Worker outbox lifecycle', () => {
           createTransactionalEmail('VERIFY_EMAIL', recipient, 'secret-token'),
         ),
         idempotencyKey: `${runId}:email`,
+        availableAt: new Date(0),
       },
     });
     await dispatcher.dispatchBatch();
@@ -174,6 +178,7 @@ describe('Worker outbox lifecycle', () => {
         topic: 'email.send.v1',
         payload: { version: 1, iv: 'invalid', ciphertext: 'invalid', authTag: 'invalid' },
         idempotencyKey: `${runId}:damaged-email`,
+        availableAt: new Date(0),
         status: 'PUBLISHED',
         publishedAt: new Date(),
       },
@@ -224,6 +229,7 @@ describe('Worker outbox lifecycle', () => {
         topic: 'privacy.account-delete.v1',
         payload: { requestId: deletionRequest.id, userId: user.id },
         idempotencyKey: `${runId}:privacy`,
+        availableAt: new Date(0),
       },
     });
 

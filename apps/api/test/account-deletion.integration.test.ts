@@ -69,6 +69,8 @@ describe('account export and deletion', () => {
       await db.deletionTombstone.deleteMany({ where: { subjectRef: deletionSubjectRef } });
     }
     await db.$executeRaw`DELETE FROM "AccountDeletionSchedule" WHERE "userId" = ${userId}`;
+    await db.$executeRaw`DELETE FROM "RenewalCancellationOperation" WHERE "subscriptionId" IN
+      (SELECT "id" FROM "Subscription" WHERE "userId" = ${userId})`;
     await db.user.deleteMany({ where: { id: userId } });
     await db.$disconnect();
     await app.close();
@@ -186,6 +188,19 @@ describe('account export and deletion', () => {
       .expect(({ body }) => expect(body.scheduled).toBe(false));
     expect((await db.user.findUniqueOrThrow({ where: { id: userId } })).deletedAt).toBeNull();
 
+    const linked = await Promise.all(
+      ['ACTIVE', 'EXPIRED'].map((status) =>
+        db.subscription.create({
+          data: {
+            userId,
+            status: status as 'ACTIVE' | 'EXPIRED',
+            providerSubscriptionId: `synthetic-${userId}-${status}`,
+            providerCustomerId: `synthetic-customer-${userId}`,
+            endsAt: new Date(Date.now() + 86400000),
+          },
+        }),
+      ),
+    );
     const deletion = await request(app.getHttpServer())
       .delete('/auth/account')
       .set('Cookie', cookie)
@@ -198,6 +213,15 @@ describe('account export and deletion', () => {
       statusTokenExpiresAt: expect.any(String),
     });
     deletionRequestId = deletion.body.requestId;
+    expect(await db.subscription.count({ where: { userId, status: { not: 'CANCELED' } } })).toBe(0);
+    const renewalOperations = await db.$queryRaw<{ subscriptionId: string; status: string }[]>`
+      SELECT o."subscriptionId", o."status" FROM "RenewalCancellationOperation" o
+      JOIN "Subscription" s ON s."id" = o."subscriptionId" WHERE s."userId" = ${userId}`;
+    expect(renewalOperations).toHaveLength(2);
+    expect(renewalOperations.every((op) => op.status === 'PENDING')).toBe(true);
+    expect(new Set(renewalOperations.map((op) => op.subscriptionId))).toEqual(
+      new Set(linked.map((sub) => sub.id)),
+    );
 
     await request(app.getHttpServer())
       .post('/auth/account-deletion/status')

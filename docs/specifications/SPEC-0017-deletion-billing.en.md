@@ -52,8 +52,11 @@ See [technical design](../../specs/scheduled_deletion_design.md).
 SubscriptionService.cancel schedules end-of-period cancellation for the latest
 ACTIVE/TRIAL subscription only. The deletion worker has no billing adapter;
 its default external processor list is empty. Ordinary processing refuses to
-complete receipts with external references but no processors. Legacy restore
-still completes without billing reconciliation. Late webhooks retain CANCELED
+complete receipts while renewal is unconfirmed or provider links remain pending
+their approved retention design. Immediate, scheduled and restored deletion now
+enqueue durable cancellation for every linked subscription and cancel local
+entitlement. Legacy restore never invents completion; v2 completed receipts reopen
+when external links return from backup. Late webhooks retain CANCELED
 for deleted users and enqueue reconciliation, without extending scheduled dates.
 Checkout/resume reject schedules or pending operations; remote-call races and
 provider event ordering still need full verification. Ledger v2 replays schedule
@@ -111,6 +114,10 @@ links and broader irreversible unlinkability are not covered by this helper.
 
 ## Document status
 
+- 2026-09-13 slice: [deletion/recovery hardening](../../specs/deletion-recovery-hardening_design.md).
+  All three deletion paths use the shared billing port. Restore re-arms purged
+  or dead-letter delivery. Fake-provider tests cover timeout after remote success;
+  production adapters and provider-link retention remain separate blockers.
 - 2026-09-06 slice: deletion ledger v2 restores schedule creation and cancellation
   after backup; v1 remains readable. Restored deleted accounts no longer retain an
   ACTIVE local subscription. Incomplete receipts remain incomplete and are requeued
@@ -142,5 +149,5 @@ links and broader irreversible unlinkability are not covered by this helper.
   security checkpoint; shared billing boundary approval remains a stop condition.
 - Status: Local scheduled deletion implemented; production provider and recovery gates pending
 - Owner: MATIQ team
-- Last reviewed: 2026-09-04
+- Last reviewed: 2026-09-13
 - Related code: worker/privacy.ts, worker/deletion-ledger.ts, SubscriptionService

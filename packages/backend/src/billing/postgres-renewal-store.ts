@@ -10,6 +10,31 @@ export interface RenewalSqlClient {
 export class PostgresRenewalStore implements RenewalOperationStore {
   constructor(private readonly db: RenewalSqlClient) {}
 
+  /** Run inside the deletion transaction, under its User row lock. */
+  async requestDeletion(userId: string, scope: string): Promise<void> {
+    await this.db.$executeRaw`
+      UPDATE "Subscription" SET "status" = 'CANCELED', "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "userId" = ${userId}`;
+    const linked = await this.db.$queryRaw<{ id: string }[]>`
+      SELECT "id" FROM "Subscription" WHERE "userId" = ${userId}
+      AND "providerSubscriptionId" IS NOT NULL`;
+    for (const { id } of linked) await this.request(`${scope}:${id}`, id, userId);
+  }
+
+  async deletionRenewalPending(userId: string): Promise<boolean> {
+    const rows = await this.db.$queryRaw<{ pending: boolean }[]>`
+      SELECT EXISTS (
+        SELECT 1 FROM "Subscription" s WHERE s."userId" = ${userId}
+        AND s."providerSubscriptionId" IS NOT NULL AND (
+          NOT s."cancelAtPeriodEnd" OR EXISTS (
+            SELECT 1 FROM "RenewalCancellationOperation" o
+            WHERE o."subscriptionId" = s."id" AND o."status" <> 'CONFIRMED'
+          )
+        )
+      ) AS pending`;
+    return rows[0]?.pending ?? true;
+  }
+
   /** Caller supplies an opaque, stable operation ID and authenticated owner. */
   async request(id: string, subscriptionId: string, userId: string): Promise<void> {
     if (![id, subscriptionId, userId].every((value) => value && value.length <= 200)) {

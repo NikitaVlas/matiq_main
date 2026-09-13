@@ -107,6 +107,7 @@ export class PostgresDeletionSchedule {
           "passwordHash" = ${randomBytes(32).toString('hex')}, "role" = 'ATHLETE', "emailVerifiedAt" = NULL,
           "mfaSecretEncrypted" = NULL, "mfaEnabledAt" = NULL, "deletedAt" = CURRENT_TIMESTAMP,
           "deletionRequestedAt" = CURRENT_TIMESTAMP, "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ${userId}`;
+        await new PostgresRenewalStore(tx).requestDeletion(userId, `deletion:${requestId}`);
         await tx.$executeRaw`INSERT INTO "OutboxEvent" ("id", "topic", "payload", "idempotencyKey", "updatedAt")
           VALUES (${randomUUID()}, 'privacy.account-delete.v1',
           ${JSON.stringify({ requestId, userId })}::jsonb, ${`privacy.account-delete.v1:${requestId}`}, CURRENT_TIMESTAMP)`;
