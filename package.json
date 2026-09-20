@@ -24,6 +24,8 @@
     "typecheck": "turbo run typecheck",
     "architecture:check": "node scripts/check-architecture.mjs",
     "test": "turbo run test",
+    "load:check": "pnpm --filter @matiq/backend build && pnpm --filter @matiq/api build && pnpm --filter @matiq/worker build && node scripts/load/run.mjs",
+    "load:test": "node --test scripts/load/measure.test.mjs",
     "test:integration": "turbo run test:integration",
     "e2e": "playwright test",
     "e2e:admin": "playwright test --config playwright.admin.config.ts",

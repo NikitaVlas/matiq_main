@@ -25,6 +25,10 @@ This checklist is not security certification or production authorization.
       RPO and 4-hour RTO objectives recorded. Production-like restore, independent
       EU ledger storage, and provider-identifier deletion evidence remain required.
 - [ ] Observability: dashboards, alerts, ownership and tested alert delivery.
+- [ ] Load: local API/DB/queue baseline completed with 5807 error-free requests
+      and 250 jobs plus redelivery checks. [Evidence](load-baseline-2026-09-20.en.md).
+      Agreed targets, deployment-hardware load, soak testing and real provider
+      handlers remain required; the local result does not close this gate.
 - [ ] Providers/legal: DPA, subprocessors, export/delete, privacy notice and terms.
 - [ ] Incident response: owners, escalation channel and breach procedure.
 - [ ] Owner accepts residual risks and authorizes launch.
@@ -40,5 +44,5 @@ Partial verification and open risks:
 
 - Status: Active checklist; review not completed
 - Owner: MATIQ team
-- Last reviewed: 2026-09-13
+- Last reviewed: 2026-09-20
 - Related code: Repository-wide

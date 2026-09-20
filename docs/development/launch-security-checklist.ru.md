@@ -31,6 +31,10 @@
       production-like restore, независимое EU-хранилище ledger и подтверждение
       удаления provider identifiers.
 - [ ] Observability: dashboards/alerts, ответственный и тест доставки alert.
+- [ ] Нагрузка: локальный API/DB/queue baseline выполнен, 5807 запросов без
+      ошибок и 250 заданий с проверкой повторной доставки. [Отчёт](load-baseline-2026-09-20.ru.md).
+      Остаются целевые показатели, нагрузка на будущем сервере, длительный прогон
+      и реальные обработчики провайдеров; локальный результат не закрывает gate.
 - [ ] Providers/legal: DPA, subprocessors, export/delete, privacy notice и terms.
 - [ ] Incident response: ответственные, канал escalation, процедура breach.
 - [ ] Владелец принимает residual risks и разрешает запуск.
@@ -46,5 +50,5 @@ accessibility audit и recovery/observability evidence. Пустые пункт�
 
 - Status: Active checklist; review not completed
 - Owner: MATIQ team
-- Last reviewed: 2026-09-13
+- Last reviewed: 2026-09-20
 - Related code: Repository-wide

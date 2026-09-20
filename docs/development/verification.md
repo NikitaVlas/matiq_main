@@ -22,6 +22,8 @@ On Windows with restricted PowerShell scripts, use `pnpm.cmd`.
 | Identity integration | `pnpm --filter @matiq/api test:integration` | Yes with PostgreSQL |
 | Build                | `pnpm build`                                | Yes                 |
 | Full verification    | `pnpm verify`                               | Yes                 |
+| Load harness tests   | `pnpm load:test`                            | Local               |
+| Local load baseline  | `pnpm load:check`                           | Local Docker        |
 
 Для проверки восстановления после удаления экспортируйте ledger перед backup,
 восстановите disposable test database и примените ledger командами из
@@ -45,6 +47,14 @@ and integration tests. Never run these commands against production.
 
 ## Reporting
 
+The bounded local load check creates and removes its own `matiq_load_<uuid>`
+PostgreSQL database and `matiq-load-<uuid>` Redis queue. It uses the default local
+Compose endpoints, compiled API and real DB/queue adapters with synthetic data.
+It does not accept remote target URLs or load application `.env` files. See the
+[load runbook](load-check.ru.md) for methodology and limits. Evidence is written
+under `test-results/load/<uuid>/`. A passing run proves request correctness and
+queue drain/deduplication for that run, not production capacity or an approved SLO.
+
 Browser tests use synthetic API responses and run in Chromium via `pnpm e2e`
 and `pnpm e2e:admin`. Representative User and Admin states are checked with
 axe-core against WCAG 2.1 A/AA, including automated color-contrast rules.
@@ -62,5 +72,5 @@ Report every command, outcome, skipped check, manual check, and residual risk.
 
 - Status: Active
 - Owner: MATIQ team
-- Last reviewed: 2026-09-03
+- Last reviewed: 2026-09-20
 - Related code: Root scripts, CI, all workspace packages
