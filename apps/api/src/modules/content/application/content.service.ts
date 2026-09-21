@@ -20,9 +20,20 @@ import { VideoStorageService } from '../infrastructure/video-storage.service';
 import { SubscriptionService } from '../../subscription/application/subscription.service';
 import { PlaybackHeartbeatDto } from '../dto/playback-heartbeat.dto';
 import { publicVideoSelect, publicVideoSummary } from './public-video-catalog';
+import { CatalogQueryDto } from '../dto/catalog-query.dto';
+import {
+  catalogWhere,
+  disciplineWhere,
+  publicTrainer,
+  usedGroup,
+  usedMovement,
+  usedPosition,
+  usedTechnique,
+} from './catalog-query';
 
 @Injectable()
 export class ContentService {
+  private seedInitialization?: Promise<void>;
   constructor(
     @Inject(Database) private readonly db: Database,
     @Inject(VideoStorageService) private readonly storage: VideoStorageService,
@@ -36,6 +47,74 @@ export class ContentService {
       select: publicVideoSelect,
     });
     return videos.map(publicVideoSummary);
+  }
+
+  async videoPage(query: CatalogQueryDto) {
+    const where = catalogWhere(query);
+    const [total, videos] = await this.db.$transaction(
+      [
+        this.db.video.count({ where }),
+        this.db.video.findMany({
+          where,
+          orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+          skip: (query.page - 1) * query.limit,
+          take: query.limit,
+          select: publicVideoSelect,
+        }),
+      ],
+      { isolationLevel: 'RepeatableRead' },
+    );
+    return { items: videos.map(publicVideoSummary), total, page: query.page, limit: query.limit };
+  }
+
+  async videoFacets() {
+    const select = { id: true, name: true } as const;
+    const [gameAreas, positions, skillGroups, techniques, movements, drills, trainers, gi, noGi] =
+      await this.db.$transaction(
+        [
+          this.db.gameArea.findMany({ where: { positions: { some: usedPosition } }, select }),
+          this.db.position.findMany({ where: usedPosition, select }),
+          this.db.skillGroup.findMany({ where: usedGroup, select }),
+          this.db.technique.findMany({ where: usedTechnique, select }),
+          this.db.movement.findMany({ where: usedMovement, select }),
+          this.db.drill.findMany({ where: { videos: { some: { published: true } } }, select }),
+          this.db.trainerProfile.findMany({
+            where: {
+              published: true,
+              user: { ...publicTrainer, authoredVideos: { some: { published: true } } },
+            },
+            select: { slug: true, displayName: true },
+          }),
+          this.db.video.findFirst({
+            where: { published: true, ...disciplineWhere('BJJ_GI') },
+            select: { id: true },
+          }),
+          this.db.video.findFirst({
+            where: { published: true, ...disciplineWhere('NO_GI_GRAPPLING') },
+            select: { id: true },
+          }),
+        ],
+        { isolationLevel: 'RepeatableRead' },
+      );
+    const values = {
+      gameAreas,
+      positions,
+      skillGroups,
+      techniques,
+      movements,
+      drills,
+      trainer: trainers.map((t) => ({ id: t.slug, name: t.displayName })),
+      disciplines: [
+        ...(gi ? [{ id: 'BJJ_GI', name: 'BJJ Gi' }] : []),
+        ...(noGi ? [{ id: 'NO_GI_GRAPPLING', name: 'No-Gi Grappling' }] : []),
+      ],
+    };
+    return Object.fromEntries(
+      Object.entries(values).map(([key, options]) => [
+        key,
+        options.sort((a, b) => a.name.localeCompare(b.name, 'de') || a.id.localeCompare(b.id)),
+      ]),
+    );
   }
 
   async courses() {
@@ -161,7 +240,11 @@ export class ContentService {
     return { ...publicProfile, courses: user.authoredCourses, videos: user.authoredVideos };
   }
   async catalog() {
-    await this.seed();
+    this.seedInitialization ??= this.seed().catch((error) => {
+      this.seedInitialization = undefined;
+      throw error;
+    });
+    await this.seedInitialization;
     return this.db.gameArea.findMany({
       include: {
         positions: {

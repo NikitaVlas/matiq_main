@@ -42,8 +42,9 @@ OpenAPI clients; run verification, User/Admin E2E and relevant integration tests
 
 - `GET /content/videos` supplies safe summaries and taxonomy facets directly from
   published videos; existing catalog/playback contracts remain compatible.
-- Filtering is client-side across published summaries. Pagination and production
-  load validation belong to the launch-readiness step.
+- Filtering now runs server-side with bounded pages and global facet options;
+  see `catalog-pagination_design.md`. The original full-summary route remains
+  compatible. Production load validation remains a launch-readiness requirement.
 - The current video model has no public thumbnail field. Video cards therefore
   use neutral typography; trainer photos use the published profile URL when set.
 - Admin-only language storage is `matiq-admin-language`. It stores only `de`/`ru`.
@@ -76,5 +77,5 @@ OpenAPI clients; run verification, User/Admin E2E and relevant integration tests
 
 - Status: Implemented and verified; approved by user request
 - Owner: MATIQ team
-- Last reviewed: 2026-09-10
+- Last reviewed: 2026-09-21
 - Related code: User catalog API, Public Web, Admin Web

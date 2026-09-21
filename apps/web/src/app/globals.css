@@ -8,6 +8,14 @@
   color: #111;
   transform: translateY(-200%);
 }
+.catalog-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-block: 32px;
+}
 .skip-link:focus {
   transform: translateY(0);
   outline: 3px solid #265d40;

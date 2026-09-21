@@ -779,6 +779,151 @@
         ]
       }
     },
+    "/content/video-page": {
+      "get": {
+        "operationId": "ContentController_videoPage",
+        "parameters": [
+          {
+            "required": false,
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "required": false,
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 48,
+              "default": 24,
+              "type": "number"
+            }
+          },
+          {
+            "required": false,
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "required": false,
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "required": false,
+            "name": "disciplines",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "required": false,
+            "name": "trainer",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "required": false,
+            "name": "gameAreas",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "required": false,
+            "name": "positions",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "required": false,
+            "name": "skillGroups",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "required": false,
+            "name": "techniques",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "required": false,
+            "name": "movements",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "required": false,
+            "name": "drills",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPageDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/content/video-facets": {
+      "get": {
+        "operationId": "ContentController_videoFacets",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogFacetsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
     "/content/trainers": {
       "get": {
         "operationId": "ContentController_trainers",
@@ -1037,6 +1182,95 @@
           "description",
           "durationSec",
           "createdAt",
+          "disciplines",
+          "trainer",
+          "gameAreas",
+          "positions",
+          "skillGroups",
+          "techniques",
+          "movements",
+          "drills"
+        ]
+      },
+      "CatalogPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogVideoDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit"
+        ]
+      },
+      "CatalogFacetsDto": {
+        "type": "object",
+        "properties": {
+          "disciplines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          },
+          "trainer": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          },
+          "gameAreas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          },
+          "skillGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          },
+          "techniques": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          },
+          "movements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          },
+          "drills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetDto"
+            }
+          }
+        },
+        "required": [
           "disciplines",
           "trainer",
           "gameAreas",

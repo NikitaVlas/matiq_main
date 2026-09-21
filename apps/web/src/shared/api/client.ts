@@ -2,8 +2,15 @@ import type { UserApiPath } from '@matiq/contracts';
 
 export const userApiUrl = process.env.NEXT_PUBLIC_USER_API_URL ?? 'http://localhost:4000';
 
-export function userApiResponse(path: UserApiPath, init?: RequestInit): Promise<Response> {
-  return fetch(`${userApiUrl}${path}`, { credentials: 'include', ...init });
+export function userApiResponse(
+  path: UserApiPath,
+  init?: RequestInit,
+  query?: string,
+): Promise<Response> {
+  return fetch(`${userApiUrl}${path}${query ? `?${query}` : ''}`, {
+    credentials: 'include',
+    ...init,
+  });
 }
 
 export async function userApi<T>(path: UserApiPath, init?: RequestInit): Promise<T> {

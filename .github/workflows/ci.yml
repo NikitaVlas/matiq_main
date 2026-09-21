@@ -54,7 +54,7 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_DB: matiq
+          POSTGRES_DB: matiq_test
           POSTGRES_USER: matiq
           POSTGRES_PASSWORD: matiq_local
         ports:
@@ -65,7 +65,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      DATABASE_URL: postgresql://matiq:matiq_local@localhost:5432/matiq?schema=public
+      DATABASE_URL: postgresql://matiq:matiq_local@localhost:5432/matiq_test?schema=public
       NODE_ENV: test
       EMAIL_PROVIDER: console
     steps:

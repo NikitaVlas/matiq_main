@@ -33,6 +33,12 @@ run UUID before manually removing anything.
 
 ## Limits
 
+After catalog optimization, `paginatedHttp` contains an additional series:
+24-video first page, global facets and a position-filtered page, at the same
+dataset sizes and concurrency levels. The original four-route mix remains in
+`http`. The mixes differ, so their RPS is not a direct whole-system speedup.
+Page response bytes can be compared with the full-summary response.
+
 This is a short closed-loop baseline on one development machine, not an arrival-
 rate SLA, soak test, production capacity or athlete count. Latency SLOs are not
 approved; measurements are observations, not launch acceptance. Small-sample p99
@@ -45,5 +51,5 @@ with agreed traffic, real handlers and sustained load before launch.
 
 - Status: Active local runbook; production capacity not established
 - Owner: MATIQ team
-- Last reviewed: 2026-09-20
+- Last reviewed: 2026-09-21
 - Related code: scripts/load, root package scripts

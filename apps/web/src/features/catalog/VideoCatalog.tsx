@@ -1,26 +1,48 @@
 'use client';
 import { useEffect, useState } from 'react';
 import {
-  type CatalogVideo,
+  type CatalogPage,
+  type CatalogFacets,
   type Filters,
   type FilterKey,
   filterLabels,
-  filterOptions,
-  filterVideos,
 } from './catalog';
 import { usePublicData } from './use-public-data';
 import { VideoCard } from './VideoCard';
 export default function VideoCatalog() {
-  const { data: videos, error, retry } = usePublicData<CatalogVideo[]>('/content/videos');
   const [filters, setFilters] = useState<Filters>({});
   const [query, setQuery] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(query), 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+  const params = new URLSearchParams({ page: String(page), limit: '24' });
+  if (search) params.set('q', search);
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  const results = usePublicData<CatalogPage>('/content/video-page', params.toString(), 'page');
+  const facets = usePublicData<CatalogFacets>('/content/video-facets', '', 'facets');
+  const data = search === query ? results.data : undefined;
+  const error = results.error || facets.error;
+  const retry = () => {
+    results.retry();
+    facets.retry();
+  };
   useEffect(() => {
     const read = () => {
       const params = new URLSearchParams(window.location.search);
-      setQuery(params.get('q') ?? '');
+      setQuery((params.get('q') ?? '').slice(0, 160));
+      const pageValue = Number(params.get('page') ?? 1);
+      setPage(Number.isInteger(pageValue) && pageValue >= 1 && pageValue <= 10000 ? pageValue : 1);
       setFilters(
         Object.fromEntries(
-          (Object.keys(filterLabels) as FilterKey[]).map((key) => [key, params.get(key) ?? '']),
+          (Object.keys(filterLabels) as FilterKey[]).map((key) => [
+            key,
+            (params.get(key) ?? '').slice(0, 120),
+          ]),
         ),
       );
     };
@@ -28,22 +50,23 @@ export default function VideoCatalog() {
     window.addEventListener('popstate', read);
     return () => window.removeEventListener('popstate', read);
   }, []);
-  function update(next: Filters, search: string) {
+  function update(next: Filters, search: string, nextPage = 1, push = false) {
     setFilters(next);
     setQuery(search);
+    setPage(nextPage);
     const params = new URLSearchParams();
+    if (nextPage > 1) params.set('page', String(nextPage));
     if (search) params.set('q', search);
     Object.entries(next).forEach(([key, value]) => {
       if (value) params.set(key, value);
     });
-    window.history.replaceState(
+    window.history[push ? 'pushState' : 'replaceState'](
       null,
       '',
       `${window.location.pathname}${params.size ? `?${params}` : ''}`,
     );
   }
   const selected = Object.values(filters).filter(Boolean).length;
-  const filtered = filterVideos(videos ?? [], filters, query);
   return (
     <main className="catalog-page">
       <header className="catalog-heading">
@@ -59,6 +82,7 @@ export default function VideoCatalog() {
           Videos suchen
           <input
             type="search"
+            maxLength={160}
             value={query}
             onChange={(event) => update(filters, event.target.value)}
             placeholder="Titel, Beschreibung oder Trainer"
@@ -74,28 +98,28 @@ export default function VideoCatalog() {
                 onChange={(event) => update({ ...filters, [key]: event.target.value }, query)}
               >
                 <option value="">Alle</option>
-                {filterOptions(videos ?? [], key).map((option) => (
+                {(facets.data?.[key] ?? []).map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.name}
                   </option>
                 ))}
                 {filters[key] &&
-                  !filterOptions(videos ?? [], key).some(
-                    (option) => option.id === filters[key],
-                  ) && <option value={filters[key]}>Nicht verfügbar</option>}
+                  !(facets.data?.[key] ?? []).some((option) => option.id === filters[key]) && (
+                    <option value={filters[key]}>Nicht verfügbar</option>
+                  )}
               </select>
             </div>
           ))}
         </div>
         <div className="catalog-results-bar">
           <p role="status">
-            {videos
-              ? `${filtered.length} ${filtered.length === 1 ? 'Video' : 'Videos'}${selected ? ` · ${selected} Filter aktiv` : ''}`
+            {data && !error
+              ? `${data.total} ${data.total === 1 ? 'Video' : 'Videos'}${selected ? ` · ${selected} Filter aktiv` : ''}`
               : error
                 ? 'Katalog nicht verfügbar'
                 : 'Katalog wird geladen …'}
           </p>
-          {(selected > 0 || query) && (
+          {(selected > 0 || query || page > 1) && (
             <button onClick={() => update({}, '')}>Filter zurücksetzen</button>
           )}
         </div>
@@ -105,21 +129,40 @@ export default function VideoCatalog() {
           <p>Der Videokatalog konnte nicht geladen werden.</p>
           <button onClick={retry}>Erneut versuchen</button>
         </div>
-      ) : videos && filtered.length === 0 ? (
+      ) : data && data.items.length === 0 ? (
         <div className="catalog-empty">
-          <h2>{videos.length ? 'Keine passenden Videos' : 'Die Videothek wächst'}</h2>
+          <h2>
+            {query || selected || page > 1 ? 'Keine passenden Videos' : 'Die Videothek wächst'}
+          </h2>
           <p>
-            {videos.length
+            {query || selected || page > 1
               ? 'Ändere deine Suche oder setze die Filter zurück.'
               : 'Neue Videos erscheinen nach ihrer Veröffentlichung.'}
           </p>
         </div>
       ) : (
-        <section className="catalog-grid" aria-label="Videoergebnisse">
-          {filtered.map((video, index) => (
+        <section className="catalog-grid" aria-label="Videoergebnisse" aria-busy={!data}>
+          {(data?.items ?? []).map((video, index) => (
             <VideoCard video={video} index={index} key={video.id} />
           ))}
         </section>
+      )}
+      {(page > 1 || (data?.total ?? 0) > 24) && (
+        <nav className="catalog-pagination" aria-label="Katalogseiten">
+          <button disabled={page === 1} onClick={() => update(filters, query, page - 1, true)}>
+            Vorherige Seite
+          </button>
+          <p role="status">
+            Seite {page}
+            {data ? ` von ${Math.max(1, Math.ceil(data.total / data.limit))}` : ''}
+          </p>
+          <button
+            disabled={!data || error || page >= 10000 || page * data.limit >= data.total}
+            onClick={() => update(filters, query, page + 1, true)}
+          >
+            Nächste Seite
+          </button>
+        </nav>
       )}
     </main>
   );

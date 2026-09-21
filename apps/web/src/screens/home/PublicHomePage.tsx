@@ -58,7 +58,13 @@ function Collection({
   );
 }
 export default function PublicHomePage() {
-  const videos = usePublicData<CatalogVideo[]>('/content/videos');
+  const videoPage = usePublicData<{
+    items: CatalogVideo[];
+    total: number;
+    page: number;
+    limit: number;
+  }>('/content/video-page', 'limit=12', 'page');
+  const videos = { ...videoPage, data: videoPage.data?.items };
   const trainers = usePublicData<Trainer[]>('/content/trainers');
   return (
     <main className="public-home">

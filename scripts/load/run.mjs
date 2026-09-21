@@ -95,6 +95,7 @@ async function main() {
     },
     datasetSizes: [100, 1000],
     http: [],
+    paginatedHttp: [],
     filters: [],
     status: 'FAILED',
     cleanup: {},
@@ -191,10 +192,49 @@ async function main() {
         report.http.push({ videos: size, ...phase });
         console.log(JSON.stringify({ videos: size, concurrency, routes: phase.routes }));
       }
+      const pagePaths = [
+        '/content/video-page?limit=24',
+        '/content/video-facets',
+        '/content/video-page?limit=24&positions=position-0',
+      ];
+      const validatePage = (path, body) => {
+        if (path === '/content/video-facets')
+          return (
+            body.gameAreas.length === 10 &&
+            body.techniques.length === 10 &&
+            body.trainer.length === 5
+          );
+        const total = path.includes('positions=') ? size / 10 : size;
+        return (
+          body.total === total &&
+          body.limit === 24 &&
+          body.page === 1 &&
+          body.items.length === Math.min(24, total) &&
+          body.items.every((video) => !('storageKey' in video))
+        );
+      };
+      for (const path of pagePaths) {
+        const response = await fetch(`${baseUrl}${path}`, { signal: AbortSignal.timeout(10_000) });
+        if (!response.ok || !validatePage(path, await response.json()))
+          throw new Error('PAGE_WARMUP_VALIDATION_FAILED');
+      }
+      for (const concurrency of [1, 5, 20]) {
+        const phase = await measureHttp({
+          baseUrl,
+          paths: pagePaths,
+          concurrency,
+          durationMs: 8000,
+          validate: validatePage,
+        });
+        report.paginatedHttp.push({ videos: size, ...phase });
+        console.log(
+          JSON.stringify({ paginated: true, videos: size, concurrency, routes: phase.routes }),
+        );
+      }
     }
     report.queue = await checkQueue(db, runId);
     report.status =
-      report.http.every((p) =>
+      [...report.http, ...report.paginatedHttp].every((p) =>
         Object.values(p.routes).every((r) => r.failures === 0 && r.requests >= 5),
       ) && report.queue.passed
         ? 'PASSED'

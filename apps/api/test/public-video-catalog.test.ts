@@ -29,6 +29,28 @@ const base = {
 };
 
 describe('public video summaries', () => {
+  it('initializes legacy taxonomy once across concurrent catalog requests and retries a failure', async () => {
+    const db = Object.fromEntries(
+      ['gameArea', 'position', 'skillGroup', 'technique', 'techniqueVariant', 'movement'].map(
+        (key) => [
+          key,
+          {
+            upsert: vi.fn().mockResolvedValue({ id: key }),
+            findMany: vi.fn().mockResolvedValue([]),
+          },
+        ],
+      ),
+    );
+    const service = new ContentService(db as never, {} as never, {} as never);
+    db.gameArea!.upsert.mockRejectedValueOnce(new Error('transient'));
+    await expect(service.catalog()).rejects.toThrow('transient');
+    await Promise.all([service.catalog(), service.catalog(), service.catalog()]);
+    await service.catalog();
+    expect(db.gameArea!.upsert).toHaveBeenCalledTimes(2);
+    for (const key of ['position', 'skillGroup', 'technique', 'techniqueVariant', 'movement'])
+      expect(db[key]!.upsert).toHaveBeenCalledTimes(1);
+    expect(db.gameArea!.findMany).toHaveBeenCalledTimes(4);
+  });
   it('queries all published videos directly and never selects playback secrets', async () => {
     const findMany = vi.fn().mockResolvedValue([base]);
     const service = new ContentService({ video: { findMany } } as never, {} as never, {} as never);

@@ -73,9 +73,13 @@ export default function VideoDetail({ id }: { id: string }) {
         });
         if (response.status === 401 || response.status === 403) {
           setVisitor(response.status === 401);
-          const catalog = await userApiResponse('/content/videos', { signal: controller.signal });
+          const catalog = await userApiResponse(
+            '/content/video-page',
+            { signal: controller.signal },
+            new URLSearchParams({ id, limit: '1' }).toString(),
+          );
           if (!catalog.ok) throw new Error();
-          const videos = (await catalog.json()) as {
+          const videos = (await catalog.json()).items as {
             id: string;
             title: string;
             description: string | null;

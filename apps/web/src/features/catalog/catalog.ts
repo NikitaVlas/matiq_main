@@ -1,5 +1,7 @@
 import type { UserApiSchemas } from '@matiq/contracts';
 export type CatalogVideo = UserApiSchemas['schemas']['CatalogVideoDto'];
+export type CatalogPage = UserApiSchemas['schemas']['CatalogPageDto'];
+export type CatalogFacets = UserApiSchemas['schemas']['CatalogFacetsDto'];
 export const filterLabels = {
   disciplines: 'Disziplin',
   trainer: 'Trainer',

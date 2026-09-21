@@ -1,6 +1,18 @@
-import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+  ValidationPipe,
+} from '@nestjs/common';
+import { ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CatalogVideoDto } from '../dto/catalog-video.dto';
+import { CatalogQueryDto, CatalogPageDto, CatalogFacetsDto } from '../dto/catalog-query.dto';
 import { ContentService } from '../application/content.service';
 import { AuthenticatedRequest } from '../../identity/infrastructure/auth.guard';
 import { ContentSessionGuard } from '../../identity/infrastructure/admin-session.guard';
@@ -22,6 +34,22 @@ export class ContentController {
   @ApiOkResponse({ type: [CatalogVideoDto] })
   videos() {
     return this.content.publicVideos();
+  }
+
+  @Get('video-page')
+  @ApiOkResponse({ type: CatalogPageDto })
+  @ApiQuery({ type: CatalogQueryDto })
+  videoPage(
+    @Query(new ValidationPipe({ expectedType: CatalogQueryDto, transform: true, whitelist: true }))
+    query: CatalogQueryDto,
+  ) {
+    return this.content.videoPage(query);
+  }
+
+  @Get('video-facets')
+  @ApiOkResponse({ type: CatalogFacetsDto })
+  videoFacets() {
+    return this.content.videoFacets();
   }
 
   @Get('trainers')
