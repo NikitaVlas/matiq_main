@@ -135,6 +135,7 @@ describe('public catalog pagination against PostgreSQL', () => {
                 position: 0,
                 videoId: id('by-drill'),
                 published: true,
+                reactions: [],
               },
             },
           },
@@ -260,6 +261,21 @@ describe('public catalog pagination against PostgreSQL', () => {
       await db.trainerProfile.update({
         where: { userId: id('trainer') },
         data: { published: true },
+      });
+    }
+  });
+  it('keeps derived area and position facets without direct video position links', async () => {
+    const directIds = Array.from({ length: 40 }, (_, i) => id(String(i).padStart(3, '0')));
+    await db.video.updateMany({ where: { id: { in: directIds } }, data: { positionId: null } });
+    try {
+      const facets = (await request(app!.getHttpServer()).get('/content/video-facets').expect(200))
+        .body;
+      expect(facets.gameAreas.filter((value) => value.id === id('area'))).toHaveLength(1);
+      expect(facets.positions.filter((value) => value.id === id('position'))).toHaveLength(1);
+    } finally {
+      await db.video.updateMany({
+        where: { id: { in: directIds } },
+        data: { positionId: id('position') },
       });
     }
   });

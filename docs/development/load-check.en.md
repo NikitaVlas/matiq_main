@@ -47,9 +47,11 @@ writes and actual email/video/payment jobs remain untested by this harness.
 No-op throughput does not represent provider jobs. Repeat on deployment hardware
 with agreed traffic, real handlers and sustained load before launch.
 
+Comparative evidence: [catalog verification 2026-09-26](catalog-load-2026-09-26.en.md).
+
 ## Document status
 
 - Status: Active local runbook; production capacity not established
 - Owner: MATIQ team
-- Last reviewed: 2026-09-21
+- Last reviewed: 2026-09-26
 - Related code: scripts/load, root package scripts

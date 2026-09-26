@@ -27,7 +27,6 @@ import {
   publicTrainer,
   usedGroup,
   usedMovement,
-  usedPosition,
   usedTechnique,
 } from './catalog-query';
 
@@ -69,36 +68,52 @@ export class ContentService {
 
   async videoFacets() {
     const select = { id: true, name: true } as const;
-    const [gameAreas, positions, skillGroups, techniques, movements, drills, trainers, gi, noGi] =
-      await this.db.$transaction(
-        [
-          this.db.gameArea.findMany({ where: { positions: { some: usedPosition } }, select }),
-          this.db.position.findMany({ where: usedPosition, select }),
-          this.db.skillGroup.findMany({ where: usedGroup, select }),
-          this.db.technique.findMany({ where: usedTechnique, select }),
-          this.db.movement.findMany({ where: usedMovement, select }),
-          this.db.drill.findMany({ where: { videos: { some: { published: true } } }, select }),
-          this.db.trainerProfile.findMany({
-            where: {
-              published: true,
-              user: { ...publicTrainer, authoredVideos: { some: { published: true } } },
-            },
-            select: { slug: true, displayName: true },
-          }),
-          this.db.video.findFirst({
-            where: { published: true, ...disciplineWhere('BJJ_GI') },
-            select: { id: true },
-          }),
-          this.db.video.findFirst({
-            where: { published: true, ...disciplineWhere('NO_GI_GRAPPLING') },
-            select: { id: true },
-          }),
-        ],
-        { isolationLevel: 'RepeatableRead' },
-      );
-    const values = {
+    const directPosition = { videos: { some: { published: true } } };
+    const techniquePosition = { skillGroups: { some: usedGroup } };
+    // Splitting the relation paths avoids costly PostgreSQL JIT for nested OR plans.
+    const [
       gameAreas,
+      derivedAreas,
       positions,
+      derivedPositions,
+      skillGroups,
+      techniques,
+      movements,
+      drills,
+      trainers,
+      gi,
+      noGi,
+    ] = await this.db.$transaction(
+      [
+        this.db.gameArea.findMany({ where: { positions: { some: directPosition } }, select }),
+        this.db.gameArea.findMany({ where: { positions: { some: techniquePosition } }, select }),
+        this.db.position.findMany({ where: directPosition, select }),
+        this.db.position.findMany({ where: techniquePosition, select }),
+        this.db.skillGroup.findMany({ where: usedGroup, select }),
+        this.db.technique.findMany({ where: usedTechnique, select }),
+        this.db.movement.findMany({ where: usedMovement, select }),
+        this.db.drill.findMany({ where: { videos: { some: { published: true } } }, select }),
+        this.db.trainerProfile.findMany({
+          where: {
+            published: true,
+            user: { ...publicTrainer, authoredVideos: { some: { published: true } } },
+          },
+          select: { slug: true, displayName: true },
+        }),
+        this.db.video.findFirst({
+          where: { published: true, ...disciplineWhere('BJJ_GI') },
+          select: { id: true },
+        }),
+        this.db.video.findFirst({
+          where: { published: true, ...disciplineWhere('NO_GI_GRAPPLING') },
+          select: { id: true },
+        }),
+      ],
+      { isolationLevel: 'RepeatableRead' },
+    );
+    const values = {
+      gameAreas: [...gameAreas, ...derivedAreas],
+      positions: [...positions, ...derivedPositions],
       skillGroups,
       techniques,
       movements,
@@ -112,7 +127,9 @@ export class ContentService {
     return Object.fromEntries(
       Object.entries(values).map(([key, options]) => [
         key,
-        options.sort((a, b) => a.name.localeCompare(b.name, 'de') || a.id.localeCompare(b.id)),
+        [...new Map(options.map((option) => [option.id, option])).values()].sort(
+          (a, b) => a.name.localeCompare(b.name, 'de') || a.id.localeCompare(b.id),
+        ),
       ]),
     );
   }

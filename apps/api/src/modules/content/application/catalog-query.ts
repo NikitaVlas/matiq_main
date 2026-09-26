@@ -76,9 +76,6 @@ export const usedTechnique: Prisma.TechniqueWhereInput = {
   ],
 };
 export const usedGroup: Prisma.SkillGroupWhereInput = { techniques: { some: usedTechnique } };
-export const usedPosition: Prisma.PositionWhereInput = {
-  OR: [{ videos: attached }, { skillGroups: { some: usedGroup } }],
-};
 export const usedMovement: Prisma.MovementWhereInput = {
   OR: [{ videos: attached }, { drills: { some: { videos: attached } } }],
 };

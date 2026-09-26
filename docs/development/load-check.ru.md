@@ -42,6 +42,9 @@ JSON-отчёт и журнал API: `test-results/load/<uuid>/`. Код зав�
 
 ## Интерпретация и ограничения
 
+Сравнительные результаты после оптимизации:
+[проверка 2026-09-26](catalog-load-2026-09-26.ru.md).
+
 После оптимизации каталога отчёт также содержит `paginatedHttp`: отдельную
 серию с первой страницей из 24 видео, глобальными вариантами фильтров и страницей
 с фильтром позиции. Размеры данных и уровни параллельности те же. Старые четыре
@@ -65,5 +68,5 @@ production SLO ещё не утверждены, поэтому скорость
 
 - Status: Active local runbook; production capacity not established
 - Owner: MATIQ team
-- Last reviewed: 2026-09-21
+- Last reviewed: 2026-09-26
 - Related code: scripts/load, root package scripts

@@ -39,6 +39,16 @@ changes preserve filters; changes to filters/search reset page. Error and retry
 work without displaying a stale response. Existing routes and other screens work.
 Measurements report payload and latency without inventing production SLOs.
 
+## Measured query correction
+
+The 2026-09-26 load run exposed slow area/position facet queries. PostgreSQL
+EXPLAIN ANALYZE on the local test database attributed approximately 945/749 ms
+to JIT compilation of the nested OR queries. Separate direct-video and
+technique-derived relation queries avoided JIT in the diagnostic plan (less than
+1 ms execution each). Split these paths within the same repeatable-read
+transaction and merge by ID, preserving global facets, sorting and visibility.
+Do not change database-wide configuration or cache responses.
+
 ## Implementation and verification
 
 - Added public page/facet DTOs and OpenAPI routes. Page defaults to 24 videos,
@@ -52,20 +62,30 @@ Measurements report payload and latency without inventing production SLOs.
   and provides navigation, error/retry and reset from out-of-range pages.
 - CI integration database uses the explicitly disposable `matiq_test` name.
 - `pnpm openapi:generate`: passed after adding explicit Swagger primitive types.
-- `pnpm verify`: passed on 2026-09-21 (format, architecture, lint, types, units,
+- `pnpm verify`: passed on 2026-09-26 (format, architecture, lint, types, units,
   production builds). `eslint scripts/load/*.mjs` and `git diff --check`: passed.
 - Full Public Chromium suite: 27 passed; final focused catalog suite: 7 passed,
   including an additional out-of-range-page regression. Mobile pagination
   screenshot reviewed.
-- Initial focused API run on 2026-09-20: 8 tests passed. The expanded final
-  integration run on 2026-09-21 could not reach PostgreSQL because Docker Desktop
-  failed to start. The comparative load run remains pending for the same reason.
+- Docker became available on 2026-09-26. Final API integration suite: 17 tests
+  passed across eight files, including all five expanded catalog cases. The first
+  run exposed a missing required `reactions` array in the lesson fixture; adding
+  the empty array fixed setup without changing application behavior or assertions.
+- API lint/typecheck, fixture formatting and all three load-measurement unit tests
+  passed on 2026-09-26. The measurement tests required subprocess permission
+  after an initial sandbox `spawn EPERM` failure.
+- Comparative load verification passed after the measured query correction:
+  16,188 HTTP requests, no failures, all sample-count checks met, queue drain and
+  redelivery deduplication passed, disposable database removed. The initial run
+  failed its sample-count gate due to slow facets. Full measurements and limits:
+  [RU](../docs/development/catalog-load-2026-09-26.ru.md),
+  [EN](../docs/development/catalog-load-2026-09-26.en.md).
 - No migrations, dependencies, auth/payment/provider changes or production actions.
   Remote CI and production capacity are not verified by these local checks.
 
 ## Document status
 
-- Status: Implemented; final DB and load verification pending
+- Status: Implemented and locally verified; production verification remains open
 - Owner: MATIQ team
-- Last reviewed: 2026-09-21
+- Last reviewed: 2026-09-26
 - Related code: content API, catalog/home/video UI, contracts, load harness
