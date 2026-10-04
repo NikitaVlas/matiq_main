@@ -49,10 +49,12 @@ test('athlete registers, verifies the email and completes the profile', async ({
   await expectNoWcagViolations(page);
 
   await page.getByLabel('BJJ Gi').check();
-  await page.getByLabel('Gürtel').selectOption('WHITE');
-  await page.getByLabel('Trainingserfahrung in Monaten').fill('8');
+  await page.getByRole('button', { name: /Gürtel/ }).click();
+  await page.getByRole('option', { name: 'Weiß', exact: true }).click();
+  await page.getByLabel('Monate', { exact: true }).fill('8');
   await page.getByLabel('Trainings pro Woche').fill('3');
-  await page.getByLabel('Wettkampferfahrung').selectOption('yes');
+  await page.getByRole('button', { name: /Wettkampferfahrung/ }).click();
+  await page.getByRole('option', { name: 'Ja', exact: true }).click();
   await page.getByLabel('Allgemeine Entwicklung').check();
   await page.getByRole('button', { name: 'Profil speichern' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -126,4 +128,35 @@ test('verification without a token explains the missing email link', async ({ pa
   await expect(page.getByRole('button', { name: 'E-Mail bestätigen' })).toHaveCount(0);
   await expectNoWcagViolations(page);
   await page.screenshot({ path: 'test-results/verification-desktop.png', fullPage: true });
+});
+
+test('profile accepts years and months and supports keyboard selection', async ({ page }) => {
+  let saved: Record<string, unknown> | undefined;
+  await page.route('http://localhost:4000/**', (route) => {
+    if (route.request().method() === 'PUT') saved = route.request().postDataJSON();
+    return json(route, {});
+  });
+  await page.goto('/onboarding/profile');
+  await page.getByLabel('BJJ Gi', { exact: true }).check();
+  const belt = page.getByRole('button', { name: /Gürtel/ });
+  await belt.focus();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('End');
+  await page.keyboard.press('Enter');
+  await expect(belt).toContainText('Schwarz');
+  await belt.click();
+  await page.keyboard.press('Escape');
+  await expect(belt).toBeFocused();
+  await page.getByLabel('Jahre', { exact: true }).fill('6');
+  await page.getByLabel('Monate', { exact: true }).fill('3');
+  await page.getByLabel('Trainings pro Woche').fill('4');
+  await page.getByLabel('Allgemeine Entwicklung').check();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await belt.click();
+  await expectNoWcagViolations(page);
+  await page.screenshot({ path: 'test-results/profile-select-mobile.png', fullPage: true });
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Profil speichern' }).click();
+  await expect(page).toHaveURL(/dashboard$/);
+  expect(saved).toMatchObject({ experienceYears: 6, experienceMonths: 75, belt: 'BLACK' });
 });

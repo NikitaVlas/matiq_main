@@ -38,6 +38,13 @@ production.
 Console email is local-development only. Login, password reset, session
 management, MFA, and deletion are later Identity slices.
 
+## Interface update 2026-10-04
+
+Experience is entered as full years (0–80) and additional months (0–11),
+with a total limit of 960 months. The API receives total months and full years.
+Belt and competition experience use styled, keyboard-accessible lists.
+Public contracts and recommendation rules remain unchanged.
+
 ## Document status
 
 - Status: Verified

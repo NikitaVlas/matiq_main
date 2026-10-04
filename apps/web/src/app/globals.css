@@ -1528,3 +1528,80 @@ legend {
     grid-template-columns: 1fr;
   }
 }
+
+.profile-select {
+  position: relative;
+}
+.profile-field-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.profile-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  background: white;
+  color: #111418;
+  border: 1px solid #aaa59b;
+  text-align: left;
+}
+.profile-select-trigger:hover {
+  background: #f3f1ec;
+}
+.profile-select-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.profile-select-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin-top: 6px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #aaa59b;
+  box-shadow: 0 12px 28px #1114181a;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.profile-select-options [role='option'] {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.profile-select-options .is-active {
+  background: #f3f1ec;
+  outline: 1px solid #c63d32;
+  outline-offset: -1px;
+}
+.profile-select-options [aria-selected='true'] {
+  font-weight: 700;
+}
+.profile-option-check {
+  margin-left: auto;
+}
+.belt-swatch {
+  width: 22px;
+  height: 10px;
+  border: 1px solid #777;
+}
+.profile-experience-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.profile-experience-fields input {
+  min-width: 0;
+  width: 100%;
+}
