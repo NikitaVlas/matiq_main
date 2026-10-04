@@ -5,7 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7d5690e5-729f-4f1e-9004-24b2e48bed4f" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/web/src/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/app/globals.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/web/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/app/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/web/src/screens/home/PublicHomePage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/screens/home/PublicHomePage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/worker/src/email-provider.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/worker/src/email-provider.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/worker/test/email-provider.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/worker/test/email-provider.test.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/project/requirements.en.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/project/requirements.en.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/project/requirements.ru.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/project/requirements.ru.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/specifications/SPEC-0012-async-transactional-email.ru.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/specifications/SPEC-0012-async-transactional-email.ru.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/e2e/public-catalog.spec.ts" beforeDir="false" afterPath="$PROJECT_DIR$/e2e/public-catalog.spec.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,6 +77,7 @@
       <workItem from="1785440777693" duration="1478000" />
       <workItem from="1785686779610" duration="175000" />
       <workItem from="1785739875183" duration="262000" />
+      <workItem from="1791124754580" duration="3276000" />
     </task>
     <servers />
   </component>

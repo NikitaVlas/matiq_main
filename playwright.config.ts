@@ -17,6 +17,7 @@ export default defineConfig({
     },
   ],
   webServer: {
+    env: { NEXT_DIST_DIR: '.next-e2e' },
     command: `${process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'} --filter @matiq/web exec next dev --port 3100`,
     url: 'http://localhost:3100',
     reuseExistingServer: false,

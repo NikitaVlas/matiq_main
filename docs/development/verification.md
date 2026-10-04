@@ -61,6 +61,10 @@ axe-core against WCAG 2.1 A/AA, including automated color-contrast rules.
 They are not a full-stack production test. The CI browser job runs on Linux;
 local Windows execution uses the same cross-platform Playwright configuration.
 
+User Web uses separate Next.js output directories: `.next-dev` for development,
+`.next-e2e` for Playwright, and `.next` for production builds. This prevents a
+build or browser check from replacing the assets of the running local site.
+
 Real synthetic PostgreSQL dump/restore check:
 `pnpm --filter @matiq/worker test:recovery`. See
 [recovery runbook](recovery-runbook.ru.md). JSON evidence is written under

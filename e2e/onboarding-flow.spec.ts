@@ -99,3 +99,31 @@ test('registration validation failure is announced and can be retried', async ({
   await page.getByRole('button', { name: 'Konto erstellen' }).click();
   await expect(page).toHaveURL(/\/check-email\?email=available%40matiq\.local$/);
 });
+
+test('verification hides the token and reports network errors with a retry', async ({ page }) => {
+  let fail = true;
+  await page.route('http://localhost:4000/auth/verify-email', (route) =>
+    fail ? route.abort() : json(route, { verified: true }),
+  );
+  await page.route('http://localhost:4000/auth/me', (route) => json(route, {}, 401));
+  await page.goto('/verify-email?token=private-test-token');
+  await expect(page.locator('input')).toHaveCount(0);
+  await expect(page.getByText('private-test-token')).toHaveCount(0);
+  await page.getByRole('button', { name: 'E-Mail bestätigen' }).click();
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('Keine Verbindung');
+  await expect(page.getByRole('button', { name: 'E-Mail bestätigen' })).toBeEnabled();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoWcagViolations(page);
+  await page.screenshot({ path: 'test-results/verification-mobile.png', fullPage: true });
+  fail = false;
+  await page.getByRole('button', { name: 'E-Mail bestätigen' }).click();
+  await expect(page).toHaveURL(/onboarding\/profile$/);
+});
+
+test('verification without a token explains the missing email link', async ({ page }) => {
+  await page.goto('/verify-email');
+  await expect(page.getByText('Öffne den Bestätigungslink', { exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'E-Mail bestätigen' })).toHaveCount(0);
+  await expectNoWcagViolations(page);
+  await page.screenshot({ path: 'test-results/verification-desktop.png', fullPage: true });
+});

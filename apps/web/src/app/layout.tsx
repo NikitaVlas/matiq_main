@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { Navigation, SessionVisibility } from '../features/auth/SessionVisibility';
 
 export const metadata: Metadata = {
   title: 'MATIQ',
@@ -13,20 +14,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <a className="skip-link" href="#main-content">
           Zum Inhalt springen
         </a>
-        <nav className="navigation" aria-label="Hauptnavigation">
-          <a href="/">MATIQ</a>
-          <a href="/dashboard">Dashboard</a>
-          <a href="/roadmap">Roadmap</a>
-          <a href="/videos">Videos</a>
-          <a href="/courses">Kurse</a>
-          <a href="/trainers">Trainer</a>
-          <a href="/history">Verlauf</a>
-          <a href="/subscription">Mitgliedschaft</a>
-          <a href="/settings">Einstellungen</a>
-        </nav>
-        <div id="main-content" tabIndex={-1}>
-          {children}
-        </div>
+        <SessionVisibility>
+          <Navigation />
+          <div id="main-content" tabIndex={-1}>
+            {children}
+          </div>
+        </SessionVisibility>
       </body>
     </html>
   );

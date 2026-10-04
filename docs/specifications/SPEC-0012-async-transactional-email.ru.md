@@ -64,6 +64,13 @@ email и provider webhooks.
 - Console provider не доставляет реальные письма.
 - Production provider и его DPA/GDPR review требуют отдельного решения.
 
+## Дополнение 2026-10-04
+
+Пользователь выбрал Brevo для локальной проверки реальных писем. Добавлен
+опциональный API adapter без изменения auth contracts; console остаётся
+значением по умолчанию. Настройка, ограничения idempotency и границы production
+описаны в [локальном руководстве](../development/brevo-local.ru.md).
+
 ## Document status
 
 - Status: Verified

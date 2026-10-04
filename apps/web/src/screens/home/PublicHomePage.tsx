@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import type { ReactNode } from 'react';
 import { type CatalogVideo, disciplineLabel } from '../../features/catalog/catalog';
 import { usePublicData } from '../../features/catalog/use-public-data';
+import { useSessionVisibility } from '../../features/auth/SessionVisibility';
 import { VideoCard } from '../../features/catalog/VideoCard';
 type Trainer = {
   slug: string;
@@ -58,13 +59,7 @@ function Collection({
   );
 }
 export default function PublicHomePage() {
-  const videoPage = usePublicData<{
-    items: CatalogVideo[];
-    total: number;
-    page: number;
-    limit: number;
-  }>('/content/video-page', 'limit=12', 'page');
-  const videos = { ...videoPage, data: videoPage.data?.items };
+  const authenticated = useSessionVisibility() === 'authenticated';
   const trainers = usePublicData<Trainer[]>('/content/trainers');
   return (
     <main className="public-home">
@@ -81,22 +76,7 @@ export default function PublicHomePage() {
           <Link href="/login">Bereits dabei? Anmelden</Link>
         </div>
       </header>
-      <Collection title="Videos entdecken" href="/videos">
-        {videos.error ? (
-          <div role="alert">
-            <p>Videos konnten nicht geladen werden.</p>
-            <button onClick={videos.retry}>Videos erneut laden</button>
-          </div>
-        ) : !videos.data ? (
-          <p role="status">Videos werden geladen …</p>
-        ) : videos.data.length === 0 ? (
-          <p>Neue Videos erscheinen hier nach ihrer Veröffentlichung.</p>
-        ) : (
-          videos.data
-            .slice(0, 12)
-            .map((video, index) => <VideoCard key={video.id} video={video} index={index} />)
-        )}
-      </Collection>
+      {authenticated && <HomeVideos />}
       <Collection title="Die Athleten hinter den Techniken" href="/trainers">
         {trainers.error ? (
           <div role="alert">
@@ -130,5 +110,33 @@ export default function PublicHomePage() {
         )}
       </Collection>
     </main>
+  );
+}
+
+function HomeVideos() {
+  const videoPage = usePublicData<{
+    items: CatalogVideo[];
+    total: number;
+    page: number;
+    limit: number;
+  }>('/content/video-page', 'limit=12', 'page');
+  const videos = { ...videoPage, data: videoPage.data?.items };
+  return (
+    <Collection title="Videos entdecken" href="/videos">
+      {videos.error ? (
+        <div role="alert">
+          <p>Videos konnten nicht geladen werden.</p>
+          <button onClick={videos.retry}>Videos erneut laden</button>
+        </div>
+      ) : !videos.data ? (
+        <p role="status">Videos werden geladen …</p>
+      ) : videos.data.length === 0 ? (
+        <p>Neue Videos erscheinen hier nach ihrer Veröffentlichung.</p>
+      ) : (
+        videos.data
+          .slice(0, 12)
+          .map((video, index) => <VideoCard key={video.id} video={video} index={index} />)
+      )}
+    </Collection>
   );
 }

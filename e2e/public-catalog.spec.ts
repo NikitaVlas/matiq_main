@@ -43,8 +43,8 @@ async function mock(page: Page, fail = false) {
   await page.route('http://localhost:4000/**', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
+    if (path === '/auth/me') return route.fulfill({ json: { role: 'ATHLETE' } });
     if (path === '/content/video-page' && fail) {
-      fail = false;
       return route.abort();
     }
     if (path === '/content/videos')
@@ -96,8 +96,11 @@ async function mock(page: Page, fail = false) {
       ),
     });
   });
+  return () => {
+    fail = false;
+  };
 }
-test('public home presents videos, athletes and protected detail without a subscription', async ({
+test('signed-in home presents videos, athletes and protected detail without a subscription', async ({
   page,
 }) => {
   await mock(page);
@@ -126,6 +129,7 @@ test('pagination preserves query, handles back navigation and finds a later-page
   }));
   await page.route('http://localhost:4000/**', async (route) => {
     const url = new URL(route.request().url());
+    if (url.pathname === '/auth/me') return route.fulfill({ json: { role: 'ATHLETE' } });
     if (url.pathname === '/content/video-facets')
       return route.fulfill({
         json: Object.fromEntries(
@@ -201,9 +205,10 @@ test('all eight filters combine, persist, reset and show no results on mobile', 
   expect(new URL(page.url()).search).toBe('');
 });
 test('catalog recovers from a network failure', async ({ page }) => {
-  await mock(page, true);
+  const recover = await mock(page, true);
   await page.goto('/videos');
   await expect(page.getByRole('main').getByRole('alert')).toBeVisible();
+  recover();
   await page.getByRole('button', { name: 'Erneut versuchen' }).click();
   await expect(page.locator('.catalog-video-card')).toHaveCount(2);
 });
@@ -244,11 +249,16 @@ test('a slow stale search cannot replace newer results', async ({ page }) => {
 
 test('facet failure is visible and can be retried', async ({ page }) => {
   await mock(page);
-  await page.route('http://localhost:4000/content/video-facets', (route) => route.abort(), {
-    times: 1,
-  });
+  let failed = true;
+  const recover = () => {
+    failed = false;
+  };
+  await page.route('http://localhost:4000/content/video-facets', (route) =>
+    failed ? route.abort() : route.fallback(),
+  );
   await page.goto('/videos');
   await expect(page.getByRole('main').getByRole('alert')).toBeVisible();
+  recover();
   await page.getByRole('button', { name: 'Erneut versuchen' }).click();
   await expect(
     page.getByLabel('Trainer', { exact: true }).getByRole('option', { name: 'Lea Müller' }),
@@ -264,3 +274,43 @@ test('an out-of-range bookmarked page can return to the catalog', async ({ page 
   await expect(page.locator('.catalog-video-card')).toHaveCount(2);
   expect(new URL(page.url()).search).toBe('');
 });
+
+for (const unavailable of ['guest', 'network failure', 'pending'] as const) {
+  test(`video catalogue stays hidden for ${unavailable}`, async ({ page }) => {
+    await mock(page);
+    const catalogRequests: string[] = [];
+    page.on('request', (request) => {
+      if (/content\/video-(page|facets)/.test(request.url())) catalogRequests.push(request.url());
+    });
+    await page.route('http://localhost:4000/auth/me', async (route) => {
+      if (unavailable === 'network failure') return route.abort();
+      if (unavailable === 'pending') {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      return route.fulfill({ status: 401, json: {} });
+    });
+    await page.goto('/');
+    await expect(
+      page.getByRole('heading', { name: 'Entdecke dein nächstes Training.' }),
+    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Videos entdecken' })).toHaveCount(0);
+    await expect(page.locator('.catalog-video-card')).toHaveCount(0);
+    await expect(
+      page.getByRole('navigation').getByRole('link', { name: 'Videos', exact: true }),
+    ).toHaveCount(0);
+    await expect(page.getByRole('navigation').getByRole('link', { name: 'Dashboard' })).toHaveCount(
+      0,
+    );
+    await expect(page.getByRole('link', { name: 'Kostenlos registrieren' })).toBeVisible();
+    await page.goto('/videos?trainer=lea');
+    await expect(page.locator('.catalog-video-card')).toHaveCount(0);
+    await expect(
+      page.getByRole('heading', { name: 'Melde dich an, um Videos zu entdecken.' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('main').getByRole('link', { name: 'Anmelden', exact: true }),
+    ).toHaveAttribute('href', '/login');
+    await expectNoWcagViolations(page);
+    expect(catalogRequests).toEqual([]);
+  });
+}
