@@ -156,7 +156,7 @@ test('athlete completes assessment, opens a roadmap lesson, and updates progress
   await page.goto('/login');
   await page.waitForLoadState('networkidle');
   await page.getByLabel('E-Mail').fill('athlete@matiq.local');
-  await page.getByLabel('Passwort').fill('Test-password-123');
+  await page.getByLabel('Passwort', { exact: true }).fill('Test-password-123');
   await page.getByRole('button', { name: 'Anmelden' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole('heading', { name: 'DEIN NÄCHSTER SCHRITT' })).toBeVisible();

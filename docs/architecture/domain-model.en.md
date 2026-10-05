@@ -200,6 +200,21 @@ A separate Roadmap is created for every selected discipline. A user may:
 
 A user cannot create new system positions, techniques, or variants.
 
+### Skill map presentation
+
+The Roadmap is an interactive tree with Top Game, Guard Game and Escapes branches
+containing recommendations from the current result. Grouping uses `skillKey`;
+unknown keys remain under “Weitere Skills”, and foundation steps without a known
+group appear under “Grundlagen”. Empty branches are omitted. Connections indicate
+topic grouping, not mandatory learning prerequisites.
+
+The existing focus selection determines one “Jetzt” step, up to two “Danach” steps
+and the remaining “Später” steps. Nodes and the plan above the map display these
+stages. Completed steps remain on the map. Selecting a node shows its materials,
+actual progress and reorder/hide controls; changing discipline resets selection.
+The map does not create additional recommendations or skill scores. Watching
+materials does not imply mastery of a technique.
+
 ## Video
 
 One video is a complete item in which explanation and demonstration are not

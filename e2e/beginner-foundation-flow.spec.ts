@@ -108,7 +108,7 @@ test('new white belt receives Foundation and can add Assessment recommendations 
 
   await page.goto('/login');
   await page.getByLabel('E-Mail').fill('beginner@matiq.local');
-  await page.getByLabel('Passwort').fill('Test-password-123');
+  await page.getByLabel('Passwort', { exact: true }).fill('Test-password-123');
   await page.getByRole('button', { name: 'Anmelden' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
