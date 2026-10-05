@@ -44,6 +44,17 @@ async function mock(page: Page, fail = false) {
     const url = new URL(route.request().url());
     const path = url.pathname;
     if (path === '/auth/me') return route.fulfill({ json: { role: 'ATHLETE' } });
+    if (path === '/content/courses')
+      return route.fulfill({
+        json: [
+          {
+            id: 'guard-course',
+            title: 'Guard Grundlagen',
+            description: 'Dein Einstieg in die Guard.',
+            modules: [{ lessons: [{ id: 'lesson-1' }] }],
+          },
+        ],
+      });
     if (path === '/content/video-page' && fail) {
       return route.abort();
     }
@@ -105,10 +116,15 @@ test('signed-in home presents videos, athletes and protected detail without a su
 }) => {
   await mock(page);
   await page.goto('/');
-  await expect(
-    page.getByRole('heading', { name: 'Entdecke dein nächstes Training.' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bereit für die nächste Runde?' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Guard Sweep' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Guard Grundlagen' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Zu meinem Training' })).toHaveAttribute(
+    'href',
+    '/dashboard',
+  );
+  await expect(page.getByRole('link', { name: 'Kostenlos registrieren' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Bereits dabei? Anmelden' })).toHaveCount(0);
   await expectNoWcagViolations(page);
   await page.screenshot({ path: 'test-results/step2-home.png', fullPage: true });
   await page.getByRole('link', { name: 'Guard Sweep' }).click();
@@ -293,7 +309,7 @@ for (const unavailable of ['guest', 'network failure', 'pending'] as const) {
     await expect(
       page.getByRole('heading', { name: 'Entdecke dein nächstes Training.' }),
     ).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Videos entdecken' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Neu in der Videothek' })).toHaveCount(0);
     await expect(page.locator('.catalog-video-card')).toHaveCount(0);
     await expect(
       page.getByRole('navigation').getByRole('link', { name: 'Videos', exact: true }),

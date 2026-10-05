@@ -15,6 +15,8 @@
 - `FR-USER-005`: The `/` page shall show guests the platform introduction, sign-in,
   registration and trainers. The video catalogue, including `/videos`, is
   displayed only after sign-in; guest direct links show a sign-in prompt.
+  After sign-in, home shows links to Dashboard and Roadmap, recent videos,
+  published courses and trainers without sign-in or registration prompts.
 - `FR-USER-006`: Attempting to play locked video shall open a contextual modal
   with the appropriate next action.
 

@@ -59,24 +59,48 @@ function Collection({
   );
 }
 export default function PublicHomePage() {
-  const authenticated = useSessionVisibility() === 'authenticated';
+  const session = useSessionVisibility();
+  const authenticated = session === 'authenticated';
   const trainers = usePublicData<Trainer[]>('/content/trainers');
   return (
     <main className="public-home">
-      <header className="public-intro">
-        <div>
-          <p className="eyebrow">BJJ Gi & No-Gi · MATIQ</p>
-          <h1>Entdecke dein nächstes Training.</h1>
-          <p>Techniken, Kurse und Athleten aus der deutschen Grappling-Szene.</p>
-        </div>
-        <div className="public-account">
-          <Link className="action-link" href="/register">
-            Kostenlos registrieren
-          </Link>
-          <Link href="/login">Bereits dabei? Anmelden</Link>
-        </div>
-      </header>
-      {authenticated && <HomeVideos />}
+      {session === 'loading' ? (
+        <p role="status">Dein Trainingsbereich wird geladen …</p>
+      ) : authenticated ? (
+        <header className="public-intro member-intro">
+          <div>
+            <p className="eyebrow">Dein Training · MATIQ</p>
+            <h1>Bereit für die nächste Runde?</h1>
+            <p>Arbeite an deinem Spiel. Entdecke neue Techniken und finde deinen nächsten Kurs.</p>
+          </div>
+          <div className="public-account">
+            <Link className="action-link" href="/dashboard">
+              Zu meinem Training
+            </Link>
+            <Link href="/roadmap">Meine Roadmap ansehen →</Link>
+          </div>
+        </header>
+      ) : (
+        <header className="public-intro">
+          <div>
+            <p className="eyebrow">BJJ Gi & No-Gi · MATIQ</p>
+            <h1>Entdecke dein nächstes Training.</h1>
+            <p>Techniken, Kurse und Athleten aus der deutschen Grappling-Szene.</p>
+          </div>
+          <div className="public-account">
+            <Link className="action-link" href="/register">
+              Kostenlos registrieren
+            </Link>
+            <Link href="/login">Bereits dabei? Anmelden</Link>
+          </div>
+        </header>
+      )}
+      {authenticated && (
+        <>
+          <HomeVideos />
+          <HomeCourses />
+        </>
+      )}
       <Collection title="Die Athleten hinter den Techniken" href="/trainers">
         {trainers.error ? (
           <div role="alert">
@@ -122,7 +146,7 @@ function HomeVideos() {
   }>('/content/video-page', 'limit=12', 'page');
   const videos = { ...videoPage, data: videoPage.data?.items };
   return (
-    <Collection title="Videos entdecken" href="/videos">
+    <Collection title="Neu in der Videothek" href="/videos">
       {videos.error ? (
         <div role="alert">
           <p>Videos konnten nicht geladen werden.</p>
@@ -136,6 +160,47 @@ function HomeVideos() {
         videos.data
           .slice(0, 12)
           .map((video, index) => <VideoCard key={video.id} video={video} index={index} />)
+      )}
+    </Collection>
+  );
+}
+
+function HomeCourses() {
+  const courses = usePublicData<
+    {
+      id: string;
+      title: string;
+      description?: string;
+      modules: { lessons: { id: string }[] }[];
+    }[]
+  >('/content/courses');
+  return (
+    <Collection title="Kurse für dein Training" href="/courses">
+      {courses.error ? (
+        <div role="alert">
+          <p>Kurse konnten nicht geladen werden.</p>
+          <button onClick={courses.retry}>Kurse erneut laden</button>
+        </div>
+      ) : !courses.data ? (
+        <p role="status">Kurse werden geladen …</p>
+      ) : courses.data.length === 0 ? (
+        <p>Neue Kurse erscheinen hier nach ihrer Veröffentlichung.</p>
+      ) : (
+        courses.data.slice(0, 12).map((course) => (
+          <article className="home-course-card" key={course.id}>
+            <p className="eyebrow">
+              Kurs · {course.modules.reduce((count, module) => count + module.lessons.length, 0)}{' '}
+              Lektionen
+            </p>
+            <h3>
+              <Link href={`/courses/${course.id}`}>{course.title}</Link>
+            </h3>
+            {course.description && <p className="catalog-description">{course.description}</p>}
+            <Link className="action-link" href={`/courses/${course.id}`}>
+              Kurs ansehen →
+            </Link>
+          </article>
+        ))
       )}
     </Collection>
   );
