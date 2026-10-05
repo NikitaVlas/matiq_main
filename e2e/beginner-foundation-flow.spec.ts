@@ -114,8 +114,9 @@ test('new white belt receives Foundation and can add Assessment recommendations 
 
   await page.goto('/onboarding/profile');
   await page.getByLabel('BJJ Gi').check();
-  await page.getByLabel('Gürtel').selectOption('WHITE');
-  await page.getByLabel('Trainingserfahrung in Monaten').fill('4');
+  await page.getByRole('button', { name: /Gürtel/ }).click();
+  await page.getByRole('option', { name: 'Weiß', exact: true }).click();
+  await page.getByLabel('Monate', { exact: true }).fill('4');
   await page.getByLabel('Trainings pro Woche').fill('2');
   await page.getByLabel('Allgemeine Entwicklung').check();
   await page.getByRole('button', { name: 'Profil speichern' }).click();

@@ -37,7 +37,7 @@ test('athlete completes assessment, opens a roadmap lesson, and updates progress
     if (path === '/auth/login') return json(route, { ok: true });
     if (path === '/auth/me') return json(route, { role: 'ATHLETE' });
     if (path === '/athlete-profile') return json(route, { disciplines: ['BJJ_GI'] });
-    if (path === '/assessment/attempt/BJJ_GI') return json(route, { answers: [] });
+    if (path === '/assessment/attempt/BJJ_GI') return route.fulfill({ status: 200, body: '' });
     if (path === '/content/history' || path === '/content/courses') return json(route, []);
     if (path === '/subscription') return json(route, { status: 'TRIAL', hasAccess: true });
     if (path === '/assessment/questions') return json(route, [question]);
@@ -190,4 +190,24 @@ test('athlete completes assessment, opens a roadmap lesson, and updates progress
   await expect(page.getByText('1 von 1 Roadmap-Schritten abgeschlossen.')).toBeVisible();
   await expect(page.getByText('Abgeschlossene Roadmap-Schritte')).toBeVisible();
   await expectNoWcagViolations(page);
+});
+
+test('assessment retries a failed load and accepts an empty first draft', async ({ page }) => {
+  let fail = true;
+  await page.route('http://localhost:4000/**', (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === '/assessment/questions')
+      return fail ? json(route, {}, 503) : json(route, [question]);
+    if (path === '/athlete-profile') return json(route, { disciplines: ['BJJ_GI'] });
+    if (path === '/assessment/answers') return json(route, { completed: false, answers: [] });
+    if (path === '/assessment/attempt/BJJ_GI') return route.fulfill({ status: 200, body: '' });
+    return json(route, {});
+  });
+  await page.goto('/assessment');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('nicht geladen');
+  fail = false;
+  await page.getByRole('button', { name: 'Erneut versuchen' }).click();
+  await expect(page.getByText(question.text, { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Assessment abschließen' })).toBeEnabled();
+  await expect(page.getByRole('main').getByRole('alert')).toHaveCount(0);
 });

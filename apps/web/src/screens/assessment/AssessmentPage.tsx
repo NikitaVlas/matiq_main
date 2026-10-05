@@ -24,6 +24,7 @@ export default function AssessmentPage() {
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [error, setError] = useState('');
   const [missingQuestionKey, setMissingQuestionKey] = useState('');
   const [roadmap, setRoadmap] = useState<
@@ -31,6 +32,8 @@ export default function AssessmentPage() {
   >([]);
 
   useEffect(() => {
+    setLoading(true);
+    setError('');
     Promise.all([
       userApiResponse('/assessment/questions'),
       userApiResponse('/assessment/answers'),
@@ -50,8 +53,10 @@ export default function AssessmentPage() {
           ? await userApiResponse(`/assessment/attempt/${encodeURIComponent(discipline)}`)
           : null;
         if (attemptResponse && !attemptResponse.ok) throw new Error('ASSESSMENT_LOAD_FAILED');
-        const attempt = attemptResponse
-          ? ((await attemptResponse.json()) as { answers?: SavedAnswer[] } | null)
+        // Nest returns an empty HTTP 200 body when there is no draft yet.
+        const attemptBody = attemptResponse ? await attemptResponse.text() : '';
+        const attempt = attemptBody.trim()
+          ? (JSON.parse(attemptBody) as { answers?: SavedAnswer[] } | null)
           : null;
         const restoredAnswers = attempt?.answers?.length ? attempt.answers : saved.answers;
         const selected: Record<string, string[]> = {};
@@ -73,7 +78,7 @@ export default function AssessmentPage() {
       })
       .catch(() => setError('Das Assessment konnte nicht geladen werden.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [loadAttempt]);
 
   useEffect(() => {
     if (!hydrated || !draftDiscipline || done) return;
@@ -194,6 +199,11 @@ export default function AssessmentPage() {
             <span />
           </div>
         ) : null}
+        {!loading && !hydrated && (
+          <button type="button" onClick={() => setLoadAttempt((value) => value + 1)}>
+            Erneut versuchen
+          </button>
+        )}
         <form className="assessment-form" onSubmit={submit} aria-busy={saving}>
           {questions.map((question) => (
             <fieldset
