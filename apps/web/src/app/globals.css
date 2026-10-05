@@ -405,6 +405,29 @@ select:focus-visible {
 .error {
   color: #a5221a;
 }
+.password-field {
+  position: relative;
+  margin-top: 8px;
+}
+.password-field input {
+  padding-right: 52px;
+}
+.password-visibility {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  bottom: 1px;
+  width: 46px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+  color: #595b60;
+}
+.password-visibility:hover {
+  color: #111418;
+  background: #f3f1ec;
+}
 .success {
   color: #176b3a;
 }
@@ -597,21 +620,21 @@ legend {
     overflow-x: auto;
     padding: 14px;
   }
-  .navigation-guest {
+  .navigation {
     flex-wrap: wrap;
     overflow-x: visible;
   }
-  .navigation-guest > .navigation-brand {
+  .navigation > .navigation-brand {
     margin-right: 0;
   }
-  .navigation-guest > .navigation-account {
+  .navigation > .navigation-account {
     order: 1;
     gap: 14px;
   }
-  .navigation-guest > a:not(.navigation-brand) {
+  .navigation > a:not(.navigation-brand) {
     order: 2;
   }
-  .navigation-guest::after {
+  .navigation::after {
     content: '';
     flex-basis: 100%;
     order: 1;
@@ -1604,4 +1627,42 @@ legend {
 .profile-experience-fields input {
   min-width: 0;
   width: 100%;
+}
+
+.navigation-logout {
+  font: inherit;
+  padding: 10px 16px;
+  white-space: nowrap;
+}
+.navigation-account .error {
+  white-space: normal;
+  max-width: 220px;
+  font-size: 12px;
+}
+
+button,
+.action-link {
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+button:not(.password-visibility):not(.profile-select-trigger):not(:disabled):not(
+    [aria-disabled='true']
+  ):is(:hover, :focus-visible),
+.action-link:not([aria-disabled='true']):is(:hover, :focus-visible) {
+  background-color: var(--action-hover, #c63d32);
+  color: #fff;
+}
+.dashboard-feature .action-link,
+.roadmap-discipline-tabs button[aria-pressed='true'] {
+  --action-hover: #a52f26;
+}
+.danger-button {
+  --action-hover: #7d120c;
+}
+@media (prefers-reduced-motion: reduce) {
+  button,
+  .action-link {
+    transition: none;
+  }
 }

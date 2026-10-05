@@ -65,6 +65,24 @@ export function VideoAccessGate({ children }: { children: ReactNode }) {
 
 export function Navigation() {
   const authenticated = useSessionVisibility() === 'authenticated';
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
+  async function logout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setLogoutError('');
+    try {
+      const response = await userApiResponse('/auth/logout', {
+        method: 'POST',
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok) throw new Error('LOGOUT_FAILED');
+      window.location.assign('/login');
+    } catch {
+      setLogoutError('Abmelden fehlgeschlagen. Bitte erneut versuchen.');
+      setLoggingOut(false);
+    }
+  }
   return (
     <nav
       className={`navigation${authenticated ? '' : ' navigation-guest'}`}
@@ -86,7 +104,22 @@ export function Navigation() {
         <>
           <Link href="/history">Verlauf</Link>
           <Link href="/subscription">Mitgliedschaft</Link>
-          <Link href="/settings">Einstellungen</Link>
+          <div className="navigation-account">
+            <Link href="/settings">Einstellungen</Link>
+            <button
+              className="navigation-logout"
+              type="button"
+              disabled={loggingOut}
+              onClick={logout}
+            >
+              {loggingOut ? 'Abmelden …' : 'Ausloggen'}
+            </button>
+            {logoutError && (
+              <span className="error" role="alert">
+                {logoutError}
+              </span>
+            )}
+          </div>
         </>
       ) : (
         <div className="navigation-account">
