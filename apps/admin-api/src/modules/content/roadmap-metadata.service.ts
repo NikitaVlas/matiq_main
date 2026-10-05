@@ -65,9 +65,14 @@ export class RoadmapMetadataService {
     return field;
   }
 
-  async createTopic(input: { key?: string; name?: string }) {
-    const name = input.name?.trim();
-    const key = input.key?.trim().toLowerCase();
+  async createTopic(input: { key?: string; name?: string; parentId?: string | null }) {
+    if (
+      input.parentId != null &&
+      (typeof input.parentId !== 'string' || input.parentId.length > 100)
+    )
+      throw new BadRequestException('INVALID_ROADMAP_PARENT');
+    const name = typeof input.name === 'string' ? input.name.trim() : '';
+    const key = typeof input.key === 'string' ? input.key.trim().toLowerCase() : '';
     if (!name || name.length > 120 || !key || !/^[a-z0-9-]{1,100}$/.test(key)) {
       throw new BadRequestException('INVALID_ROADMAP_TOPIC');
     }
@@ -76,7 +81,40 @@ export class RoadmapMetadataService {
       where: { fieldId_key: { fieldId: field.id, key } },
     });
     if (existing) throw new ConflictException('ROADMAP_TOPIC_ALREADY_EXISTS');
+    if (input.parentId)
+      return this.db.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "MetadataField" WHERE id = ${field.id} FOR UPDATE`;
+        const parent = await tx.metadataOption.findFirst({
+          where: { id: input.parentId!, fieldId: field.id, parentId: null },
+        });
+        if (!parent) throw new BadRequestException('PARENT_MUST_BE_A_ROOT_ROADMAP_TOPIC');
+        return tx.metadataOption.create({
+          data: { fieldId: field.id, key, name, parentId: parent.id },
+        });
+      });
     return this.db.metadataOption.create({ data: { fieldId: field.id, key, name } });
+  }
+
+  async updateTopic(id: string, input: { parentId?: string | null }) {
+    if (input.parentId !== null && typeof input.parentId !== 'string')
+      throw new BadRequestException('INVALID_ROADMAP_PARENT');
+    const field = await this.ensureField();
+    return this.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "MetadataField" WHERE id = ${field.id} FOR UPDATE`;
+      const topic = await tx.metadataOption.findFirst({
+        where: { id, fieldId: field.id },
+        include: { _count: { select: { children: true } } },
+      });
+      if (!topic) throw new BadRequestException('ROADMAP_TOPIC_NOT_FOUND');
+      if (input.parentId) {
+        const parent = await tx.metadataOption.findFirst({
+          where: { id: input.parentId!, fieldId: field.id, parentId: null },
+        });
+        if (!parent || parent.id === id || topic._count.children > 0)
+          throw new BadRequestException('PARENT_MUST_BE_A_ROOT_ROADMAP_TOPIC');
+      }
+      return tx.metadataOption.update({ where: { id }, data: { parentId: input.parentId } });
+    });
   }
 
   async coverage() {
@@ -90,8 +128,14 @@ export class RoadmapMetadataService {
         id: option.id,
         key: option.key,
         name: option.name,
-        publishedVideoCount: await this.db.videoMetadataOption.count({
-          where: { optionId: option.id, video: { published: true } },
+        parentId: option.parentId ?? null,
+        publishedVideoCount: await this.db.video.count({
+          where: {
+            published: true,
+            metadataValues: {
+              some: { option: { OR: [{ id: option.id }, { parentId: option.id }] } },
+            },
+          },
         }),
       })),
     );
@@ -121,10 +165,20 @@ export class RoadmapMetadataService {
     const enrichedTopics = await Promise.all(
       topics.map(async (topic) => ({
         ...topic,
-        draftVideoCount: await this.db.videoMetadataOption.count({
-          where: { optionId: topic.id, video: { published: false } },
+        draftVideoCount: await this.db.video.count({
+          where: {
+            published: false,
+            metadataValues: {
+              some: { option: { OR: [{ id: topic.id }, { parentId: topic.id }] } },
+            },
+          },
         }),
-        assessmentMappingCount: assessmentMappings.get(topic.key) ?? 0,
+        assessmentMappingCount:
+          assessmentMappings.get(topic.key) ??
+          assessmentMappings.get(
+            topics.find((parent) => parent.id === topic.parentId)?.key ?? '',
+          ) ??
+          0,
       })),
     );
     const unlinkedVideos = await this.db.video.findMany({

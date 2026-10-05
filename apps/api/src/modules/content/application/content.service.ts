@@ -617,7 +617,12 @@ export class ContentService {
             { technique: { key: item.skillKey } },
             {
               metadataValues: {
-                some: { option: { key: item.skillKey, field: { key: 'roadmap-topic' } } },
+                some: {
+                  option: {
+                    field: { key: 'roadmap-topic' },
+                    OR: [{ key: item.skillKey }, { parent: { key: item.skillKey } }],
+                  },
+                },
               },
             },
           ],
@@ -748,9 +753,16 @@ export class ContentService {
       roadmapItemsCompleted = result.count;
       const topicValues = await this.db.videoMetadataOption.findMany({
         where: { videoId, option: { field: { key: 'roadmap-topic' } } },
-        select: { option: { select: { key: true } } },
+        select: { option: { select: { key: true, parent: { select: { key: true } } } } },
       });
-      const topicKeys = topicValues.map((value) => value.option.key);
+      const topicKeys = [
+        ...new Set(
+          topicValues.flatMap((value) => [
+            value.option.key,
+            ...(value.option.parent ? [value.option.parent.key] : []),
+          ]),
+        ),
+      ];
       if (topicKeys.length) {
         const items = await this.db.roadmapItem.findMany({
           where: {
@@ -766,7 +778,12 @@ export class ContentService {
           const requiredWhere = {
             published: true,
             metadataValues: {
-              some: { option: { key: item.skillKey, field: { key: 'roadmap-topic' } } },
+              some: {
+                option: {
+                  field: { key: 'roadmap-topic' },
+                  OR: [{ key: item.skillKey }, { parent: { key: item.skillKey } }],
+                },
+              },
             },
             AND: [
               {

@@ -716,7 +716,26 @@
       },
       "patch": {
         "operationId": "AssessmentController_update",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoadmapItemDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -1068,6 +1087,31 @@
           "executeAt",
           "renewalConfirmed"
         ]
+      },
+      "UpdateRoadmapItemDto": {
+        "type": "object",
+        "properties": {
+          "isHidden": {
+            "type": "boolean"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ]
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "selectedSkillKeys": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       },
       "CatalogTrainerDto": {
         "type": "object",

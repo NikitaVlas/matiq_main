@@ -8,14 +8,17 @@ import {
   Param,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiParam, ApiTags } from '@nestjs/swagger';
 import { AdminDatabaseService } from '../../shared/infrastructure/admin-database.service';
 import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 import { AdminRoles } from '../admin-auth/admin-roles.decorator';
 import { validateCourseStructure } from './course-validation';
 import { RoadmapMetadataService } from './roadmap-metadata.service';
+import { RoadmapTopicDto, RoadmapTopicLinkDto } from './roadmap-topic.dto';
+import { AuditService } from '../audit/audit.service';
 
 @ApiTags('admin-content')
 @Controller('admin/content')
@@ -25,6 +28,7 @@ export class ContentController {
   constructor(
     private readonly db: AdminDatabaseService,
     private readonly roadmapMetadata: RoadmapMetadataService,
+    private readonly audit: AuditService,
   ) {}
   @Get() catalog() {
     return Promise.all([
@@ -275,8 +279,32 @@ export class ContentController {
   @Get('roadmap-diagnostics') roadmapDiagnostics() {
     return this.roadmapMetadata.diagnostics();
   }
-  @Post('roadmap-topics') createRoadmapTopic(@Body() body: { key?: string; name?: string }) {
-    return this.roadmapMetadata.createTopic(body);
+  @Post('roadmap-topics')
+  @ApiBody({ type: RoadmapTopicDto })
+  async createRoadmapTopic(@Body() body: RoadmapTopicDto, @Req() request: { adminUserId: string }) {
+    const topic = await this.roadmapMetadata.createTopic(body);
+    await this.audit.record(
+      'ROADMAP_TOPIC_CREATED',
+      'MetadataOption',
+      topic.id,
+      request.adminUserId,
+      { key: topic.key, parentId: topic.parentId },
+    );
+    return topic;
+  }
+  @Patch('roadmap-topics/:id')
+  @ApiParam({ name: 'id', type: String })
+  @ApiBody({ type: RoadmapTopicLinkDto })
+  async updateRoadmapTopic(
+    @Param('id') id: string,
+    @Body() body: RoadmapTopicLinkDto,
+    @Req() request: { adminUserId: string },
+  ) {
+    const topic = await this.roadmapMetadata.updateTopic(id, body);
+    await this.audit.record('ROADMAP_TOPIC_LINKED', 'MetadataOption', id, request.adminUserId, {
+      parentId: topic.parentId,
+    });
+    return topic;
   }
   @Post('metadata-fields') createMetadataField(@Body() body: { key: string; name: string }) {
     return this.db.metadataField.create({ data: body, include: { options: true } });
@@ -285,7 +313,7 @@ export class ContentController {
     @Param('fieldId') fieldId: string,
     @Body() body: { key: string; name: string },
   ) {
-    return this.db.metadataOption.create({ data: { ...body, fieldId } });
+    return this.db.metadataOption.create({ data: { key: body.key, name: body.name, fieldId } });
   }
   @Post('game-areas') createGameArea(
     @Body() body: { key: string; name: string; discipline: 'BJJ_GI' | 'NO_GI_GRAPPLING' },

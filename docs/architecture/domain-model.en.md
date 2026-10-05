@@ -202,6 +202,16 @@ A user cannot create new system positions, techniques, or variants.
 
 ### Skill map presentation
 
+Editors define concrete skills through `roadmap-topic`: nullable `parentId` links
+a child skill to a root topic. One level is supported; cycles and nested parents
+are rejected. A published video tagged with the skill and discipline makes the
+skill available within its parent in that discipline. Parent material includes
+child videos without an additional parent tag. Selecting concrete skills persists
+manual targets and hides broad recommendations; clearing selection restores the
+parent. Reassessment preserves selection. Child lists start collapsed. Duplicate
+targets retain their recommendation reasons in one visible node, while distinct
+disciplines and lesson targets remain separate.
+
 The Roadmap is an interactive tree with Top Game, Guard Game and Escapes branches
 containing recommendations from the current result. Grouping uses `skillKey`;
 unknown keys remain under “Weitere Skills”, and foundation steps without a known

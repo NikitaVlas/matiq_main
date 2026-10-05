@@ -112,7 +112,12 @@ describe('ContentService recommendations', () => {
           OR: expect.arrayContaining([
             {
               metadataValues: {
-                some: { option: { key: 'half-guard', field: { key: 'roadmap-topic' } } },
+                some: {
+                  option: {
+                    field: { key: 'roadmap-topic' },
+                    OR: [{ key: 'half-guard' }, { parent: { key: 'half-guard' } }],
+                  },
+                },
               },
             },
           ]),

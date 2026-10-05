@@ -70,7 +70,7 @@ test('login exposes its form and error state to keyboard users', async ({ page }
   await expectAccessibilityBaseline(page);
   await expectNoWcagViolations(page);
   await page.getByLabel('E-Mail').fill('athlete@matiq.local');
-  await page.getByLabel('Passwort').fill('Wrong-password-123');
+  await page.getByLabel('Passwort', { exact: true }).fill('Wrong-password-123');
   await page.getByRole('button', { name: 'Anmelden' }).focus();
   await page.keyboard.press('Enter');
   await expect(

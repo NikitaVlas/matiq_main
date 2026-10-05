@@ -5,6 +5,9 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  ArrayUnique,
+  IsBoolean,
+  IsIn,
   IsEnum,
   IsInt,
   IsOptional,
@@ -73,4 +76,30 @@ export class RoadmapItemDto {
   @IsOptional()
   @IsString()
   lessonId?: string;
+}
+
+export class UpdateRoadmapItemDto {
+  @ApiProperty({ required: false, type: Boolean })
+  @IsOptional()
+  @IsBoolean()
+  isHidden?: boolean;
+
+  @ApiProperty({ required: false, type: String, enum: ['up', 'down'] })
+  @IsOptional()
+  @IsIn(['up', 'down'])
+  direction?: 'up' | 'down';
+
+  @ApiProperty({ required: false, type: Boolean })
+  @IsOptional()
+  @IsBoolean()
+  completed?: boolean;
+
+  @ApiProperty({ required: false, type: [String], maxItems: 20 })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @ArrayUnique()
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  selectedSkillKeys?: string[];
 }

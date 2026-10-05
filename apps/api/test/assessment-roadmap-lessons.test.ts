@@ -166,7 +166,16 @@ describe('assessment roadmap lesson matching', () => {
         where: expect.objectContaining({
           published: true,
           OR: expect.arrayContaining([
-            { metadataValues: { some: { option: { key: 'mount-top' } } } },
+            {
+              metadataValues: {
+                some: {
+                  option: {
+                    field: { key: 'roadmap-topic' },
+                    OR: [{ key: 'mount-top' }, { parent: { key: 'mount-top' } }],
+                  },
+                },
+              },
+            },
           ]),
         }),
       }),
@@ -193,6 +202,7 @@ describe('assessment roadmap lesson matching', () => {
     const create = vi.fn().mockResolvedValue({});
     const update = vi.fn().mockResolvedValue({});
     const db = {
+      metadataOption: { findMany: vi.fn().mockResolvedValue([]) },
       roadmapItem: {
         findMany: vi.fn().mockResolvedValue([
           {

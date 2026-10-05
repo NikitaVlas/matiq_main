@@ -727,8 +727,12 @@ model MetadataOption {
   createdAt DateTime              @default(now())
   field     MetadataField         @relation(fields: [fieldId], references: [id], onDelete: Cascade)
   videos    VideoMetadataOption[]
+  parentId  String?
+  parent    MetadataOption?       @relation("RoadmapTopicChildren", fields: [parentId], references: [id], onDelete: Restrict)
+  children  MetadataOption[]      @relation("RoadmapTopicChildren")
 
   @@unique([fieldId, key])
+  @@index([parentId])
 }
 
 model VideoMetadataOption {

@@ -11,6 +11,7 @@ import {
   RoadmapRecommendationType,
 } from '@prisma/client';
 import { Database } from '../../../shared/infrastructure/database';
+import { consolidateRoadmap, specializationFor } from '../domain/roadmap-skills';
 
 const QUESTION_SEED = [
   {
@@ -458,6 +459,59 @@ export class AssessmentService {
     }));
   }
 
+  private async skillChoices(disciplines: Discipline[]) {
+    return (
+      await Promise.all(
+        disciplines.map(async (discipline) => {
+          const roots = await this.db.metadataOption.findMany({
+            where: { field: { key: 'roadmap-topic' }, parentId: null, children: { some: {} } },
+            select: {
+              key: true,
+              name: true,
+              children: {
+                orderBy: { name: 'asc' },
+                select: {
+                  key: true,
+                  name: true,
+                  _count: {
+                    select: {
+                      videos: {
+                        where: {
+                          video: {
+                            published: true,
+                            metadataValues: {
+                              some: {
+                                option: {
+                                  key: disciplineMetadataKey(discipline),
+                                  field: { key: 'discipline' },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { name: 'asc' },
+          });
+          return roots.map((root) => ({
+            parentKey: root.key,
+            title: root.name,
+            discipline,
+            options: root.children.map((child) => ({
+              key: child.key,
+              title: child.name,
+              publishedVideoCount: child._count.videos,
+            })),
+          }));
+        }),
+      )
+    ).flat();
+  }
+
   async getResult(userId: string) {
     const assessment = await this.db.assessment.findUnique({
       where: { userId },
@@ -476,7 +530,8 @@ export class AssessmentService {
         },
       },
     });
-    const roadmapItems = profile?.roadmapItems ?? [];
+    const roadmapItems = consolidateRoadmap(profile?.roadmapItems ?? []);
+    const specializationGroups = await this.skillChoices(profile?.disciplines ?? []);
     const roadmaps = (profile?.disciplines ?? []).map((discipline) => ({
       discipline,
       items: roadmapItems.filter(
@@ -505,6 +560,9 @@ export class AssessmentService {
       roadmaps: await Promise.all(
         roadmaps.map(async (roadmap) => ({
           ...roadmap,
+          skillChoices: specializationGroups.filter(
+            (group) => group.discipline === roadmap.discipline,
+          ),
           items: await Promise.all(roadmap.items.map(decorateItem)),
           completedItems: await Promise.all(roadmap.completedItems.map(decorateItem)),
         })),
@@ -552,7 +610,16 @@ export class AssessmentService {
           OR: [
             { position: { key: item.skillKey } },
             { technique: { key: item.skillKey } },
-            { metadataValues: { some: { option: { key: item.skillKey } } } },
+            {
+              metadataValues: {
+                some: {
+                  option: {
+                    field: { key: 'roadmap-topic' },
+                    OR: [{ key: item.skillKey }, { parent: { key: item.skillKey } }],
+                  },
+                },
+              },
+            },
           ],
         }
       : undefined;
@@ -611,7 +678,16 @@ export class AssessmentService {
         OR: [
           { position: { key: skillKey } },
           { technique: { key: skillKey } },
-          { metadataValues: { some: { option: { key: skillKey } } } },
+          {
+            metadataValues: {
+              some: {
+                option: {
+                  field: { key: 'roadmap-topic' },
+                  OR: [{ key: skillKey }, { parent: { key: skillKey } }],
+                },
+              },
+            },
+          },
         ],
       },
       select: { id: true, title: true },
@@ -698,7 +774,16 @@ export class AssessmentService {
             OR: [
               { position: { key: item.skillKey } },
               { technique: { key: item.skillKey } },
-              { metadataValues: { some: { option: { key: item.skillKey } } } },
+              {
+                metadataValues: {
+                  some: {
+                    option: {
+                      field: { key: 'roadmap-topic' },
+                      OR: [{ key: item.skillKey }, { parent: { key: item.skillKey } }],
+                    },
+                  },
+                },
+              },
             ],
           },
           select: {
@@ -788,39 +873,181 @@ export class AssessmentService {
   async updateRoadmapItem(
     userId: string,
     itemId: string,
-    change: { isHidden?: boolean; direction?: 'up' | 'down'; completed?: boolean },
+    change: {
+      isHidden?: boolean;
+      direction?: 'up' | 'down';
+      completed?: boolean;
+      selectedSkillKeys?: string[];
+    },
   ) {
     const profile = await this.db.athleteProfile.findUniqueOrThrow({ where: { userId } });
     const item = await this.db.roadmapItem.findFirst({
       where: { id: itemId, athleteProfileId: profile.id },
     });
     if (!item) throw new NotFoundException('ROADMAP_ITEM_NOT_FOUND');
-    if (typeof change.isHidden === 'boolean')
-      return this.db.roadmapItem.update({
-        where: { id: item.id },
-        data: { isHidden: change.isHidden },
+    if (change.selectedSkillKeys !== undefined) {
+      if (
+        change.direction !== undefined ||
+        change.isHidden !== undefined ||
+        change.completed !== undefined
+      )
+        throw new BadRequestException('ONE_ROADMAP_ACTION_REQUIRED');
+      return this.selectSpecializations(profile.id, item, change.selectedSkillKeys);
+    }
+    const specializationGroups =
+      change.isHidden === false ? await this.skillChoices([item.discipline]) : [];
+    const specialization = specializationFor(specializationGroups, item.skillKey, item.discipline);
+    if (change.isHidden === false && specialization) {
+      const active = await this.db.roadmapItem.findMany({
+        where: {
+          athleteProfileId: profile.id,
+          discipline: item.discipline,
+          isHidden: false,
+          skillKey: { in: specialization.options.map((option) => option.key) },
+        },
+        select: { skillKey: true },
       });
-    if (typeof change.completed === 'boolean')
-      return this.db.roadmapItem.update({
-        where: { id: item.id },
-        data: { completedAt: change.completed ? new Date() : null },
+      const keys =
+        item.skillKey === specialization.parentKey
+          ? []
+          : [...new Set([...active.map((row) => row.skillKey!), item.skillKey!])];
+      return this.selectSpecializations(profile.id, item, keys);
+    }
+    const sameTarget = {
+      athleteProfileId: profile.id,
+      discipline: item.discipline,
+      ...(item.skillKey ? { skillKey: item.skillKey, lessonId: item.lessonId } : { id: item.id }),
+    };
+    if (typeof change.isHidden === 'boolean' || typeof change.completed === 'boolean') {
+      await this.db.roadmapItem.updateMany({
+        where: sameTarget,
+        data:
+          typeof change.isHidden === 'boolean'
+            ? { isHidden: change.isHidden }
+            : { completedAt: change.completed ? new Date() : null },
       });
+      return this.db.roadmapItem.findUniqueOrThrow({ where: { id: item.id } });
+    }
     if (!change.direction) return item;
     const neighbor = await this.db.roadmapItem.findFirst({
       where: {
         athleteProfileId: profile.id,
         discipline: item.discipline,
         isHidden: false,
+        NOT: item.skillKey ? { skillKey: item.skillKey, lessonId: item.lessonId } : { id: item.id },
         position: change.direction === 'up' ? { lt: item.position } : { gt: item.position },
       },
       orderBy: { position: change.direction === 'up' ? 'desc' : 'asc' },
     });
     if (!neighbor) return item;
     await this.db.$transaction([
-      this.db.roadmapItem.update({ where: { id: item.id }, data: { position: neighbor.position } }),
-      this.db.roadmapItem.update({ where: { id: neighbor.id }, data: { position: item.position } }),
+      this.db.roadmapItem.updateMany({ where: sameTarget, data: { position: neighbor.position } }),
+      this.db.roadmapItem.updateMany({
+        where: {
+          athleteProfileId: profile.id,
+          discipline: neighbor.discipline,
+          ...(neighbor.skillKey
+            ? { skillKey: neighbor.skillKey, lessonId: neighbor.lessonId }
+            : { id: neighbor.id }),
+        },
+        data: { position: item.position },
+      }),
     ]);
     return this.db.roadmapItem.findUniqueOrThrow({ where: { id: item.id } });
+  }
+
+  private async selectSpecializations(
+    profileId: string,
+    item: {
+      skillKey: string | null;
+      discipline: Discipline;
+      position: number;
+      recommendationType: RoadmapRecommendationType;
+    },
+    selectedKeys: string[],
+  ) {
+    const group = specializationFor(
+      await this.skillChoices([item.discipline]),
+      item.skillKey,
+      item.discipline,
+    );
+    if (
+      !group ||
+      !Array.isArray(selectedKeys) ||
+      new Set(selectedKeys).size !== selectedKeys.length ||
+      selectedKeys.some((key) => !group.options.some((option) => option.key === key))
+    )
+      throw new BadRequestException('INVALID_SKILL_SELECTION');
+    return this.db.$transaction(async (tx) => {
+      // Serialize changes to this athlete's selection without a destructive migration.
+      await tx.$queryRaw`SELECT id FROM "AthleteProfile" WHERE id = ${profileId} FOR UPDATE`;
+      const scope = { athleteProfileId: profileId, discipline: item.discipline };
+      const existingSelections = await tx.roadmapItem.findMany({
+        where: { ...scope, isHidden: false, skillKey: { in: selectedKeys } },
+        select: { skillKey: true },
+      });
+      if (
+        selectedKeys.some(
+          (key) =>
+            !group.options.some((option) => option.key === key && option.publishedVideoCount > 0) &&
+            !existingSelections.some((selected) => selected.skillKey === key),
+        )
+      )
+        throw new BadRequestException('SKILL_HAS_NO_PUBLISHED_CONTENT');
+      await tx.roadmapItem.updateMany({
+        where: { ...scope, skillKey: group.parentKey },
+        data: { isHidden: selectedKeys.length > 0 },
+      });
+      if (
+        selectedKeys.length === 0 &&
+        !(await tx.roadmapItem.findFirst({ where: { ...scope, skillKey: group.parentKey } }))
+      ) {
+        await tx.roadmapItem.create({
+          data: {
+            ...scope,
+            skillKey: group.parentKey,
+            title: group.title,
+            type: 'SKILL_GROUP',
+            source: RoadmapItemSource.MANUAL,
+            isAddedByUser: true,
+            recommendationType: item.recommendationType,
+            position: item.position,
+            reason: { source: 'SPECIALIZATION_RESET' },
+          },
+        });
+      }
+      await tx.roadmapItem.updateMany({
+        where: { ...scope, skillKey: { in: group.options.map((option) => option.key) } },
+        data: { isHidden: true },
+      });
+      for (const [index, key] of selectedKeys.entries()) {
+        const existing = await tx.roadmapItem.findFirst({
+          where: { ...scope, skillKey: key },
+          orderBy: { position: 'asc' },
+        });
+        if (existing) {
+          await tx.roadmapItem.updateMany({
+            where: { ...scope, skillKey: key },
+            data: { isHidden: false },
+          });
+        } else {
+          await tx.roadmapItem.create({
+            data: {
+              ...scope,
+              title: group.options.find((option) => option.key === key)!.title,
+              skillKey: key,
+              type: 'SKILL_GROUP',
+              source: RoadmapItemSource.MANUAL,
+              isAddedByUser: true,
+              recommendationType: item.recommendationType,
+              position: item.position + index,
+              reason: { source: 'SPECIALIZATION', parentSkillKey: group.parentKey },
+            },
+          });
+        }
+      }
+      return { ok: true };
+    });
   }
 
   private async generateRoadmap(
@@ -854,6 +1081,17 @@ export class AssessmentService {
     const ranked = [
       ...new Map(signals.map((item) => [`${item.type}:${item.skillKey}`, item])).values(),
     ].sort((a, b) => priority[a.type] - priority[b.type] || a.score - b.score);
+    const specializationGroups = await this.skillChoices(disciplines);
+    const activeSpecializations = await this.db.roadmapItem.findMany({
+      where: {
+        athleteProfileId: profileId,
+        isHidden: false,
+        skillKey: {
+          in: specializationGroups.flatMap((group) => group.options.map((option) => option.key)),
+        },
+      },
+      select: { skillKey: true, discipline: true },
+    });
     const desired = await Promise.all(
       disciplines.flatMap((discipline) =>
         ranked.map(async ({ skillKey, type }, index) => {
@@ -872,7 +1110,16 @@ export class AssessmentService {
                 OR: [
                   { position: { key: skillKey } },
                   { technique: { key: skillKey } },
-                  { metadataValues: { some: { option: { key: skillKey } } } },
+                  {
+                    metadataValues: {
+                      some: {
+                        option: {
+                          field: { key: 'roadmap-topic' },
+                          OR: [{ key: skillKey }, { parent: { key: skillKey } }],
+                        },
+                      },
+                    },
+                  },
                 ],
               },
             },
@@ -887,6 +1134,12 @@ export class AssessmentService {
             lessonId: lesson?.id,
             position: index,
             recommendationType: type,
+            isHidden: activeSpecializations.some(
+              (child) =>
+                child.discipline === discipline &&
+                specializationFor(specializationGroups, child.skillKey, discipline)?.parentKey ===
+                  skillKey,
+            ),
             reason: { source: 'ASSESSMENT', skillKey, recommendationType: type },
           };
         }),

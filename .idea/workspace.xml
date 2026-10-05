@@ -5,9 +5,34 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7d5690e5-729f-4f1e-9004-24b2e48bed4f" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/apps/web/src/screens/assessment/AssessmentPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/screens/assessment/AssessmentPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/e2e/beginner-foundation-flow.spec.ts" beforeDir="false" afterPath="$PROJECT_DIR$/e2e/beginner-foundation-flow.spec.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/e2e/training-flow.spec.ts" beforeDir="false" afterPath="$PROJECT_DIR$/e2e/training-flow.spec.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin-api/src/modules/content/content.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin-api/src/modules/content/content.controller.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin-api/src/modules/content/content.module.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin-api/src/modules/content/content.module.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin-api/src/modules/content/roadmap-metadata.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin-api/src/modules/content/roadmap-metadata.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin-api/test/roadmap-metadata.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin-api/test/roadmap-metadata.test.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin-web/src/screens/video/VideoUploadPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin-web/src/screens/video/VideoUploadPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin-web/src/shared/i18n/messages.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin-web/src/shared/i18n/messages.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/api/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/api/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/prisma/schema.prisma" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/assessment/application/assessment.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/modules/assessment/application/assessment.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/assessment/controllers/assessment.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/modules/assessment/controllers/assessment.controller.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/assessment/dto/assessment.dto.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/modules/assessment/dto/assessment.dto.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/api/src/modules/content/application/content.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/src/modules/content/application/content.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/api/test/assessment-roadmap-lessons.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/test/assessment-roadmap-lessons.test.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/api/test/content-recommendations.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/api/test/content-recommendations.test.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/web/src/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/app/globals.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/web/src/app/roadmap/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/app/roadmap/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/web/src/features/roadmap/SkillMap.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/features/roadmap/SkillMap.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/web/src/features/roadmap/skill-map.css" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/features/roadmap/skill-map.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/web/src/features/roadmap/skill-map.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/features/roadmap/skill-map.test.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/web/src/features/roadmap/skill-map.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/features/roadmap/skill-map.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/architecture/domain-model.en.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/architecture/domain-model.en.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/architecture/domain-model.ru.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/architecture/domain-model.ru.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/development/verification.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/development/verification.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/e2e/accessibility.spec.ts" beforeDir="false" afterPath="$PROJECT_DIR$/e2e/accessibility.spec.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/e2e/roadmap-map.spec.ts" beforeDir="false" afterPath="$PROJECT_DIR$/e2e/roadmap-map.spec.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/openapi/admin-api.json" beforeDir="false" afterPath="$PROJECT_DIR$/openapi/admin-api.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/openapi/user-api.json" beforeDir="false" afterPath="$PROJECT_DIR$/openapi/user-api.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,7 +95,7 @@
       <workItem from="1785686779610" duration="175000" />
       <workItem from="1785739875183" duration="262000" />
       <workItem from="1791124754580" duration="3714000" />
-      <workItem from="1791191167212" duration="583000" />
+      <workItem from="1791191167212" duration="9204000" />
     </task>
     <servers />
   </component>

@@ -1,5 +1,11 @@
 // Source phrases are stable UI keys. Editorial content is never passed here.
 const rows = `
+Parent Roadmap topic|Übergeordnetes Roadmap-Thema|Родительское направление Roadmap
+Root topic|Eigenständiges Thema|Самостоятельное направление
+Save skill connection|Skill-Verknüpfung speichern|Сохранить связь навыка
+Skill connection saved.|Skill-Verknüpfung gespeichert.|Связь навыка сохранена.
+Skill connection could not be saved. Choose a root topic without creating a cycle.|Verknüpfung nicht gespeichert. Wähle ein übergeordnetes Thema ohne Kreisverbindung.|Связь не сохранена. Выберите корневое направление без циклических связей.
+Create a skill under a topic, tag its video with this skill and a discipline, then publish it. The skill becomes available inside that Roadmap topic.|Erstelle einen Skill unter einem Thema, ordne dem Video diesen Skill und eine Disziplin zu und veröffentliche es. Der Skill erscheint dann unter diesem Roadmap-Thema.|Создайте навык внутри направления, укажите этот навык и дисциплину у видео, затем опубликуйте его. Навык появится внутри соответствующего направления Roadmap.
 Recommendation type|Empfehlungstyp|Тип рекомендации
 published videos|veröffentlichte Videos|опубликованных видео
 published|veröffentlicht|опубликовано

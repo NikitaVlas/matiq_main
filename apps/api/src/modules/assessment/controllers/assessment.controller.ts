@@ -12,9 +12,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Discipline } from '@prisma/client';
-import { ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiParam, ApiTags } from '@nestjs/swagger';
 import { AuthGuard, AuthenticatedRequest } from '../../identity/infrastructure/auth.guard';
-import { AssessmentDraftDto, RoadmapItemDto, SubmitAssessmentDto } from '../dto/assessment.dto';
+import {
+  AssessmentDraftDto,
+  RoadmapItemDto,
+  SubmitAssessmentDto,
+  UpdateRoadmapItemDto,
+} from '../dto/assessment.dto';
 import { AssessmentService } from '../application/assessment.service';
 
 @ApiTags('assessment')
@@ -57,10 +62,13 @@ export class AssessmentController {
   @Get('roadmap-items/:id') details(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.assessment.roadmapItemDetails(req.userId, id);
   }
-  @Patch('roadmap-items/:id') update(
+  @Patch('roadmap-items/:id')
+  @ApiParam({ name: 'id', type: String })
+  @ApiBody({ type: UpdateRoadmapItemDto })
+  update(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() body: { isHidden?: boolean; direction?: 'up' | 'down'; completed?: boolean },
+    @Body() body: UpdateRoadmapItemDto,
   ) {
     return this.assessment.updateRoadmapItem(req.userId, id, body);
   }

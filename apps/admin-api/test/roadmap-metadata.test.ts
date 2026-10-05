@@ -35,7 +35,7 @@ describe('Roadmap metadata', () => {
           .fn()
           .mockResolvedValue([{ id: 'topic-1', key: 'top-control', name: 'Kontrolle von oben' }]),
       },
-      videoMetadataOption: { count: vi.fn().mockResolvedValue(2) },
+      video: { count: vi.fn().mockResolvedValue(2) },
     };
     const service = new RoadmapMetadataService(db as never);
 
@@ -45,10 +45,14 @@ describe('Roadmap metadata', () => {
         key: 'top-control',
         name: 'Kontrolle von oben',
         publishedVideoCount: 2,
+        parentId: null,
       },
     ]);
-    expect(db.videoMetadataOption.count).toHaveBeenCalledWith({
-      where: { optionId: 'topic-1', video: { published: true } },
+    expect(db.video.count).toHaveBeenCalledWith({
+      where: {
+        published: true,
+        metadataValues: { some: { option: { OR: [{ id: 'topic-1' }, { parentId: 'topic-1' }] } } },
+      },
     });
   });
 

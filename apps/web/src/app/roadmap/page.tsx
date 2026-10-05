@@ -3,7 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { SkillMap } from '../../features/roadmap/SkillMap';
-import type { RoadmapItem } from '../../features/roadmap/skill-map';
+import {
+  uniqueRoadmapItems,
+  type RoadmapItem,
+  type SkillChoice,
+} from '../../features/roadmap/skill-map';
 import { userApiResponse } from '../../shared/api/client';
 
 type Discipline = 'BJJ_GI' | 'NO_GI_GRAPPLING';
@@ -12,6 +16,7 @@ type Roadmap = {
   items: RoadmapItem[];
   completedItems: RoadmapItem[];
   hiddenItems: RoadmapItem[];
+  skillChoices?: SkillChoice[];
 };
 type Result = { completed: boolean; foundationActive: boolean; roadmaps: Roadmap[] };
 
@@ -25,7 +30,15 @@ export default function RoadmapPage() {
     const response = await userApiResponse('/assessment/result');
     if (!response.ok) throw new Error('ROADMAP_LOAD_FAILED');
     const value = (await response.json()) as Result;
-    setResult(value);
+    setResult({
+      ...value,
+      roadmaps: value.roadmaps.map((roadmap) => ({
+        ...roadmap,
+        items: uniqueRoadmapItems(roadmap.items),
+        completedItems: uniqueRoadmapItems(roadmap.completedItems),
+        hiddenItems: uniqueRoadmapItems(roadmap.hiddenItems),
+      })),
+    });
     setSelectedDiscipline((current) => current ?? value.roadmaps[0]?.discipline);
   }
 
@@ -33,7 +46,7 @@ export default function RoadmapPage() {
     void load().catch(() => setError('Die Roadmap konnte nicht geladen werden.'));
   }, []);
 
-  async function update(id: string, body: object) {
+  async function update(id: string, body: object): Promise<boolean> {
     setError('');
     setUpdatingId(id);
     try {
@@ -44,8 +57,10 @@ export default function RoadmapPage() {
       });
       if (!response.ok) throw new Error('ROADMAP_UPDATE_FAILED');
       await load();
+      return true;
     } catch {
       setError('Die Änderung konnte nicht gespeichert werden. Bitte versuche es erneut.');
+      return false;
     } finally {
       setUpdatingId('');
     }
@@ -131,6 +146,7 @@ export default function RoadmapPage() {
             key={roadmap.discipline}
             items={roadmap.items}
             completed={roadmap.completedItems}
+            choices={roadmap.skillChoices ?? []}
             updatingId={updatingId}
             update={update}
           />

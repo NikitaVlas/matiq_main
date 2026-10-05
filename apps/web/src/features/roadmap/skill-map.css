@@ -84,7 +84,9 @@
 .skill-map-page .skill-plan button:is(:hover, :focus-visible) {
   background: transparent;
   color: #ac3027;
-  text-decoration: underline;
+  text-decoration: none;
+  box-shadow: inset 0 -1px #bda99d;
+  transform: none;
 }
 .skill-workspace {
   display: grid;
@@ -355,15 +357,137 @@
   color: #ffbba9;
 }
 .skill-map-page .skill-node.is-selected {
-  box-shadow: 0 0 0 3px #e9ece3;
+  box-shadow: 0 0 0 1px #d8ddcf;
 }
 .skill-map-page .skill-node.is-muted {
   border-style: dashed;
   background: #191f1c;
 }
 .skill-map-page .skill-node:is(:hover, :focus-visible) {
-  background: #364333;
   border-color: #d5e0c9;
+  box-shadow: 0 0 0 1px #9ca791;
+  transform: none;
+}
+.skill-map-page .skill-node:active,
+.skill-map-page .skill-plan button:active {
+  transform: none;
+}
+.skill-map-page .skill-node:focus-visible {
+  outline: 2px solid #e7e9df;
+  outline-offset: 4px;
+}
+.skill-cluster > .skill-node + .skill-node {
+  margin-top: 18px;
+}
+.skill-parent-title {
+  border-left: 2px solid #8c9a7e;
+  padding: 10px 12px;
+  margin: 0 0 16px;
+  color: #d9dfd0;
+  font-size: 14px;
+}
+.skill-subskills {
+  margin: 0 0 0 14px;
+  padding: 14px 0 0 14px;
+  border-left: 1px solid #535951;
+}
+.skill-subskills p {
+  font-size: 10px;
+  color: #b4bdb1;
+  margin: 0 0 12px;
+}
+.skill-map-page .skill-option-preview {
+  display: grid;
+  gap: 6px;
+  background: transparent;
+  border: 1px dashed #65735e;
+  border-radius: 6px;
+  color: #e9ede3;
+  text-align: left;
+  padding: 12px;
+  margin-bottom: 10px;
+  width: 100%;
+}
+.skill-option-preview span:last-child {
+  color: #b4bdb1;
+  font-size: 10px;
+  font-weight: 400;
+}
+.skill-map-page .skill-option-preview:is(:hover, :focus-visible) {
+  background: #252d27;
+  border-color: #c1cfb3;
+  transform: none;
+}
+.skill-subskills summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: #dce4d3;
+  padding: 10px 0;
+}
+.skill-subskills .skill-node {
+  margin: 10px 0;
+}
+.skill-collapse-label,
+.skill-subskills[open] > summary .skill-expand-label {
+  display: none;
+}
+.skill-subskills[open] > summary .skill-collapse-label {
+  display: inline;
+}
+.skill-subskills summary:focus-visible {
+  outline: 2px solid #dce4d3;
+  outline-offset: 3px;
+}
+.skill-map-page .skill-parent-toggle {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: #293229;
+  color: #e4eadb;
+  padding: 18px 14px;
+  border: 1px solid #829273;
+  border-radius: 8px;
+}
+.skill-parent-toggle span {
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+.skill-map-page .skill-parent-toggle:is(:hover, :focus-visible) {
+  background: #293229;
+  border-color: #dce4d3;
+  transform: none;
+}
+.skill-selection {
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e6e3dc;
+}
+.skill-selection fieldset {
+  padding: 0;
+}
+.skill-selection legend {
+  font-size: 14px;
+}
+.skill-selection p {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.skill-selection label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+.skill-selection input {
+  width: 18px;
+  height: 18px;
+  accent-color: #a3392d;
+}
+.skill-selection button {
+  font-size: 12px;
 }
 .skill-node-track {
   display: block;

@@ -3,7 +3,7 @@ import { t, useAdminLanguage } from '../../shared/i18n';
 import { useEffect, useState } from 'react';
 import { adminApi } from '../../shared/api/client';
 
-type MetadataOption = { id: string; key: string; name: string };
+type MetadataOption = { id: string; key: string; name: string; parentId?: string | null };
 type MetadataField = { id: string; key: string; name: string; options: MetadataOption[] };
 type RoadmapCoverage = MetadataOption & { publishedVideoCount: number };
 type RoadmapDiagnostics = {
@@ -39,6 +39,34 @@ export default function VideoUploadPage() {
   const [newOptions, setNewOptions] = useState<Record<string, string>>({});
   const [newFieldName, setNewFieldName] = useState('');
   const [newRoadmapTopic, setNewRoadmapTopic] = useState('');
+  const [newTopicParent, setNewTopicParent] = useState('');
+  const [topicParents, setTopicParents] = useState<Record<string, string>>({});
+  const [savingTopic, setSavingTopic] = useState(false);
+
+  const saveTopicParent = async (topic: RoadmapCoverage) => {
+    setSavingTopic(true);
+    try {
+      const response = await adminApi(`/admin/content/roadmap-topics/${topic.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ parentId: topicParents[topic.id] || null }),
+      });
+      if (!response.ok) throw new Error();
+      await load();
+      setTopicParents((current) => {
+        const next = { ...current };
+        delete next[topic.id];
+        return next;
+      });
+      setResult('Skill connection saved.');
+    } catch {
+      setResult(
+        'Skill connection could not be saved. Choose a root topic without creating a cycle.',
+      );
+    } finally {
+      setSavingTopic(false);
+    }
+  };
 
   const load = async () => {
     const [videosResponse, fieldsResponse, coverageResponse, diagnosticsResponse] =
@@ -140,22 +168,31 @@ export default function VideoUploadPage() {
       setResult('Use a Roadmap topic name that contains Latin letters or numbers.');
       return;
     }
-    const response = await adminApi('/admin/content/roadmap-topics', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ key, name }),
-    });
-    if (!response.ok) {
+    setSavingTopic(true);
+    try {
+      const response = await adminApi('/admin/content/roadmap-topics', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ key, name, parentId: newTopicParent || null }),
+      });
+      if (!response.ok) {
+        setResult(
+          response.status === 409
+            ? 'This Roadmap topic already exists.'
+            : `Roadmap topic creation failed (${response.status})`,
+        );
+        return;
+      }
+      setNewRoadmapTopic('');
+      setResult('Roadmap topic added. It is now available for video metadata.');
+      await load();
+    } catch {
       setResult(
-        response.status === 409
-          ? 'This Roadmap topic already exists.'
-          : `Roadmap topic creation failed (${response.status})`,
+        'Skill connection could not be saved. Choose a root topic without creating a cycle.',
       );
-      return;
+    } finally {
+      setSavingTopic(false);
     }
-    setNewRoadmapTopic('');
-    setResult('Roadmap topic added. It is now available for video metadata.');
-    await load();
   };
 
   const saveMetadata = async () => {
@@ -228,19 +265,74 @@ export default function VideoUploadPage() {
             onChange={(event) => setNewRoadmapTopic(event.target.value)}
           />
         </label>{' '}
+        <label>
+          {t('Parent Roadmap topic')}
+          <select
+            aria-label={t('Parent Roadmap topic')}
+            value={newTopicParent}
+            onChange={(event) => setNewTopicParent(event.target.value)}
+          >
+            <option value="">{t('Root topic')}</option>
+            {roadmapCoverage
+              .filter((topic) => !topic.parentId)
+              .map((topic) => (
+                <option key={topic.id} value={topic.id}>
+                  {topic.name}
+                </option>
+              ))}
+          </select>
+        </label>
         <button
           type="button"
-          disabled={!newRoadmapTopic.trim()}
+          disabled={!newRoadmapTopic.trim() || savingTopic}
           onClick={() => void addRoadmapTopic()}
         >
           {t('Add Roadmap topic')}{' '}
         </button>
+        <p>
+          {t(
+            'Create a skill under a topic, tag its video with this skill and a discipline, then publish it. The skill becomes available inside that Roadmap topic.',
+          )}
+        </p>
         {roadmapCoverage.length ? (
           <ul>
             {roadmapCoverage.map((topic) => (
               <li key={topic.id}>
                 <strong>{topic.name}</strong>: {topic.publishedVideoCount} {t('published videos')}{' '}
                 {topic.publishedVideoCount === 0 ? <span>{t('— needs content')} </span> : null}
+                <label>
+                  {t('Parent Roadmap topic')}: {topic.name}
+                  <select
+                    aria-label={`${t('Parent Roadmap topic')}: ${topic.name}`}
+                    value={topicParents[topic.id] ?? topic.parentId ?? ''}
+                    disabled={
+                      savingTopic || roadmapCoverage.some((child) => child.parentId === topic.id)
+                    }
+                    onChange={(event) =>
+                      setTopicParents((current) => ({ ...current, [topic.id]: event.target.value }))
+                    }
+                  >
+                    <option value="">{t('Root topic')}</option>
+                    {roadmapCoverage
+                      .filter((parent) => !parent.parentId && parent.id !== topic.id)
+                      .map((parent) => (
+                        <option key={parent.id} value={parent.id}>
+                          {parent.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  disabled={
+                    savingTopic ||
+                    topicParents[topic.id] === undefined ||
+                    topicParents[topic.id] === (topic.parentId ?? '')
+                  }
+                  onClick={() => void saveTopicParent(topic)}
+                >
+                  {t('Save skill connection')}
+                </button>
               </li>
             ))}
           </ul>
@@ -337,6 +429,9 @@ export default function VideoUploadPage() {
                         <option value="">{t('Not selected')} </option>
                         {field.options.map((option) => (
                           <option key={option.id} value={option.id}>
+                            {option.parentId
+                              ? `${field.options.find((parent) => parent.id === option.parentId)?.name ?? ''} → `
+                              : ''}
                             {option.name}
                           </option>
                         ))}

@@ -26,7 +26,49 @@ const fixture = () =>
     },
   }));
 
-async function mock(page: Page, failedUpdate = false) {
+test('editorial skills start collapsed and persist only the selected specialization', async ({
+  page,
+}) => {
+  await mock(page, false, true);
+  await page.goto('/roadmap');
+  const skills = page.locator('.skill-subskills');
+  await expect(skills).not.toHaveAttribute('open');
+  await expect(page.getByRole('checkbox', { name: 'Draft skill' })).toHaveCount(0);
+  await skills.locator('summary').click();
+  await expect(skills.getByRole('button', { name: /Spider Guard/ })).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Spider Guard', exact: true }).check();
+  await page.getByRole('button', { name: 'Auswahl speichern' }).click();
+  await expect(page.locator('.skill-plan-now')).toContainText('Spider Guard');
+  await expect(page.locator('.skill-node').filter({ hasText: 'Lasso Guard' })).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('.skill-plan-now')).toContainText('Spider Guard');
+  await expect(skills).not.toHaveAttribute('open');
+  await expect(page.getByRole('checkbox', { name: 'Spider Guard', exact: true })).toBeChecked();
+  await expect(page.getByRole('checkbox', { name: 'Lasso Guard', exact: true })).not.toBeChecked();
+  await skills.locator('summary').click();
+  await skills.locator('summary').click();
+  await expect(skills).not.toHaveAttribute('open');
+  const next = page.locator('.skill-plan > div').nth(1).getByRole('button').first();
+  await next.hover();
+  await expect(next).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expectNoWcagViolations(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({ path: test.info().outputPath('skills-collapsed.png'), fullPage: true });
+  await skills.locator('summary').click();
+  await page.screenshot({ path: test.info().outputPath('skills-expanded.png'), fullPage: true });
+});
+
+test('failed specialization save preserves the current plan and allows retry', async ({ page }) => {
+  await mock(page, true, true);
+  await page.goto('/roadmap');
+  await page.getByRole('checkbox', { name: 'Spider Guard', exact: true }).check();
+  await page.getByRole('button', { name: 'Auswahl speichern' }).click();
+  await expect(page.getByText('Auswahl nicht gespeichert. Bitte erneut versuchen.')).toBeVisible();
+  await expect(page.locator('.skill-plan-now')).toContainText('Offene Guard');
+  await expect(page.getByRole('button', { name: 'Auswahl speichern' })).toBeEnabled();
+});
+
+async function mock(page: Page, failedUpdate = false, withChoices = false) {
   let items = fixture();
   const hidden: ReturnType<typeof fixture> = [];
   await page.route('http://localhost:4000/**', async (route) => {
@@ -36,7 +78,19 @@ async function mock(page: Page, failedUpdate = false) {
       if (failedUpdate) return route.fulfill({ status: 500, json: {} });
       const id = path.split('/').at(-1);
       const change = route.request().postDataJSON();
-      if (change.isHidden === true) {
+      if (change.selectedSkillKeys) {
+        items = items.filter(
+          (item) => !['open-guard', 'spider-guard', 'lasso-guard'].includes(item.skillKey),
+        );
+        if (!change.selectedSkillKeys.length) items.unshift(fixture()[0]!);
+        for (const key of change.selectedSkillKeys)
+          items.unshift({
+            ...fixture()[0]!,
+            id: key,
+            skillKey: key,
+            title: key === 'spider-guard' ? 'Spider Guard' : 'Lasso Guard',
+          });
+      } else if (change.isHidden === true) {
         hidden.push(items.find((item) => item.id === id)!);
         items = items.filter((item) => item.id !== id);
       } else if (change.isHidden === false) {
@@ -60,7 +114,25 @@ async function mock(page: Page, failedUpdate = false) {
           completed: true,
           foundationActive: false,
           roadmaps: [
-            { discipline: 'BJJ_GI', items, completedItems: [], hiddenItems: hidden },
+            {
+              discipline: 'BJJ_GI',
+              items,
+              completedItems: [],
+              hiddenItems: hidden,
+              skillChoices: withChoices
+                ? [
+                    {
+                      parentKey: 'open-guard',
+                      title: 'Offene Guard',
+                      options: [
+                        { key: 'spider-guard', title: 'Spider Guard', publishedVideoCount: 1 },
+                        { key: 'lasso-guard', title: 'Lasso Guard', publishedVideoCount: 1 },
+                        { key: 'draft-skill', title: 'Draft skill', publishedVideoCount: 0 },
+                      ],
+                    },
+                  ]
+                : [],
+            },
             {
               discipline: 'NO_GI_GRAPPLING',
               items: [],

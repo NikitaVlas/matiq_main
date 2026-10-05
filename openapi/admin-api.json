@@ -591,8 +591,51 @@
       "post": {
         "operationId": "ContentController_createRoadmapTopic",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoadmapTopicDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/admin/content/roadmap-topics/{id}": {
+      "patch": {
+        "operationId": "ContentController_updateRoadmapTopic",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoadmapTopicLinkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
             "description": ""
           }
         },
@@ -1030,6 +1073,40 @@
   "servers": [],
   "components": {
     "schemas": {
+      "RoadmapTopicDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "parentId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "key",
+          "name"
+        ]
+      },
+      "RoadmapTopicLinkDto": {
+        "type": "object",
+        "properties": {
+          "parentId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "parentId"
+        ]
+      },
       "PrivacyOperationsStatusDto": {
         "type": "object",
         "properties": {

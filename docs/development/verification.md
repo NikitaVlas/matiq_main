@@ -24,6 +24,7 @@ On Windows with restricted PowerShell scripts, use `pnpm.cmd`.
 | Full verification    | `pnpm verify`                               | Yes                 |
 | Load harness tests   | `pnpm load:test`                            | Local               |
 | Local load baseline  | `pnpm load:check`                           | Local Docker        |
+| Roadmap skill integration | `node scripts/check-roadmap-skills.mjs` | Local PostgreSQL; build both APIs first |
 
 Для проверки восстановления после удаления экспортируйте ledger перед backup,
 восстановите disposable test database и примените ledger командами из
@@ -71,6 +72,11 @@ Real synthetic PostgreSQL dump/restore check:
 `test-results/recovery/` and uploaded by the separate CI recovery job.
 
 Report every command, outcome, skipped check, manual check, and residual risk.
+
+The Roadmap skill check creates and migrates its own local `matiq_skills_<uuid>`
+database and removes only that database afterward. It checks editorial hierarchy,
+published content matching, persistent athlete selection, HTTP validation, access
+isolation and the admin audit record. It does not load application `.env` files.
 
 ## Document status
 

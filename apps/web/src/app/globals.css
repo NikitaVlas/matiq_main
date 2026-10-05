@@ -1675,8 +1675,10 @@ button,
     background-color 160ms ease,
     color 160ms ease;
 }
-button:not(.password-visibility):not(.profile-select-trigger):not(:disabled):not(
-    [aria-disabled='true']
+button:where(
+    :not(.password-visibility):not(.profile-select-trigger):not(:disabled):not(
+        [aria-disabled='true']
+      )
   ):is(:hover, :focus-visible),
 .action-link:not([aria-disabled='true']):is(:hover, :focus-visible) {
   background-color: var(--action-hover, #c63d32);
